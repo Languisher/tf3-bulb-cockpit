@@ -85,7 +85,7 @@ function S.directory(lines,aliases,busQuery,P)
   end
   return groups
 end
-function S.geometry(viewport)
+function S.geometry(viewport,language)
   viewport=viewport or {x=800,y=600}
   local width=math.min(880,math.max(272,viewport.x-48))
   local content=width-24
@@ -94,12 +94,14 @@ function S.geometry(viewport)
   -- same four-unit inset for both the heading and every data row.
   local rowWidth=content-12
   local inner=rowWidth-8
-  local badge=40
+  local english=language=='en'
+  local badge=english and 48 or 40
   local field=compact and math.floor((inner-badge-24)/3) or 72
   local number=compact and field or 64
-  local mode,save=136,56
+  local mode,save=136,english and 72 or 56
   local fixed=badge+field+number+field+mode+save+6*8
   local extraToolbar=content<376 and 80 or 40
+  if english and content<376 then extraToolbar=extraToolbar+40 end
   local listHeight=math.max(64,math.min(304,viewport.y-280-extraToolbar))
   return {width=width,content=content,compact=compact,rowWidth=rowWidth,inner=inner,badge=badge,
     line=compact and inner or inner-fixed,
@@ -108,7 +110,7 @@ function S.geometry(viewport)
     listHeight=listHeight,
     x=24/viewport.x,y=math.min(64,math.max(8,viewport.y-listHeight-264-extraToolbar))/viewport.y}
 end
-local function prepareChanges(lines,aliases,drafts,P)
+local function prepareChanges(lines,aliases,drafts,P,tr)
   local changes,candidate={},{}
   for key,value in pairs(aliases)do candidate[key]=value end
   local originalDefaults=P.defaults(lines,aliases)
@@ -118,7 +120,7 @@ local function prepareChanges(lines,aliases,drafts,P)
       local parts={prefix=draft.prefix:gsub('[\r\n]',''),identifier=draft.identifier:match('^%s*(.-)%s*$'),
         suffix=draft.suffix:gsub('[\r\n]','')}
       if not parts.identifier:match('^[A-Za-z0-9]*$')then
-        return nil,'「'..line.name..'」的编号仅支持数字或英文字母。'
+        return nil,tr('「%s」的编号仅支持数字或英文字母。',line.name)
       end
       local initial=P.parts(line,aliases,originalDefaults)
       local current=aliases[key];local mode=current and current.name==line.name and current.displayMode or ''
@@ -138,15 +140,15 @@ local function prepareChanges(lines,aliases,drafts,P)
   end
   return changes,candidate,defaults
 end
-function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,citySettings,stationSettings,visuals)
+function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,citySettings,stationSettings,visuals,I)
   -- Native size describes content, excluding the control's CSS padding.
   -- Keep official skins/insets while budgeting their complete outer bounds.
   local function inputSize(width)return {width-8,28}end
   local function buttonSize(width)return {width-16,24}end
-  local function label(value,width,height,class,tooltip,id)
+  local function label(value,width,height,class,tooltip,id,unicode)
     local meta=style{size={width or -1,height or -1},padding={0,0,0,0},margin={0,0,0,0},gravity={0,0.5}}
     meta.class=class or 'font-scale-body';meta.tooltip=tooltip;meta.id=id
-    return builtin.TextView{text=value,useUnicodeCompatibilityFont=false,meta=meta}
+    return builtin.TextView{text=value,useUnicodeCompatibilityFont=unicode==true,meta=meta}
   end
   local function wrap(layout,class,width,height)
     local meta=style{size={width or -1,height or -1}}
@@ -160,6 +162,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     return wrap(builtin.BoxLayout{orientation=builtin.type.Orientation.Vertical,children=children},class,width,height)
   end
   local AliasRow=react.RegisterRecipe('LinnanBulbAliasRowNative',function(param)
+    local tr=I.bind(param.aliases:old())
     local line,g=param.line,param.geometry
     local key=tostring(line.id)
     local current=param.aliases:old()[tostring(line.id)]
@@ -202,10 +205,10 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           enabled=not param.batchPending,tooltip=tooltip,styleSheet=style{size=inputSize(width)}.styleSheet}}
     end
     local fields={
-      field('prefix',prefix,g.prefix,'','编号前的文字，例如 T、快、RER；可留空'),
+      field('prefix',prefix,g.prefix,'',tr('编号前的文字，例如 T、快、RER；可留空')),
       field('identifier',identifier,g.number,P.defaultIdentifier(line,defaults),
-        '数字或英文字母，例如 3、A、AA、12A；留空使用预览编号'),
-      field('suffix',suffix,g.suffix,'','编号后的文字，例如 b、支线；可留空'),
+        tr('数字或英文字母，例如 3、A、AA、12A；留空使用预览编号')),
+      field('suffix',suffix,g.suffix,'',tr('编号后的文字，例如 b、支线；可留空')),
     }
     local items,selected={},1
     -- Empty/legacy TRAIN configurations resolve to their actual display
@@ -213,13 +216,13 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local actual=P.mode({mode=displayMode:old()~='' and displayMode:old() or line.mode},{})
     for i,mode in ipairs(modeChoices) do
       if mode==actual then selected=i end
-      items[#items+1]=builtin.ComboBoxItem{value=i,content=label(modeNames[i],nil,24)}
+      items[#items+1]=builtin.ComboBoxItem{value=i,content=label(tr(modeNames[i]),nil,24)}
     end
     local controls={
       builtin.ComboBox{value=selected,items=items,compact=true,
         meta={id='linnan.bulb.mode.'..line.id,class='bulb-settings-mode',
           enabled=not param.batchPending,
-          tooltip='选择线路图中的交通标识样式',styleSheet=style{size={g.mode,32}}.styleSheet},
+          tooltip=tr('选择线路图中的交通标识样式'),styleSheet=style{size={g.mode,32}}.styleSheet},
         onValueChange=function(value)
           if not modeChoices[value] or (param.batchBusy and param.batchBusy:get())then return end
           local oldMode=P.mode({mode=displayMode:old()~='' and displayMode:old() or line.mode},{})
@@ -233,14 +236,14 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         end},
       builtin.Button{meta={id='linnan.bulb.save.'..line.id,class='primary, bulb-settings-save',
         enabled=not param.batchPending,
-        styleSheet=style{size=buttonSize(g.save)}.styleSheet},content=label('应用',nil,24),onClick=function()
+        styleSheet=style{size=buttonSize(g.save)}.styleSheet},content=label(tr('应用'),nil,24),onClick=function()
         if param.batchBusy and param.batchBusy:get()then return end
         local submitted=param.drafts and param.drafts:get()[key]
         local latest=submitted or {prefix=prefix:old(),identifier=identifier:old(),suffix=suffix:old(),displayMode=displayMode:old()}
         local parts={prefix=latest.prefix:gsub('[\r\n]',''),identifier=latest.identifier:match('^%s*(.-)%s*$'),
           suffix=latest.suffix:gsub('[\r\n]','')}
         if not parts.identifier:match('^[A-Za-z0-9]*$')then
-          param.message:set('编号仅支持数字或英文字母；其他文字请放在前缀或后缀。');return
+          param.message:set(tr('编号仅支持数字或英文字母；其他文字请放在前缀或后缀。'));return
         end
         local aliases=candidate(parts,latest.displayMode)
         local wanted=P.alias(line,aliases,P.defaults(param.lines or {line},aliases)):match('^%s*(.-)%s*$')
@@ -248,10 +251,10 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         local mergeNotice=''
         if collect.mergeStatus then
           local checked,count,warning=pcall(collect.mergeStatus,line,aliases)
-          if not checked then param.message:set('未能校验同号线路，请稍后重试。');return end
-          mergeNotice=warning or (count>1 and ('已合并 '..count..' 条同号线路。') or '')
+          if not checked then param.message:set(tr('未能校验同号线路，请稍后重试。'));return end
+          mergeNotice=warning and tr(warning) or (count>1 and tr('已合并 %d 条同号线路。',count) or '')
         end
-        param.message:set('正在应用线路配置…')
+        param.message:set(tr('正在应用线路配置…'))
         local ok,err=pcall(aliasStore.save,line,wanted,function(_,success)
           react.enqueueJoin(function()
             if param.aliases:hasExpired() or param.message:hasExpired() then return end
@@ -262,13 +265,13 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
               and (entry.displayMode or '')==wantedMode then
               param.aliases:set(value)
               if param.drafts and param.drafts:get()[key]==submitted then param.drafts:get()[key]=nil end
-              param.message:set('已应用。'..mergeNotice..'请保存游戏。')
-            else param.message:set('配置未写入，请稍后重试。') end
+              param.message:set(tr('已应用。')..mergeNotice..tr('请保存游戏。'))
+            else param.message:set(tr('配置未写入，请稍后重试。')) end
           end,'LinnanBulbAliasRowNative:confirmSave')
         end,wantedMode,parts)
         if not ok then
           log.warning('[BULB native 0.1.64dev] settings save: '..tostring(err))
-          param.message:set('应用失败，请稍后重试。')
+          param.message:set(tr('应用失败，请稍后重试。'))
         end
       end},
     }
@@ -301,6 +304,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       children=cells},'bulb-settings-row'..(param.striped and ', bulb-settings-striped' or ''),g.inner,g.rowHeight-8)}}
   end)
   local Content=react.RegisterRecipe('LinnanBulbSettingsContentNative',function(param)
+    local tr=I.bind(param.aliases:old())
     local initialOptions=param.aliases:old().__options
     local flashChoice=react.useState(initialOptions and initialOptions.flashNextStop==true or false)
     local flashPending=react.useState(false)
@@ -308,7 +312,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local query=react.useState('')
     local scope=react.useState(2)
     local order=react.useState(1)
-    local message=react.useState('同类型、同完整标号且起终点连通的线路合并显示；请保存游戏。')
+    local message=react.useState(tr('同类型、同完整标号且起终点连通的线路合并显示；请保存游戏。'))
     -- Parent-owned drafts survive row unmounts caused by search/sorting.
     -- Closing this editor releases them; no global cache or timer is needed.
     local drafts=react.useRef({})
@@ -331,49 +335,49 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     end
     local function choice(id,names,state,width,tooltip)
       local items={}
-      for i,name in ipairs(names)do items[#items+1]=builtin.ComboBoxItem{value=i,content=label(name,nil,24)}end
+      for i,name in ipairs(names)do items[#items+1]=builtin.ComboBoxItem{value=i,content=label(tr(name),nil,24)}end
       return builtin.ComboBox{value=state:old(),items=items,compact=true,
         meta={id=id,class='bulb-settings-mode',tooltip=tooltip,styleSheet=style{size={width,32}}.styleSheet},
         onValueChange=function(value)if names[value]then state:set(value)end end}
     end
     local count=#rows
-    if count==0 then rows[1]=label(query:old()=='' and '当前存档没有线路。' or '没有找到匹配的线路。',g.content-20,64) end
-    local headings=g.compact and {label('标识',g.badge,24,'font-scale-annotation'),
-        label('前缀',g.prefix,24,'font-scale-annotation'),label('编号',g.number,24,'font-scale-annotation'),
-        label('后缀',g.suffix,24,'font-scale-annotation')}
-      or {label('线路',g.line,24,'font-scale-annotation'),label('标识',g.badge,24,'font-scale-annotation'),
-        label('前缀',g.prefix,24,'font-scale-annotation'),
-        label('编号',g.number,24,'font-scale-annotation'),label('后缀',g.suffix,24,'font-scale-annotation'),
-        label('显示类型',g.mode,24,'font-scale-annotation'),label('操作',g.save,24,'font-scale-annotation')}
+    if count==0 then rows[1]=label(query:old()=='' and tr('当前存档没有线路。') or tr('没有找到匹配的线路。'),g.content-20,64) end
+    local headings=g.compact and {label(tr('标识'),g.badge,24,'font-scale-annotation'),
+        label(tr('前缀'),g.prefix,24,'font-scale-annotation'),label(tr('编号'),g.number,24,'font-scale-annotation'),
+        label(tr('后缀'),g.suffix,24,'font-scale-annotation')}
+      or {label(tr('线路'),g.line,24,'font-scale-annotation'),label(tr('标识'),g.badge,24,'font-scale-annotation'),
+        label(tr('前缀'),g.prefix,24,'font-scale-annotation'),
+        label(tr('编号'),g.number,24,'font-scale-annotation'),label(tr('后缀'),g.suffix,24,'font-scale-annotation'),
+        label(tr('显示类型'),g.mode,24,'font-scale-annotation'),label(tr('操作'),g.save,24,'font-scale-annotation')}
     local children={}
     local footer={}
-    if not stationSettings then footer[1]=label(tostring(count)..' 条线路',80,32,'font-scale-annotation')end
+    if not stationSettings then footer[1]=label(tr('%d 条线路',count),80,32,'font-scale-annotation')end
     if stationSettings then footer[#footer+1]=builtin.Button{
       meta={id='linnan.bulb.settings.stations',class='bulb-settings-save',
-        styleSheet=style{size=buttonSize(96)}.styleSheet,tooltip='让独立站组在线路图中共享换乘，例如火车站与站前公交站'},
-      content=label('关联车站',nil,24),onClick=function()
+        styleSheet=style{size=buttonSize(96)}.styleSheet,tooltip=tr('让独立站组在线路图中共享换乘，例如火车站与站前公交站')},
+      content=label(tr('关联车站'),nil,24),onClick=function()
         local ok,err=pcall(stationSettings.open,{aliases=param.aliases,viewport=param.viewport})
         if not ok then
           log.warning('[BULB native 0.1.64dev] station settings: '..tostring(err))
-          message:set('未能读取车站，请稍后重试。')
+          message:set(tr('未能读取车站，请稍后重试。'))
         end
       end}
     end
     local statusWidth=g.content-(stationSettings and 104 or 88)
-    local status=(stationSettings and tostring(count)..' 条 · ' or '')..message:old()
+    local status=(stationSettings and tr('%d 条 · ',count) or '')..message:old()
     footer[#footer+1]=label(P.ellipsize(status,math.max(2,math.floor(statusWidth/17)*2),true),
       statusWidth,40,'font-scale-annotation',status)
     local function applyAll()
       if batchBusy:get()then return end
-      local changes,candidate,defaults=prepareChanges(param.lines,param.aliases:old(),drafts:get(),P)
+      local changes,candidate,defaults=prepareChanges(param.lines,param.aliases:old(),drafts:get(),P,tr)
       if not changes then message:set(candidate);return end
-      if #changes==0 then message:set('没有待应用的修改。');return end
+      if #changes==0 then message:set(tr('没有待应用的修改。'));return end
       local assignments={}
       for _,change in ipairs(changes)do
         local key=tostring(change.line.id)
         if defaults[key]then assignments[key]=defaults[key]end
       end
-      batchBusy:set(true);batchPending:set(true);message:set('正在应用全部修改…')
+      batchBusy:set(true);batchPending:set(true);message:set(tr('正在应用全部修改…'))
       local function complete(success)
         if param.aliases:hasExpired()then return end
         if success then
@@ -397,7 +401,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           end
         end
         batchBusy:set(false);batchPending:set(false)
-        message:set(success and ('已应用 '..#changes..' 条修改，请保存游戏。') or '全部应用失败，修改已保留，请重试。')
+        message:set(success and tr('已应用 %d 条修改，请保存游戏。',#changes) or tr('全部应用失败，修改已保留，请重试。'))
       end
       local ok,err=pcall(aliasStore.saveAll,changes,function(_,success)
         react.enqueueJoin(function()complete(success==true)end,'LinnanBulbSettingsContentNative:confirmAll')
@@ -407,14 +411,14 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local controls={}
     if citySettings then controls[#controls+1]=builtin.Button{
       meta={id='linnan.bulb.settings.city',class='bulb-settings-save',
-        styleSheet=style{size=buttonSize(math.min(224,g.content))}.styleSheet,tooltip='维护城市与 Express 的数字前缀对照表，默认关闭'},
-      content=label('公交线路编号一键配置',nil,24),onClick=function()
+        styleSheet=style{size=buttonSize(math.min(224,g.content))}.styleSheet,tooltip=tr('维护城市与 Express 的数字前缀对照表，默认关闭')},
+      content=label(tr('公交线路编号一键配置'),nil,24),onClick=function()
         local ok,lines=pcall(collect.listLines,true)
-        if not ok then message:set('未能读取公交线路，请稍后重试。');return end
+        if not ok then message:set(tr('未能读取公交线路，请稍后重试。'));return end
         local towns={}
         if collect.listTowns then
           local loaded,result=pcall(collect.listTowns)
-          if not loaded then message:set('未能读取城市，请稍后重试。');return end
+          if not loaded then message:set(tr('未能读取城市，请稍后重试。'));return end
           towns=result
         end
         citySettings.open{aliases=param.aliases,lines=lines,towns=towns,viewport=param.viewport}
@@ -424,12 +428,12 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     controls[#controls+1]=builtin.ToggleButton{value=flashing and 1 or 0,
         meta={id='linnan.bulb.settings.flash',class='bulb-settings-flash',enabled=not flashPending:old(),
           styleSheet=style{size=buttonSize(144)}.styleSheet},
-        content=label(flashing and '黄灯闪烁：开启' or '黄灯闪烁：关闭'),onValueChange=function(value)
+        content=label(flashing and tr('黄灯闪烁：开启') or tr('黄灯闪烁：关闭')),onValueChange=function(value)
           if (value~=0 and value~=1) or flashBusy:get()then return end
           local wanted=value==1
           if wanted==flashing then return end
           flashBusy:set(true);flashPending:set(true);flashChoice:set(wanted)
-          message:set('正在应用…')
+          message:set(tr('正在应用…'))
           local function complete(success)
             if param.aliases:hasExpired()then return end
             local current=param.aliases:old()
@@ -450,7 +454,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
             if message:hasExpired()then return end
             flashBusy:set(false);flashPending:set(false)
             if not success then flashChoice:set(current.__options and current.__options.flashNextStop==true or false)end
-            message:set(success and '已应用，请保存游戏。' or '配置未写入，请稍后重试。')
+            message:set(success and tr('已应用，请保存游戏。') or tr('配置未写入，请稍后重试。'))
           end
           local ok,err=pcall(aliasStore.saveOptions,{flashNextStop=wanted},function(_,success)
             react.enqueueJoin(function()complete(success==true)end,'LinnanBulbSettingsContentNative:confirmOptions')
@@ -458,25 +462,33 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           if not ok then log.warning('[BULB native 0.1.64dev] options: '..tostring(err));complete(false)end
         end}
 
+    local english=I.language(param.aliases:old())=='en'
+    local applyWidth=english and 104 or 88
+    local scopeWidth=english and 96 or 72
+    local splitSearch=english and g.content<376
     local applyButton=builtin.Button{meta={id='linnan.bulb.settings.apply-all',class='primary, bulb-settings-save',
-      enabled=not batchPending:old(),tooltip='应用所有已编辑线路，包含被搜索筛选隐藏的修改',
-      styleSheet=style{size=buttonSize(88)}.styleSheet},content=label('全部应用',nil,24),onClick=applyAll}
+      enabled=not batchPending:old(),tooltip=tr('应用所有已编辑线路，包含被搜索筛选隐藏的修改'),
+      styleSheet=style{size=buttonSize(applyWidth)}.styleSheet},content=label(tr('全部应用'),nil,24),onClick=applyAll}
+    local search=builtin.TextInputField{value=query:old(),placeholderText=scope:old()==1 and tr('搜索编号') or tr('搜索名称'),
+      meta={id='linnan.bulb.settings.search',class='font-scale-body',
+        styleSheet=style{size=inputSize(splitSearch and g.content or g.content-scopeWidth-128)}.styleSheet},
+      onTyping=function(value)query:set(value)end,onValueChange=function(value)query:set(value)end}
+    local filters={
+      choice('linnan.bulb.settings.scope',{tr('编号'),tr('名称'),tr('全部')},scope,scopeWidth,tr('按名称或完整线路标号搜索，例如 T1、T3b')),
+      choice('linnan.bulb.settings.sort',{tr('编号 ↑'),tr('编号 ↓'),tr('名称 ↑')},order,112,
+        tr('编号自然排序：2 在 10 前，字母按 A…Z、AA…；相同编号再按实际名称排列')),
+    }
+    local searchRows=splitSearch and {search,horizontal(filters,'bulb-settings-controls',g.content,32)}
+      or {horizontal({search,filters[1],filters[2]},'bulb-settings-controls',g.content,32)}
     local body={
-      horizontal({label('',g.content-96,32),applyButton},'bulb-settings-controls',g.content,32),
-      horizontal({builtin.TextInputField{value=query:old(),placeholderText=scope:old()==1 and '搜索编号' or '搜索名称',
-          meta={id='linnan.bulb.settings.search',class='font-scale-body',
-            styleSheet=style{size=inputSize(g.content-200)}.styleSheet},
-          onTyping=function(value)query:set(value)end,onValueChange=function(value)query:set(value)end},
-        choice('linnan.bulb.settings.scope',{'编号','名称','全部'},scope,72,'按名称或完整线路标号搜索，例如 T1、T3b'),
-        choice('linnan.bulb.settings.sort',{'编号 ↑','编号 ↓','名称 ↑'},order,112,
-          '编号自然排序：2 在 10 前，字母按 A…Z、AA…；相同编号再按实际名称排列')},
-        'bulb-settings-controls',g.content,32),
+      horizontal({label('',g.content-applyWidth-8,32),applyButton},'bulb-settings-controls',g.content,32),
       horizontal(headings,'bulb-settings-heading',g.inner,24),
       builtin.ScrollArea{content=vertical(rows,'bulb-settings-list'),
         horizontalPolicy=builtin.type.ScrollBarPolicy.AlwaysOff,verticalPolicy=builtin.type.ScrollBarPolicy.AsNeeded,
         meta={class='bulb-settings-scroll',styleSheet=style{size={g.content,g.listHeight}}.styleSheet}},
       horizontal(footer,'bulb-settings-footer',g.content,40),
     }
+    for i=#searchRows,1,-1 do table.insert(body,2,searchRows[i])end
     if #controls==2 and g.content<376 then
       table.insert(body,1,horizontal({controls[2]},'bulb-settings-controls',g.content,32))
       table.insert(body,1,horizontal({controls[1]},'bulb-settings-controls',g.content,32))
@@ -491,6 +503,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       content=label(caption,nil,24),onClick=callback}
   end
   local Static=react.RegisterRecipe('LinnanBulbStaticRouteNative',function(param)
+    local tr=I.bind(param.aliases:old())
     -- Only this keyed child owns the visited graph. Parent navigation stores
     -- an ID and a release function; neither a diagram history nor a cache.
     local holder=react.useRef({disposed=false})
@@ -538,12 +551,12 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       if ok and located then
         release();param.onClose()
       elseif not locateError:hasExpired()then
-        locateError:set(ok and '线路已删除，无法定位。请返回目录刷新。' or '定位失败，请稍后重试。')
+        locateError:set(ok and tr('线路已删除，无法定位。请返回目录刷新。') or tr('定位失败，请稍后重试。'))
         if not ok then log.warning('[BULB native 0.1.64dev] locate line: '..tostring(located))end
       end
     end
-    local children={horizontal({button('linnan.bulb.browser.back','返回线路目录',param.home,120),
-      builtin.Button{meta={id='linnan.bulb.browser.locate',class='bulb-static-locate',tooltip='在地图上定位此线路',
+    local children={horizontal({button('linnan.bulb.browser.back',tr('返回线路目录'),param.home,I.language(param.aliases:old())=='en' and 144 or 120),
+      builtin.Button{meta={id='linnan.bulb.browser.locate',class='bulb-static-locate',tooltip=tr('在地图上定位此线路'),
           enabled=h.snapshot~=nil and not h.disposed,styleSheet=style{size={24,24}}.styleSheet},
         content=builtin.ImageView{path='::/gui/line_vehicle_mgmt/icons/symbol_locate_20.tga',
           scaling=builtin.type.ImageViewScaling.AutoFit,
@@ -562,7 +575,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       children[#children+1]=horizontal({mark,label(B.fit(route.name,titleWidth,19,19),
         titleWidth,44,'font-scale-body, bulb-static-title',route.name)},'bulb-static-identity',g.content,44)
       if h.snapshot.mergeWarning then
-        children[#children+1]=label(h.snapshot.mergeWarning,g.content-inset,36,'font-scale-annotation, bulb-static-message')
+        children[#children+1]=label(tr(h.snapshot.mergeWarning),g.content-inset,36,'font-scale-annotation, bulb-static-message')
         -- Disconnected services may share a badge. Keep every real service
         -- accessible without scanning their endpoints in the directory.
         local items,value={},1
@@ -589,19 +602,23 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
             styleSheet=style{size={g.content,mapHeight}}.styleSheet}}
       else
         log.warning('[BULB native 0.1.64dev] static render: '..tostring(diagram))
-        children[#children+1]=label('线路图暂时无法绘制。请返回目录重试。',g.content-inset,96,'font-scale-body, bulb-static-message')
+        children[#children+1]=label(tr('线路图暂时无法绘制。请返回目录重试。'),g.content-inset,96,'font-scale-body, bulb-static-message')
       end
     elseif ready:old()then
-      children[#children+1]=label('线路已删除、没有站点或暂时无法读取。请返回目录重试。',g.content-inset,96,'font-scale-body, bulb-static-message')
+      children[#children+1]=label(tr('线路已删除、没有站点或暂时无法读取。请返回目录重试。'),g.content-inset,96,'font-scale-body, bulb-static-message')
     else
-      children[#children+1]=label('正在读取线路…',g.content-inset,96,'font-scale-body, bulb-static-message')
+      children[#children+1]=label(tr('正在读取线路…'),g.content-inset,96,'font-scale-body, bulb-static-message')
     end
     return builtin.BoxLayout{children={vertical(children,'bulb-settings-body, bulb-static-page',g.content)}}
   end)
   local Browser=react.RegisterRecipe('LinnanBulbBrowserNative',function(param)
+    local tr=I.bind(param.aliases:old())
     local page=react.useState(nil)
     local busQuery=react.useState('')
     local owner=react.useRef({})
+    local languagePending=react.useState(false)
+    local languageBusy=react.useRef(false)
+    local languageError=react.useState('')
     local ownership=owner:get()
     local function release()
       local fn=ownership.release;ownership.release=nil
@@ -619,10 +636,13 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local function back()if page:old()~=nil then home()else param.onClose()end end
     react.useInputAction('IA_MENU_BACK',react.iaHandler(back))
     react.useInputAction('IA_BACK',react.iaHandler(back))
-    local g=param.geometry
+    -- Language-dependent widths update on demand with the subscribed aliases.
+    local g=S.geometry(param.viewport,I.language(param.aliases:old()))
     if page:old()=='config' then
-      return builtin.BoxLayout{children={vertical({button('linnan.bulb.browser.back','返回线路目录',home,120),
-        Content(param)},'bulb-settings-body',g.content)}}
+      local configParam={};for key,value in pairs(param)do configParam[key]=value end
+      configParam.geometry=g
+      return builtin.BoxLayout{children={vertical({button('linnan.bulb.browser.back',tr('返回线路目录'),home,I.language(param.aliases:old())=='en' and 144 or 120),
+        Content(configParam)},'bulb-settings-body',g.content)}}
     elseif type(page:old())=='number' then
       return builtin.BoxLayout{children={Static{meta={localKey='static:'..page:old()},lineId=page:old(),
         aliases=param.aliases,lines=param.lines,viewport=param.viewport,geometry=g,color=param.color,
@@ -636,9 +656,9 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local tileWidth,tileHeight,tileGap=44,32,8
     local columns=math.max(1,math.floor((g.content-32+tileGap)/(tileWidth+tileGap)))
     for _,group in ipairs(groups)do
-      local section={label(group.title,g.content-32,28,'font-scale-body')}
+      local section={label(tr(group.title),g.content-32,28,'font-scale-body')}
       if group.mode=='BUS' then
-        section[#section+1]=builtin.TextInputField{value=busQuery:old(),placeholderText='搜索公交标号或线路名称',
+        section[#section+1]=builtin.TextInputField{value=busQuery:old(),placeholderText=tr('搜索公交标号或线路名称'),
           meta={id='linnan.bulb.browser.bus-search',class='font-scale-body',styleSheet=style{size={g.content-32,32}}.styleSheet},
           onTyping=function(value)busQuery:set(value)end,onValueChange=function(value)busQuery:set(value)end}
       end
@@ -656,32 +676,72 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       end
       if #group.items==0 then
         section[#section+1]=label(group.mode=='BUS' and
-          (busQuery:old():match('^%s*$') and '输入标号或名称搜索公交线路。' or '没有匹配的公交线路。')
-          or '当前没有此类线路。',g.content-32,32,'font-scale-annotation')
+          (busQuery:old():match('^%s*$') and tr('输入标号或名称搜索公交线路。') or tr('没有匹配的公交线路。'))
+          or tr('当前没有此类线路。'),g.content-32,32,'font-scale-annotation')
       end
       sections[#sections+1]=vertical(section,'bulb-directory-section',g.content-16)
     end
-    local homeControls={horizontal({label('线路目录',g.content-120,32),
-      button('linnan.bulb.browser.configure','线路设置',function()navigate('config')end,112)},
-      'bulb-settings-controls',g.content,32)}
+    local function switchLanguage()
+      if languageBusy:get() or (param.session and param.session.closed)then return end
+      local previous=I.language(param.aliases:old())
+      local wanted=previous=='zh' and 'en' or 'zh'
+      languageBusy:set(true);languagePending:set(true);languageError:set('')
+      -- Re-render only subscribed UI. No new timers, engine scans or caches.
+      local function updateLanguage(value,onlyIf)
+        param.aliases:transform(function(latest)
+          if onlyIf and I.language(latest)~=onlyIf then return latest end
+          local updated,options={},{}
+          for k,v in pairs(latest)do updated[k]=v end
+          for k,v in pairs(latest.__options or {})do options[k]=v end
+          options.language=value;updated.__options=options
+          return updated
+        end)
+      end
+      if citySettings then citySettings.close()end
+      if stationSettings then stationSettings.close()end
+      updateLanguage(wanted)
+      local function complete(success)
+        if param.aliases:hasExpired()then return end
+        if not success then updateLanguage(previous,wanted)end
+        if languagePending:hasExpired() or (param.session and param.session.closed)then return end
+        languageBusy:set(false);languagePending:set(false)
+        if not success then languageError:set(I.bind(param.aliases:old())('语言保存失败，请重试。'))end
+      end
+      local ok,err=pcall(aliasStore.saveOptions,{language=wanted},function(_,success)
+        react.enqueueJoin(function()complete(success==true)end,'LinnanBulbBrowserNative:confirmLanguage')
+      end)
+      if not ok then log.warning('[BULB] language: '..tostring(err));complete(false)end
+    end
+    local configure=button('linnan.bulb.browser.configure',tr('线路设置'),function()navigate('config')end,
+      I.language(param.aliases:old())=='en' and 136 or 112)
+    local language=builtin.Button{meta={id='linnan.bulb.browser.language',class='bulb-settings-save',
+        tooltip=tr('切换界面语言'),enabled=not languagePending:old(),styleSheet=style{size=buttonSize(88)}.styleSheet},
+      content=label(I.language(param.aliases:old())=='zh' and 'English' or '中文',nil,24,nil,nil,nil,true),onClick=switchLanguage}
+    local narrow=g.content<448
+    local homeControls={horizontal(narrow and {label(tr('线路目录'),g.content,32)}
+      or {label(tr('线路目录'),g.content-240,32),configure,language},'bulb-settings-controls',g.content,32)}
+    if narrow then homeControls[#homeControls+1]=horizontal({configure,language},'bulb-settings-controls',g.content,32)end
+    if languageError:old()~=''then homeControls[#homeControls+1]=label(languageError:old(),g.content,32,'font-scale-annotation')end
     homeControls[#homeControls+1]=builtin.ScrollArea{content=vertical(sections,'bulb-directory-sections'),
         horizontalPolicy=builtin.type.ScrollBarPolicy.AlwaysOff,verticalPolicy=builtin.type.ScrollBarPolicy.AsNeeded,
-        meta={class='bulb-settings-scroll',styleSheet=style{size={g.content,math.max(128,math.min(620,param.viewport.y-220))}}.styleSheet}}
+        meta={class='bulb-settings-scroll',styleSheet=style{size={g.content,math.max(128,math.min(620,param.viewport.y-220-(narrow and 40 or 0)))}}.styleSheet}}
     return builtin.BoxLayout{children={vertical(homeControls,'bulb-settings-body',g.content)}}
   end)
   local Window=react.RegisterWrapperRecipe('LinnanBulbSettingsWindowNative',builtin.Window,function(param)
+    local tr=I.bind(param.aliases:old())
     react.useInputAction('IA_MENU_BACK',react.iaHandler(param.onClose))
     react.useInputAction('IA_BACK',react.iaHandler(param.onClose))
     -- Wrapper recipes must return Window directly. Non-class metadata here
     -- inserts WithComponentParams and crashes WindowContainer. The sized
     -- content plus Window::Content padding already determines the width.
-    return builtin.Window{title='线路图设置',id='linnan.bulb.settings.window',
+    return builtin.Window{title=tr('线路图设置'),id='linnan.bulb.settings.window',
       meta={class='bulb-settings-window'},
       closable=true,movable=true,pinnable=false,autoFocusOnBecomingVisible=true,autoVisibilityOnFocusChange=false,
       initialX=param.geometry.x,initialY=param.geometry.y,onClose=param.onClose,
       content=Browser(param)}
   end)
   return react.RegisterRecipe('LinnanBulbSettingsNative',function(param)
+    local tr=I.bind(param.aliases:old())
     diagnostic.note('settings.render')
     local open=react.useState(false)
     local opening=react.useRef({request=0})
@@ -699,7 +759,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     react.onUnmount(close)
     return builtin.BoxLayout{children={builtin.ToggleButton{
       meta={id='linnan.bulb.settings.toggle',class='bulb-settings-toggle',
-        tooltip=open:old() and '关闭线路图设置' or '线路图设置'},
+        tooltip=open:old() and tr('关闭线路图设置') or tr('线路图设置')},
       value=open:old() and 1 or 0,
       content=builtin.ImageView{path='::/gui/game_bar/icons/line_vehicle_manager_30.tga',
         scaling=builtin.type.ImageViewScaling.AutoFit,meta={class='bulb-settings-toggle-icon'}},
@@ -721,7 +781,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           control.session={closed=false,lines=lines,owners={}}
           local openedSession=control.session
           log.verbose('[BULB native 0.1.64dev] settings opened; roster='..#lines)
-          wc.addSingletonWindow(Window,{aliases=param.aliases,lines=lines,geometry=S.geometry(viewport),
+          wc.addSingletonWindow(Window,{aliases=param.aliases,lines=lines,geometry=S.geometry(viewport,I.language(param.aliases:old())),
             viewport=viewport,color=param.color,session=openedSession,onClose=function()
               if control.session==openedSession then close()else releaseSession(openedSession)end
             end})

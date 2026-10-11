@@ -15,6 +15,13 @@ for source,target in pairs(I.english)do
   end
   assert(formats(source)==formats(target),'format placeholders differ: '..source)
 end
+-- Every controlled Chinese translation key used by UI/model has an English entry.
+for _,name in ipairs({'settings.lua','city_settings.lua','station_settings.lua','install.script.lua','native_model.lua'})do
+  local file=assert(io.open('mod/content/gui/bulb_cockpit/'..name));local source=file:read('*a');file:close()
+  for key in source:gmatch("tr%('([^']+)'")do
+    if key:find('[\228-\233][\128-\191][\128-\191]')then assert(I.english[key],name..': missing translation '..key)end
+  end
+end
 local env=setmetatable({},{__index=_G})
 assert(loadfile('mod/content/game_mechanics/bulb_aliases/bulb_aliases.script.lua','t',env))()
 local S=env.data()

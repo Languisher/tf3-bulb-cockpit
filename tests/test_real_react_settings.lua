@@ -78,8 +78,9 @@ local wc={addSingletonWindow=function(fn,param)windowFn,windowParam=fn,param end
     if fn==windowFn then windowParam=nil;closeCount=(closeCount or 0)+1 end
   end}
 local P=dofile('mod/content/gui/bulb_cockpit/native_model.lua')
+local I=dofile('mod/content/gui/bulb_cockpit/localization.lua')
 local citySettings=dofile('mod/content/gui/bulb_cockpit/city_settings.lua').create(react,builtin,
-  function(value)return {styleSheet=value}end,{}, {getDefaultWindowApi=function()return wc end},P)
+  function(value)return {styleSheet=value}end,{}, {getDefaultWindowApi=function()return wc end},P,I)
 local mapTool,mapParam,mapCtx,mapAction
 local mapStack={getActiveTool=function()return mapTool end}
 function mapStack.push(def,key,param,stacking)
@@ -98,7 +99,7 @@ local stationSettings=dofile('mod/content/gui/bulb_cockpit/station_settings.lua'
   function(value)return {styleSheet=value}end,{}, {getDefaultWindowApi=function()return wc end,
     getDefaultToolStackApi=function()return mapStack end},P,
   {listStationGroups=function()return {{id=100,name='杭州站'},{id=101,name='站前公交'}}end,
-    resolveStation=function(id)if id==100 or id==101 then return {id=id,name='站 '..id}end end})
+    resolveStation=function(id)if id==100 or id==101 then return {id=id,name='站 '..id}end end},I)
 local optionRequests={}
 local optionStore={saveOptions=function(value,callback)optionRequests[#optionRequests+1]={value=value,callback=callback}end,
   read=function()error('a command acknowledgment must not read a stale GAME_SCRIPT component')end}
@@ -120,7 +121,7 @@ local Entry=S.create(react,builtin,testStyle,P,B,
     getDefaultToolStackApi=function()return mapStack end},citySettings,stationSettings,
   {badge=badge,mark=mark,draw=function()
     return builtin.Component{meta=testStyle{size={1600,200}},layout=builtin.BoxLayout{children={testText('静态图',14,1600,200)}}}
-  end})
+  end},I)
 local entryId=react.GetRecipeId(Entry)
 local aliases=state({})
 local function toggleFrom(root)
@@ -456,3 +457,46 @@ do
   assert(config:old()['10'].shortName=='T8b','closing the editor does not discard an accepted save')
 end
 print('PASS: actual game react.lua converts native settings, inline badges and bulk edits across filters, retry and confirmation')
+-- The native wrapper and dependent content must switch on the first click.
+do
+  local config=state({__options={flashNextStop=true}})
+  local viewport={x=400,y=600}
+  local param={aliases=config,lines={},viewport=viewport,geometry=S.geometry(viewport),color=function()return {1,1,0,1}end,
+    onClose=function()end,session={closed=false,lines={},owners={}}}
+  local ctx=context()
+  local function caption(ctrl)
+    local node=nodes[ctrl.params.content]
+    if node.recipeId==1 then node=nodes[node.props.props[1].item]end
+    return node.props.props[1]
+  end
+  local function draw()
+    lowerBound=nextNode;render(browserId,param,ctx)
+    return assert(control('linnan.bulb.browser.language'))
+  end
+  local first=draw();assert(caption(first).text=='English' and caption(first).useUnicodeCompatibilityFont)
+  local before=#optionRequests
+  first.params.onClick()
+  local switched=draw()
+  assert(caption(switched).text=='中文' and switched.meta.enabled==false)
+  assert(caption(control('linnan.bulb.browser.configure')).text=='Line settings')
+  first.params.onClick();assert(#optionRequests==before+1)
+  assert(optionRequests[#optionRequests].value.language=='en' and config:old().__options.flashNextStop)
+  local windowId
+  for id,name in pairs(names)do if name=='LinnanBulbSettingsWindowNative'then windowId=id end end
+  local window=render(assert(windowId),param)
+  assert(window.recipeId==39 and window.props.props[1].title=='Route maps',
+    'language switch preserves the direct Window wrapper contract')
+  optionRequests[#optionRequests].callback(nil,true);_reactDoExecuteJoins()
+  local saved=draw();assert(saved.meta.enabled and config:old().__options.language=='en')
+  saved.params.onClick();assert(config:old().__options.language=='zh')
+  optionRequests[#optionRequests].callback(nil,false);_reactDoExecuteJoins()
+  assert(config:old().__options.language=='en' and caption(draw()).text=='中文')
+  -- English line-editor geometry includes a full-width narrow-screen search.
+  local englishParam={};for k,v in pairs(param)do englishParam[k]=v end
+  englishParam.geometry=S.geometry(viewport,'en')
+  lowerBound=nextNode;render(contentId,englishParam,context())
+  assert(control('linnan.bulb.settings.search').params.placeholderText=='Search name')
+  assert(control('linnan.bulb.settings.search').meta.styleSheet.size[1]==englishParam.geometry.content-8)
+  assert(caption(control('linnan.bulb.settings.flash')).text=='Blinking: On')
+end
+print('PASS: actual game React bilingual switch, direct Window title and narrow English controls')

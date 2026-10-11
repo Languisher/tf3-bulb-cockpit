@@ -4,6 +4,7 @@ local free = ug_require '::/gui/main/free_cam_options.tl'
 local styleutil = ug_require '::/gui/main/styleutil.tl'
 local collect = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/collect.lua'
 local P = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/native_model.lua'
+local I = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/localization.lua'
 local modeMarks = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/mode_marks.lua'
 local diagnostic = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/diagnostics.lua'
 local cameraState = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/camera_state.lua'
@@ -154,7 +155,7 @@ end
 -- HUD and static browser share the exact station/track/transfer renderer.
 -- The static caller owns its component tree; no canvas or generated image is
 -- cached by this function. Interactive badges carry IDs, never old snapshots.
-local function diagramChildren(snapshot,plan,onTransfer,renderMarker)
+local function diagramChildren(snapshot,plan,onTransfer,renderMarker,tr)
   local g=plan.geometry
   local width=g.width
   local lineColor=color(snapshot.route.color)
@@ -239,7 +240,8 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker)
       0,0,width,height,'linnan.bulb.track-layer')
   end
   for _,gap in ipairs(plan.gaps)do
-    local tooltip=gap.first and string.format('省略 %d 站（第 %d–%d 站）',gap.count,gap.first,gap.last) or '该支线省略 '..gap.count..' 站'
+    local tooltip=gap.first and tr('省略 %d 站（第 %d–%d 站）',gap.count,gap.first,gap.last)
+      or tr('该支线省略 %d 站',gap.count)
     local mark=text(gap.text,10,gap.labelWidth,18,HUD_INK,nil,'bulb-omission-label',{.5,.5},tooltip)
     positioned(children,mark,gap.x,railY+(gap.y or 0),width,height,
       'linnan.bulb.omission.'..(gap.key or gap.first..':'..gap.last))
@@ -287,20 +289,22 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker)
     end
   end
   if snapshot.mergeWarning then
-    positioned(children,text('同号线路未合并 · 端点不连通或为环线',12,width-24,20,HUD_INK,nil,
-      'bulb-omission-label',nil,snapshot.mergeWarning),12,height-22,width,height,'linnan.bulb.merge-warning')
+    positioned(children,text(tr('同号线路未合并 · 端点不连通或为环线'),12,width-24,20,HUD_INK,nil,
+      'bulb-omission-label',nil,tr(snapshot.mergeWarning)),12,height-22,width,height,'linnan.bulb.merge-warning')
   end
   return children,width,height
 end
 local function staticDiagram(snapshot,aliases,onTransfer)
+  local tr=I.bind(aliases)
   local count=snapshot.network and #snapshot.network.nodes or #snapshot.route.stops
-  local plan=P.plan(snapshot,aliases,false,math.max(800,count*220+256))
-  local children,width,height=diagramChildren(snapshot,plan,onTransfer)
+  local plan=P.plan(snapshot,aliases,false,math.max(800,count*220+256),tr)
+  local children,width,height=diagramChildren(snapshot,plan,onTransfer,nil,tr)
   return floatingPanel(width,height,children,'linnan.bulb.static-canvas'),width,height
 end
 
 -- Native GUI elements only: no exported request, pixels, helper or browser.
 local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
+  local tr=I.bind(param.aliases:old())
   react.setMouseTransparent(true)
   react.setDisableFocusable(true)
   local state = react.useState(nil)
@@ -448,14 +452,15 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
   if not cameraState.getEntity()then return nil end
   local snapshot=state:old()
   if failure:old()~='' then
-    return panel(480,40,builtin.BoxLayout{children={text(failure:old(),14,470,36)}},nil,true)
+    local message=P.wrap(tr(failure:old()),66,true)
+    return panel(480,40,builtin.BoxLayout{children={text(message,14,470,36)}},nil,true)
   end
   if not snapshot then return nil end
   local viewport=param.viewport
   local maxWidth=math.max(240,math.min(viewport.x-48,1600))
   local aliases=param.aliases:old()
   local flashing=aliases.__options and aliases.__options.flashNextStop==true
-  local plan=P.plan(snapshot,aliases,not flashing,maxWidth)
+  local plan=P.plan(snapshot,aliases,not flashing,maxWidth,tr)
   local children,width,height=diagramChildren(snapshot,plan,nil,function(stop,stopColor)
     if flashing and (stop.isNext or (not snapshot.network and stop.index==snapshot.next)) then
       return FlashingStation{stop=stop,track=plan.track,lineColor=stopColor,vehicle=snapshot.vehicle or cameraState.getEntity(),
@@ -463,9 +468,9 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
           styleSheet=style{size={stop.markerSize,stop.markerSize},anchorPoint={.5,.5},
             padding={0,0,0,0},margin={0,0,0,0}}.styleSheet}}
     end
-  end)
+  end,tr)
   local lineColor=color(snapshot.route.color)
-  local badge=plan.hasBadge and plan.badge or (modeNames[plan.mode] or plan.mode)
+  local badge=plan.hasBadge and plan.badge or tr(modeNames[plan.mode] or plan.mode)
   local mark,markWidth,markHeight=modeMark(plan.mode,badge,lineColor,false,plan.name)
   local inset=12
   local titleLimit=math.min(420,viewport.x-48)-markWidth-12-inset*2
@@ -501,9 +506,9 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
 end)
 
 local Settings=settingsUI.create(react,builtin,style,P,modeMarks,collect,aliasStore,diagnostic,windows,
-  cityUI.create(react,builtin,style,aliasStore,windows,P),
-  stationUI.create(react,builtin,style,aliasStore,windows,P,collect),
-  {badge=lineBadge,draw=staticDiagram,mark=modeMark})
+  cityUI.create(react,builtin,style,aliasStore,windows,P,I),
+  stationUI.create(react,builtin,style,aliasStore,windows,P,collect,I),
+  {badge=lineBadge,draw=staticDiagram,mark=modeMark},I)
 
 -- Layout may not be ready on the first join. This child retries only until
 -- calibration succeeds; removing the child also removes its native timer.

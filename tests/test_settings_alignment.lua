@@ -34,8 +34,10 @@ do
     {id=20,name='TP 乘客-杭州-南充-RE-1',mode='TRAIN'},
     {id=30,name='城市公交',mode='BUS'},
     {id=40,name=string.rep('很长的地铁线路名称',12),mode='METRO'}}
+  for _,language in ipairs({'zh','en'})do
+  aliases.__options={language=language}
   for _,width in ipairs({320,400,640,800,1024,2560})do
-    local g=S.geometry({x=width,y=900})
+    local g=S.geometry({x=width,y=900},language)
     contexts.LinnanBulbBrowserNative={}
     local home=render('LinnanBulbBrowserNative',{aliases=aliasState,lines=roster,geometry=g,
       viewport={x=width,y=900},color=function()return {1,.8,0,1}end})
@@ -92,6 +94,7 @@ do
     end
     assert(#rows==4)
   end
+  end
 end
-print('PASS: native content/padding bounds, aligned badge and field columns, empty affixes at six viewport widths')
+print('PASS: bilingual native content/padding bounds, aligned badge and field columns, empty affixes at six viewport widths')
 ]=],'@test_settings_alignment.lua'))()

@@ -23,7 +23,7 @@ local vehicle=200
 local modules={['react.lua']=react,['builtin.lua']=builtin,['free_cam_options.tl']={},
   ['styleutil.tl']={makeStyle=function(v)return v end},['collect.lua']={},['aliases.lua']={},
   ['game_react_globals.tl']={},['camera_state.lua']={getEntity=function()return vehicle end}}
-for _,name in ipairs({'native_model.lua','mode_marks.lua','diagnostics.lua','settings.lua','city_settings.lua','station_settings.lua'})do
+for _,name in ipairs({'localization.lua','native_model.lua','mode_marks.lua','diagnostics.lua','settings.lua','city_settings.lua','station_settings.lua'})do
   modules[name]=dofile(base..name)
 end
 ug_require=function(path)return assert(modules[path:match('([^/]+)$')],path)end

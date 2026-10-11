@@ -45,11 +45,12 @@ function P.busCodeTable(towns,config)
   end
   return result
 end
-function P.validateBusCodes(config)
+function P.validateBusCodes(config,tr)
+  tr=tr or string.format
   local used={}
   local function check(code,name)
-    if type(code)~='string' or not code:match('^%d*$')then return false,name..'的前缀只能填写数字；留空跳过。'end
-    if code~='' and used[code]then return false,name..'与'..used[code]..'的前缀重复。'end
+    if type(code)~='string' or not code:match('^%d*$')then return false,tr('%s的前缀只能填写数字；留空跳过。',name)end
+    if code~='' and used[code]then return false,tr('%s与%s的前缀重复。',name,used[code])end
     if code~=''then used[code]=name end
     return true
   end
@@ -298,7 +299,7 @@ function P.nextKey(snapshot)
 end
 -- Each station reserves only its actual rotated name and transfer footprint.
 -- Hidden stretches are rail labels, not fictitious stop markers.
-local function arrange(stops)
+local function arrange(stops,tr)
   local g={left=24,fontSize=14,transferStep=28,iconSize=26,lampSize=14}
   local gaps,furthest={},0
   for index,stop in ipairs(stops)do
@@ -309,7 +310,7 @@ local function arrange(stops)
         previous.rowWidth>0 and previous.rowWidth+14 or 0)
       local count=stop.index-previous.index-1
       if count>0 then
-        local caption='… '..count..'站'
+        local caption=tr('… %d站',count)
         local gap={first=previous.index+1,last=stop.index-1,count=count,text=caption,
           labelWidth=textWidth(caption,10,false)+8}
         distance=math.max(distance,gap.labelWidth+(previous.markerSize+stop.markerSize)/2+12)
@@ -325,8 +326,9 @@ local function arrange(stops)
   g.width=math.ceil(furthest+12);g.rightMargin=g.width-g.right
   return g,gaps
 end
-function P.plan(snapshot, aliases, blink, width)
-  if snapshot.network then return P.branchPlan(snapshot,aliases,blink,width)end
+function P.plan(snapshot, aliases, blink, width,tr)
+  tr=tr or string.format
+  if snapshot.network then return P.branchPlan(snapshot,aliases,blink,width,tr)end
   local route=snapshot.route
   local defaults=P.defaults(snapshot.lines or {route},aliases)
   local n=#route.stops
@@ -361,7 +363,7 @@ function P.plan(snapshot, aliases, blink, width)
         markerSize=result.track[kind..'Size'],
         lit=i<=snapshot.passed or (i==snapshot.next and blink),endpoint=i==1 or i==n}
     end
-    local geometry,gaps=arrange(stops)
+    local geometry,gaps=arrange(stops,tr)
     return {stops=stops,geometry=geometry,gaps=gaps}
   end
   local layout
@@ -455,7 +457,8 @@ end
 -- Convert the station union into a layered diagram. Paths are oriented from
 -- their shared station order; a longest-path rank keeps unequal parallel
 -- branches aligned at their shared ends. Cyclic connections use a return lane.
-function P.branchPlan(snapshot,aliases,blink,width)
+function P.branchPlan(snapshot,aliases,blink,width,tr)
+  tr=tr or string.format
   local graph,route=snapshot.network,snapshot.route
   local mode=P.mode(route,aliases)
   local result={name=route.name,mode=mode,track=P.trackStyle(mode),stops={},segments={},rails={},gaps={},total=#graph.nodes}
@@ -730,8 +733,9 @@ function P.branchPlan(snapshot,aliases,blink,width)
     end
     if edge.omitted>0 then
       local a1,b1=points[math.ceil(#points/2)],points[math.ceil(#points/2)+1]
+      local caption=tr('… %d站',edge.omitted)
       result.gaps[#result.gaps+1]={x=(a1.x+b1.x)/2,y=(a1.y+b1.y)/2,count=edge.omitted,
-        text='… '..edge.omitted..'站',labelWidth=textWidth('… '..edge.omitted..'站',10,false)+8,key=edge.key}
+        text=caption,labelWidth=textWidth(caption,10,false)+8,key=edge.key}
     end
   end
   result.geometry={left=24,right=24+(xs[maxRank]-24)*factor,width=math.min(width,math.ceil(furthest+12)),fontSize=14}

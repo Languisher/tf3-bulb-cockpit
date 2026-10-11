@@ -146,6 +146,7 @@ local windowApi={addSingletonWindow=function(recipe,param)windowRecipe,windowPar
 local modules={['react.lua']=react,['builtin.lua']=builtin,['free_cam_options.tl']=free,
   ['styleutil.tl']={makeStyle=function(v)return v end},['collect.lua']=collect,['native_model.lua']=P,
   ['mode_marks.lua']=B,['settings.lua']=S,
+  ['localization.lua']=dofile('mod/content/gui/bulb_cockpit/localization.lua'),
   ['city_settings.lua']=dofile('mod/content/gui/bulb_cockpit/city_settings.lua'),
   ['station_settings.lua']=dofile('mod/content/gui/bulb_cockpit/station_settings.lua'),
   ['hud_react_util.tl']={makeDefaultVisibilityThresholds=function()return {}end},
