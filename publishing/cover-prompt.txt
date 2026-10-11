@@ -1,0 +1,14 @@
+Use case: ads-marketing.
+Asset type: finished mod.io cover artwork, one wide 16:9 image at 1920 x 1080.
+Create a premium, restrained editorial graphic cover for the existing mod “BULB COCKPIT”, a native dynamic route map overlay for Transport Fever 3. This is promotional illustration, not a fabricated gameplay screenshot.
+Scene/backdrop: deep midnight navy background, a subtle abstract railway perspective and barely visible terrain contours, quiet fine grain. Flat crisp wayfinding design dominates; no photorealistic train, no futuristic cockpit, no neon holograms.
+Composition: generous safe margins of 7 percent, readable when reduced to a small listing thumbnail. Large bold white heading in the upper-left/upper-middle area, with a smaller subtitle below. The lower half contains an elegant large warm yellow route diagram: a single horizontal trunk from the left with 3 round stops, forking smoothly into two horizontally ending branches to the right, one gently rising, one gently descending. Rounded line caps, smooth tangent transitions, crisp anti-aliased edges, white station interiors and dark outlines, selected stops glowing a subtle warm yellow. Beneath a few stops put small, precisely aligned transfer badges: a rounded square “A”, a circle “1”, “T1” framed by two thin horizontal bars, and a compact wide rectangle “1001”. Each badge appears once, uncluttered and evenly aligned. Small mode initials only if necessary. No dense station names, no invented tiny text.
+Style: sophisticated European transit wayfinding meets a contemporary game-mod cover. A strong clean typography hierarchy with bold humanist sans-serif lettering, exact straight horizontal baselines. Two-dimensional graphic design, beautifully spaced, no mockup device border.
+Palette: midnight navy, ivory white, warm yellow; restrained cyan accents only. Excellent contrast.
+Text (verbatim), only these three lines outside the badges:
+“BULB COCKPIT”
+“DYNAMIC ROUTE MAPS”
+“FOR TRANSPORT FEVER 3”
+The first line is largest, the second is medium, the third is a small discreet caption. Do not add a version number or claims.
+Avoid: official game logos, company logos, watermarks, copyright symbols, app screenshots, giant vehicles, excessive ornament, gradients on the lines, broken route connections, illegible text, any extra wording.
+Output a finished opaque cover, exact widescreen 16:9 composition.

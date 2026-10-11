@@ -2,11 +2,27 @@
 
 [English guide](README.en.md) · 中文
 
+![BULB Cockpit AI 宣传封面](mod/_metadata/0.png)
+
+AI 生成的宣传封面；实际游戏效果见下方截图。
+
 为《Transport Fever 3》第一人称车辆视角提供 BULB 风格的动态线路图，以及可点击换乘标识的线路目录。
 
 A native in-game route diagram and line browser inspired by [BULB](https://bulb.slama.io/editor). No browser, exported images or external rendering process is required while playing.
 
 **开发预发布版。** 当前实现针对 macOS 游戏 Build 40420；Windows／Linux 尚未实测。0.1.61dev 修复了隔离测试中确认的全局样式开销，用户已确认游戏内修改效果满意。长时间内存占用和 C++ 界面释放仍需定时对照，Lua 回归检查不能代替实机测量。
+
+## 游戏内截图
+
+RER 分叉线路：左上角显示线路标识，下方展示当前行程、支线和换乘。
+
+![游戏内 RER 分叉线路图](docs/images/rer-branch-gameplay.png)
+
+公交线路：展示较长站序，以及公交、电车等换乘标识。
+
+![游戏内公交线路及换乘图](docs/images/bus-transfers-gameplay.png)
+
+这两张为用户提供的原始 5120×2880 游戏截图，未经 AI 修改；点击图片可查看原图。
 
 ## 下载与安装
 

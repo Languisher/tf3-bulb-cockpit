@@ -2,9 +2,25 @@
 
 English · [中文说明](README.md)
 
+![BULB Cockpit AI-generated promotional cover](mod/_metadata/0.png)
+
+AI-generated promotional artwork. See the screenshots below for actual gameplay.
+
 Native route maps and a clickable line directory for Transport Fever 3, inspired by [BULB](https://bulb.slama.io/editor). No browser, image export or external renderer is needed while playing.
 
 This is a development build targeting macOS Build 40420. Windows and Linux have not been tested. Long-session FPS degradation remains under investigation; passing Lua tests does not establish that the game’s native resources are fully released.
+
+## In-game screenshots
+
+RER branches with the line identity at the upper left and the route, branches and transfers at the bottom.
+
+![RER branch map during gameplay](docs/images/rer-branch-gameplay.png)
+
+A bus route with a longer stop sequence and bus / tram transfer badges.
+
+![Bus route and transfer badges during gameplay](docs/images/bus-transfers-gameplay.png)
+
+These are the user's original 5120×2880 gameplay captures, without AI alterations. Click either image to view the original.
 
 ## Install
 
