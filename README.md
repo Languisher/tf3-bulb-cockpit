@@ -1,14 +1,14 @@
-# TF3 BULB Cockpit · 0.1.60dev
+# TF3 BULB Cockpit · 0.1.61dev
 
 为《Transport Fever 3》第一人称车辆视角提供 BULB 风格的动态线路图，以及可点击换乘标识的线路目录。
 
 A native in-game route diagram and line browser inspired by [BULB](https://bulb.slama.io/editor). No browser, exported images or external rendering process is required while playing.
 
-**开发预发布版。** 当前实现针对 macOS 游戏 Build 40420；Windows／Linux 尚未实测。Lua 回归检查不能证明实际游戏帧率、长时间内存占用或 C++ 界面释放正常，持续性能下降问题仍需要同存档启用／禁用模组的实机对照。
+**开发预发布版。** 当前实现针对 macOS 游戏 Build 40420；Windows／Linux 尚未实测。0.1.61dev 修复了隔离测试中确认的全局样式开销，用户已确认游戏内修改效果满意。长时间内存占用和 C++ 界面释放仍需定时对照，Lua 回归检查不能代替实机测量。
 
 ## 下载与安装
 
-在 [Releases](https://github.com/Languisher/tf3-bulb-cockpit/releases) 下载 `tf3-bulb-cockpit-0.1.60dev.zip`。
+在 [Releases](https://github.com/Languisher/tf3-bulb-cockpit/releases) 下载 `tf3-bulb-cockpit-0.1.61dev.zip`。
 
 1. 完整退出游戏。
 2. 解压，将 `linnan_bulb_cockpit` 文件夹放入游戏用户目录的 `local/mods/`。
@@ -61,7 +61,7 @@ python3 tools/package.py
 
 第一条命令运行独立测试，明确跳过四项需要游戏原版 GUI 文件的集成检查。完整检查方式与手工验收场景见 [测试说明](docs/TESTING.md)。生成的安装包与 SHA-256 校验文件位于 `dist/`。
 
-发布版本以 [VERSION](VERSION) 为准，当前为 `0.1.60dev`，对应 Git 标签 `v0.1.60dev` 和游戏数值 revision `60`。开发后缀按本项目命名习惯保留为 `dev`。
+发布版本以 [VERSION](VERSION) 为准，当前为 `0.1.61dev`，对应 Git 标签 `v0.1.61dev` 和游戏数值 revision `61`。开发后缀按本项目命名习惯保留为 `dev`。
 
 ## 素材与归属
 

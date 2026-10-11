@@ -53,7 +53,7 @@ do
   local parsed={};local add=_branchSelectorParser.makeAdder(parsed)
   for _,rule in ipairs(css)do add(rule.selector,rule.style)end
   local function applied(kind,meta)
-    local element=kind=='Component' and 'R::Component' or kind
+    local element=(kind=='Component' or kind:match('^LinnanBulb')) and 'R::'..kind or kind
     local classes={}
     for class in (meta.class or ''):gmatch('[%w%-]+')do classes[class]=true end
     local result={}
@@ -127,7 +127,7 @@ do
       end
       if meta.class and meta.class:find('bulb-branch-stroke',1,true)then
         local segment=assert(expected[pos.localKey:gsub(':rail$',''):gsub(':stripe$','')])
-        local resolved=applied(node.kind,meta)
+        local resolved=applied(node.kind or node.recipe,meta)
         local transform=assert(resolved.transform,'rotation must match the native element')
         assert(resolved.backgroundImage1 and resolved.backgroundImage1.fileName:find('track-strip.tga',1,true),
           'antialiased alpha mask must match the real native stroke selector')

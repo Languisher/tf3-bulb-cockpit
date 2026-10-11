@@ -280,6 +280,9 @@ end
 local function walk(node,fn)
   if type(node)~='table' then return end
   if node.kind then fn(node.kind,node.param) end
+  if node.recipe=='LinnanBulbTrackStrokeNative' or node.recipe=='LinnanBulbScaledCanvasNative'then
+    fn(node.recipe,node.param)
+  end
   for _,v in pairs(node) do if type(v)=='table' then walk(v,fn) end end
 end
 local aliasState={old=function()return aliases end,set=function(_,v)aliases=v end,

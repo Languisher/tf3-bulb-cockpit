@@ -22,23 +22,25 @@ function data()
   -- width, so a wide viewport must not spread stations beyond their rail.
   add('ScrollArea#linnan.bulb.browser.map ScrollArea::Content::Layout', {gravity={0,0}})
   add('#linnan.bulb.static-canvas', {gravity={0,0},padding={0,0,0,0},margin={0,0,0,0}})
-  -- Generic components are recipe-backed: the native selector is
-  -- R::Component (see the game's builtin.css.lua), not Component.
-  -- A non-matching selector silently leaves every joining rail horizontal.
+  -- A dedicated recipe owns branch strokes; ordinary straight rails remain
+  -- generic components. Both native element types need the shared mask.
   -- One shared alpha strip softens transformed rail edges. Only the center
   -- patch stretches; no runtime rasterization or per-route texture is used.
-  add('R::Component!bulb-branch-stroke, R::Component!bulb-track, R::Component!bulb-track-stripe',{
+  add('R::LinnanBulbTrackStrokeNative!bulb-branch-stroke, R::Component!bulb-track, R::Component!bulb-track-stripe',{
     backgroundImage1={fileName='linnan_bulb_cockpit::/gui/bulb_cockpit/symbols/track-strip.tga',
       horizontal={0,0,4,4},vertical={0,0,64,64}},
   })
+  -- Keep large rule banks off R::Component, which is ubiquitous throughout
+  -- the game even when no BULB diagram exists. Dedicated native types retain
+  -- full transform precision without involving unrelated components.
   for degree=-90,90 do
-    add('R::Component!bulb-track-angle'..(degree+90),{
+    add('R::LinnanBulbTrackStrokeNative!bulb-track-angle'..(degree+90),{
       transformOrigin={0,.5},transform=transf.rotZ(math.rad(degree)),
       padding={0,0,0,0},margin={0,0,0,0},
     })
   end
   for percent=1,99 do
-    add('R::Component!bulb-canvas-scale'..percent,{
+    add('R::LinnanBulbScaledCanvasNative!bulb-canvas-scale'..percent,{
       transformOrigin={0,0},transform=transf.scaleRotZTransl(percent/100,0,{x=0,y=0,z=0}),
       padding={0,0,0,0},margin={0,0,0,0},
     })

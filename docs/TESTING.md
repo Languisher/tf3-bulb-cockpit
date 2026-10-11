@@ -8,7 +8,7 @@ python3 tools/run_tests.py
 
 运行器使用 `lua`；可以用 `--lua /path/to/lua` 指定 Lua 5.4。检测到 `luac` 时检查模组与测试脚本语法，也可用 `--luac /path/to/luac` 指定。
 
-44 个 Lua 测试文件中，40 项使用本仓库的模拟环境，4 项需要从自己安装的 Build 40420 游戏提取 GUI 源文件：
+45 个 Lua 测试文件中，41 项使用本仓库的模拟环境，4 项需要从自己安装的 Build 40420 游戏提取 GUI 源文件：
 
 ```sh
 python3 tools/run_tests.py --game-gui /path/to/extracted/gui/main

@@ -67,7 +67,16 @@ local function modeIcon(mode,size)
 end
 local modeMark,transferGroup,lineBadge=modeMarks.create(builtin,style,text,modeIcon,
   {symbolInk=HUD_INK,openBadgeInk=HUD_INK})
-local function floatingPanel(width,height,children,id,anchor,class,mouseTransparent)
+-- Custom recipes own native components just like builtin.Component. Give
+-- the transform banks exclusive element types so the engine need not match
+-- 280 BULB rules against every generic component in the game's interface.
+local TrackStroke=react.RegisterRecipe('LinnanBulbTrackStrokeNative',function()
+  return builtin.FloatingLayout{children={}}
+end)
+local ScaledCanvas=react.RegisterRecipe('LinnanBulbScaledCanvasNative',function(param)
+  return builtin.FloatingLayout{meta={class='bulb-fixed-layout'},children=param.children}
+end)
+local function floatingPanel(width,height,children,id,anchor,class,mouseTransparent,recipe)
   local meta=style{size={width,height},backgroundColor={0,0,0,0},anchorPoint=anchor or {0,0},
     padding={0,0,0,0},margin={0,0,0,0}}
   meta.id=id
@@ -79,6 +88,7 @@ local function floatingPanel(width,height,children,id,anchor,class,mouseTranspar
   extent.class='bulb-layout-extent'
   table.insert(children,1,builtin.FloatingLayoutChild{h=0,v=0,
     item=builtin.Component{meta=extent,mouseTransparent=true}})
+  if recipe then return recipe{meta=meta,children=children}end
   return builtin.Component{meta=meta,mouseTransparent=mouseTransparent,
     layout=builtin.FloatingLayout{meta={class='bulb-fixed-layout'},children=children}}
 end
@@ -178,7 +188,7 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker)
       local length=math.sqrt(dx*dx+dy*dy)
       local meta=style{size={length,thickness},backgroundColor1=ink,anchorPoint={0,.5}}
       meta.class='bulb-branch-stroke, bulb-track-angle'..(angle+90)
-      positioned(children,builtin.Component{meta=meta},a.x,railY+a.y,width,height,segment.key..suffix)
+      positioned(children,TrackStroke{meta=meta},a.x,railY+a.y,width,height,segment.key..suffix)
       for i,point in ipairs({a,b})do
         local capKey=string.format('%s:%s:%.5f:%.5f',suffix,segment.color,point.x,point.y)
         if not caps[capKey]then
@@ -337,8 +347,8 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
         return string.format('rawSize=%.6fx%.6f; visible=%s; topLeft=%.3f,%.3f; bottomRight=%.3f,%.3f',
           size.x,size.y,tostring(api.gui.byId.isVisibleRecursive('linnan.bulb.hud')),first.x,first.y,last.x,last.y)
       end)
-      if ok then log.verbose('[BULB native 0.1.60dev] HUD bounds: '..report)
-      else log.warning('[BULB native 0.1.60dev] HUD bounds failed: '..tostring(report)) end
+      if ok then log.verbose('[BULB native 0.1.61dev] HUD bounds: '..report)
+      else log.warning('[BULB native 0.1.61dev] HUD bounds failed: '..tostring(report)) end
     end
     local aliases=param.aliases:old()
     if configuredEntity:get()~=entity then
@@ -357,7 +367,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
             react.enqueueJoin(param.refreshAliases,'LinnanBulbCockpitHudNative:labelsSaved')
           end
         end)
-        if not saved then log.warning('[BULB native 0.1.60dev] default labels: '..tostring(err))end
+        if not saved then log.warning('[BULB native 0.1.61dev] default labels: '..tostring(err))end
       end
       if state:old()==snapshot and failure:old()=='' and errorRef:get()=='' then return end
       if state:old()~=snapshot then state:set(snapshot)end
@@ -370,7 +380,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
       if key~=routeRef:get() then
         routeRef:set(key)
         if snapshot then
-          log.verbose(string.format('[BULB native 0.1.60dev] route ready: line=%s; stops=%d',
+          log.verbose(string.format('[BULB native 0.1.61dev] route ready: line=%s; stops=%d',
             snapshot.route.name,#snapshot.route.stops))
         end
       end
@@ -380,7 +390,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
       if failure:old()=='' then failure:set('线路图暂时无法读取车辆数据，请查看游戏日志。')end
       setHudVisible(true)
       if errorRef:get()~=tostring(snapshot) then
-        log.warning('[BULB native 0.1.60dev] '..tostring(snapshot));errorRef:set(tostring(snapshot))
+        log.warning('[BULB native 0.1.61dev] '..tostring(snapshot));errorRef:set(tostring(snapshot))
       end
     end
   end
@@ -423,7 +433,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
     local unsubscribeExit=exitSubscription:get()
     if unsubscribeExit then unsubscribeExit();exitSubscription:set(nil)end
     scan:set({});numberedLines:set(nil);numberedConfig:set(nil);hudVisibility=nil
-    log.verbose('[BULB native 0.1.60dev] HUD disposed; session callbacks and route cache released')
+    log.verbose('[BULB native 0.1.61dev] HUD disposed; session callbacks and route cache released')
   end)
   -- onStepTimer runs with a restricted API. Camera access belongs in the
   -- main-thread join, as documented by React.enqueueJoin in this game build.
@@ -473,7 +483,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
     -- content component inside a correctly sized outer frame; KeepInside
     -- then uses the displayed dimensions, not the unscaled diagram bounds.
     local percent=math.max(1,math.floor(math.max(120,viewport.y-200)/height*100))
-    local inner=floatingPanel(width,height,children,'linnan.bulb.canvas-content',nil,'bulb-canvas-scale'..percent)
+    local inner=floatingPanel(width,height,children,'linnan.bulb.canvas-content',nil,'bulb-canvas-scale'..percent,nil,ScaledCanvas)
     local scaledWidth,scaledHeight=width*percent/100,height*percent/100
     local items={}
     positioned(items,inner,0,0,scaledWidth,scaledHeight,'linnan.bulb.scaled-content')
@@ -516,7 +526,7 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
     local loaded,stored,revision=pcall(aliasStore.read,aliasRevision:get())
     if loaded and stored and revision~=aliasRevision:get() then
       aliases:set(stored);aliasRevision:set(revision)
-      log.verbose('[BULB native 0.1.60dev] aliases state loaded; revision='..tostring(revision))
+      log.verbose('[BULB native 0.1.61dev] aliases state loaded; revision='..tostring(revision))
     end
     return loaded and stored or aliases:old()
   end
@@ -539,7 +549,7 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
     report=(ok and 'GUI bounds: ' or 'GUI bounds failed: ')..tostring(report)
     if report~=lastGeometry:get() then
       lastGeometry:set(report)
-      log.verbose('[BULB native 0.1.60dev] '..report)
+      log.verbose('[BULB native 0.1.61dev] '..report)
     end
   end
   local function requestMeasure()
@@ -625,6 +635,6 @@ function data()
     cameraState.install(free.FreeCamTool,function()setHudVisible(false)end)
     diagnostic.setCameraReader(cameraState.getEntity)
     replacementApi.ReplaceRecipe(free.FreeCamOptions,mount)
-    log.verbose('[BULB native 0.1.60dev] installed; compact station-count layout; explicit anchors; transparent transfers; savegame aliases')
+    log.verbose('[BULB native 0.1.61dev] installed; compact station-count layout; explicit anchors; transparent transfers; savegame aliases')
   end}
 end

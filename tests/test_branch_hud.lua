@@ -23,7 +23,8 @@ do
       assert(index and index>=0 and index<=180)
       if index~=90 then diagonals=diagonals+1 end
       local rule
-      for _,candidate in ipairs(css)do if candidate.selector=='R::Component!bulb-track-angle'..index then rule=candidate.style end end
+      assert(kind=='LinnanBulbTrackStrokeNative','rails must use the type that owns their transform rules')
+      for _,candidate in ipairs(css)do if candidate.selector=='R::LinnanBulbTrackStrokeNative!bulb-track-angle'..index then rule=candidate.style end end
       assert(rule and rule.transformOrigin[1]==0 and rule.transformOrigin[2]==.5)
       assert(math.abs(rule.transform.angle-math.rad(index-90))<.00001)
     end
