@@ -404,13 +404,61 @@ function P.plan(snapshot, aliases, blink, width)
   end
   return result
 end
+-- Fillet a polyline with circular arcs, as BULB's SvgLine does before
+-- stroking. Native GUI rectangles approximate each arc to < .12 GUI units
+-- for normal bends, with an absolute twelve-chord limit per corner. This
+-- runs only when a diagram is rebuilt; no textures or persistent cache.
+function P.roundedTrack(points,thickness,ink,key)
+  local path,result={},{}
+  for _,p in ipairs(points)do
+    local prior=path[#path]
+    if not prior or math.abs(p.x-prior.x)+math.abs(p.y-prior.y)>.00001 then path[#path+1]=p end
+  end
+  local function stroke(a,b,suffix,curve)
+    if math.abs(a.x-b.x)+math.abs(a.y-b.y)<.00001 then return end
+    result[#result+1]={x1=a.x,y1=a.y,x2=b.x,y2=b.y,color=ink,key=key..suffix,curve=curve or nil}
+  end
+  local cursor=path[1]
+  for i=2,#path-1 do
+    local a,b,c=path[i-1],path[i],path[i+1]
+    local ux,uy,vx,vy=b.x-a.x,b.y-a.y,c.x-b.x,c.y-b.y
+    local incoming,outgoing=math.sqrt(ux*ux+uy*uy),math.sqrt(vx*vx+vy*vy)
+    ux,uy,vx,vy=ux/incoming,uy/incoming,vx/outgoing,vy/outgoing
+    local turn=math.acos(math.max(-1,math.min(1,ux*vx+uy*vy)))
+    local cross=ux*vy-uy*vx
+    if turn<.00001 or math.abs(cross)<.00001 then
+      stroke(cursor,b,':straight:'..i);cursor=b
+    else
+      local tangent=math.tan(turn/2)
+      local radius=math.min(thickness*2.5,math.min(incoming,outgoing)*.45/tangent)
+      local trim=radius*tangent
+      local first,last={x=b.x-ux*trim,y=b.y-uy*trim},{x=b.x+vx*trim,y=b.y+vy*trim}
+      stroke(cursor,first,':straight:'..i)
+      local sign=cross>0 and 1 or -1
+      local cx,cy=first.x-uy*sign*radius,first.y+ux*sign*radius
+      local rx,ry=first.x-cx,first.y-cy
+      local step=math.min(math.pi/15,math.sqrt(.96/radius))
+      local count=math.min(12,math.max(2,math.ceil(turn/step)))
+      local previous=first
+      for j=1,count do
+        local angle=sign*turn*j/count
+        local point=j==count and last or {x=cx+rx*math.cos(angle)-ry*math.sin(angle),
+          y=cy+rx*math.sin(angle)+ry*math.cos(angle)}
+        stroke(previous,point,':curve:'..i..':'..j,true);previous=point
+      end
+      cursor=last
+    end
+  end
+  if cursor and #path>1 then stroke(cursor,path[#path],':end')end
+  return result
+end
 -- Convert the station union into a layered diagram. Paths are oriented from
 -- their shared station order; a longest-path rank keeps unequal parallel
 -- branches aligned at their shared ends. Cyclic connections use a return lane.
 function P.branchPlan(snapshot,aliases,blink,width)
   local graph,route=snapshot.network,snapshot.route
   local mode=P.mode(route,aliases)
-  local result={name=route.name,mode=mode,track=P.trackStyle(mode),stops={},segments={},gaps={},total=#graph.nodes}
+  local result={name=route.name,mode=mode,track=P.trackStyle(mode),stops={},segments={},rails={},gaps={},total=#graph.nodes}
   result.badge,result.hasBadge=P.alias(route,aliases,P.defaults(snapshot.lines,aliases))
   local active,selected={},{}
   for i,stop in ipairs(route.stops)do active[stop.id]=i end
@@ -677,6 +725,9 @@ function P.branchPlan(snapshot,aliases,blink,width)
     end
     points[#points+1]={x=b.x,y=b.y}
     for i=2,#points do segment(points[i-1],points[i],edge.color,edge.key..':'..i)end
+    for _,rail in ipairs(P.roundedTrack(points,result.track.rail,edge.color,edge.key))do
+      result.rails[#result.rails+1]=rail
+    end
     if edge.omitted>0 then
       local a1,b1=points[math.ceil(#points/2)],points[math.ceil(#points/2)+1]
       result.gaps[#result.gaps+1]={x=(a1.x+b1.x)/2,y=(a1.y+b1.y)/2,count=edge.omitted,

@@ -108,7 +108,7 @@ do
     end
     assert(extent[1]==size[1] and extent[2]==size[2],'one shared, measured coordinate system')
     local expected={}
-    for _,segment in ipairs(plan.segments)do expected[segment.key]=segment end
+    for _,segment in ipairs(plan.rails)do expected[segment.key]=segment end
     local markers,diagonals,railY={},{},nil
     local strokes={}
     local drawing={}
@@ -129,6 +129,10 @@ do
         local segment=assert(expected[pos.localKey:gsub(':rail$',''):gsub(':stripe$','')])
         local resolved=applied(node.kind,meta)
         local transform=assert(resolved.transform,'rotation must match the native element')
+        assert(resolved.backgroundImage1 and resolved.backgroundImage1.fileName:find('track-strip.tga',1,true),
+          'antialiased alpha mask must match the real native stroke selector')
+        assert(meta.styleSheet.backgroundColor1 and not meta.styleSheet.backgroundColor,
+          'rail ink must tint the alpha mask rather than cover it with an opaque rectangle')
         local length=meta.styleSheet.size[1]
         local x,y=pos.h*extent[1],pos.v*extent[2]
         local dx,dy=length*transform[1],length*transform[2]
@@ -143,7 +147,7 @@ do
         strokes[#strokes+1]={segment=segment,x=x,y=y}
       end
     end
-    assert(#markers==#plan.stops and #diagonals>0 and #strokes==#plan.segments*(plan.track.stripe>0 and 2 or 1))
+    assert(#markers==#plan.stops and #diagonals>0 and #strokes==#plan.rails*(plan.track.stripe>0 and 2 or 1))
     local hangzhou=0
     for _,marker in ipairs(markers)do
       if marker.name=='杭州站'then hangzhou=hangzhou+1 end
@@ -159,7 +163,7 @@ do
     -- Follow the painted rail graph from either origin to the single 杭州.
     local adjacency={}
     local function key(x,y)return string.format('%.4f:%.4f',x,y)end
-    for _,segment in ipairs(plan.segments)do
+    for _,segment in ipairs(plan.rails)do
       local a,b=key(segment.x1,segment.y1),key(segment.x2,segment.y2)
       adjacency[a]=adjacency[a] or {};adjacency[b]=adjacency[b] or {}
       adjacency[a][b]=true;adjacency[b][a]=true

@@ -51,7 +51,7 @@ do
         assert(meta.class~='bulb-station-marker','background never owns station lights')
         if meta.class and meta.class:find('bulb-branch-stroke',1,true)then strokes=strokes+1 end
       end)
-      assert(strokes==#plan.segments*(plan.track.stripe>0 and 2 or 1))
+      assert(strokes==#plan.rails*(plan.track.stripe>0 and 2 or 1))
       cases=cases+1
     end end
   end

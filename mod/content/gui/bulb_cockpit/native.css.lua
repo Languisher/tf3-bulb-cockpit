@@ -25,6 +25,12 @@ function data()
   -- Generic components are recipe-backed: the native selector is
   -- R::Component (see the game's builtin.css.lua), not Component.
   -- A non-matching selector silently leaves every joining rail horizontal.
+  -- One shared alpha strip softens transformed rail edges. Only the center
+  -- patch stretches; no runtime rasterization or per-route texture is used.
+  add('R::Component!bulb-branch-stroke, R::Component!bulb-track, R::Component!bulb-track-stripe',{
+    backgroundImage1={fileName='linnan_bulb_cockpit::/gui/bulb_cockpit/symbols/track-strip.tga',
+      horizontal={0,0,4,4},vertical={0,0,64,64}},
+  })
   for degree=-90,90 do
     add('R::Component!bulb-track-angle'..(degree+90),{
       transformOrigin={0,.5},transform=transf.rotZ(math.rad(degree)),

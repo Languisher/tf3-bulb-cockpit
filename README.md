@@ -1,4 +1,4 @@
-# TF3 BULB Cockpit · 0.1.59dev
+# TF3 BULB Cockpit · 0.1.60dev
 
 为《Transport Fever 3》第一人称车辆视角提供 BULB 风格的动态线路图，以及可点击换乘标识的线路目录。
 
@@ -8,7 +8,7 @@ A native in-game route diagram and line browser inspired by [BULB](https://bulb.
 
 ## 下载与安装
 
-在 [Releases](https://github.com/Languisher/tf3-bulb-cockpit/releases) 下载 `tf3-bulb-cockpit-0.1.59dev.zip`。
+在 [Releases](https://github.com/Languisher/tf3-bulb-cockpit/releases) 下载 `tf3-bulb-cockpit-0.1.60dev.zip`。
 
 1. 完整退出游戏。
 2. 解压，将 `linnan_bulb_cockpit` 文件夹放入游戏用户目录的 `local/mods/`。
@@ -37,6 +37,7 @@ python3 install.py
 - 合并线路中，当前车辆不会经过的另一分支站点内部显示白色，不参与黄灯进度与闪烁。
 - 每条线路可配置「前缀＋数字／字母编号＋后缀」，支持按最终标号搜索、自然排序及全部应用。仅影响模组标号，不修改游戏真实线路名称。
 - 同显示类型、同完整标号的线路可按实际共同起终点合并，显示 fork／parallel branches；整组必须连通。
+- 分叉／汇合采用相切圆弧和圆头端点，线条边缘柔化；共用静态遮罩，游戏运行时不生成图片。
 - 线路目录按 RER、Metro、Tramway、公交排列；点击编号查看静态线路图，点击换乘编号跳转。公交初始为空，输入搜索后显示匹配结果；返回目录释放当前图的数据。
 - 线路图设置入口在普通地图视角显示，第一人称和暂停菜单中隐藏。
 - 静态线路图顶部的图钉可定位地图上的当前线路，关闭设置并释放静态图；第一人称中会先退出驾驶视角。合并图定位当前打开的实际成员。
@@ -60,7 +61,7 @@ python3 tools/package.py
 
 第一条命令运行独立测试，明确跳过四项需要游戏原版 GUI 文件的集成检查。完整检查方式与手工验收场景见 [测试说明](docs/TESTING.md)。生成的安装包与 SHA-256 校验文件位于 `dist/`。
 
-发布版本以 [VERSION](VERSION) 为准，当前为 `0.1.59dev`，对应 Git 标签 `v0.1.59dev` 和游戏数值 revision `59`。开发后缀按本项目命名习惯保留为 `dev`。
+发布版本以 [VERSION](VERSION) 为准，当前为 `0.1.60dev`，对应 Git 标签 `v0.1.60dev` 和游戏数值 revision `60`。开发后缀按本项目命名习惯保留为 `dev`。
 
 ## 素材与归属
 

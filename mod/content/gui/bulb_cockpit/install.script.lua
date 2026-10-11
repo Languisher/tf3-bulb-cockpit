@@ -50,7 +50,9 @@ local function positioned(children,item,x,y,w,h,key)
   children[#children+1]=builtin.FloatingLayoutChild{h=x/w,v=y/h,item=item,localKey=key}
 end
 local function rectangle(w,h,fill,class)
-  local meta=style{size={w,h},backgroundColor=fill,anchorPoint={0,0}}
+  local masked=class=='bulb-track' or class=='bulb-track-stripe'
+  local meta=style{size={w,h},backgroundColor=not masked and fill or nil,
+    backgroundColor1=masked and fill or nil,anchorPoint={0,0}}
   meta.class=class
   return builtin.Component{meta=meta}
 end
@@ -163,6 +165,7 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker)
     -- Rotation is a supported stylesheet property, but is not exposed by the
     -- per-component StyleSheet API. Use fixed CSS angle classes (one degree)
     -- and existing geometry masks, never generated textures or new timers.
+    local caps={}
     local function stroke(segment,thickness,ink,suffix)
       local a,b={x=segment.x1,y=segment.y1},{x=segment.x2,y=segment.y2}
       if a.x>b.x then a,b=b,a end
@@ -173,20 +176,24 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker)
         or (dx==0 and (dy>=0 and math.pi/2 or -math.pi/2) or math.atan(dy/dx))
       local angle=math.floor(math.deg(radians)+.5)
       local length=math.sqrt(dx*dx+dy*dy)
-      local meta=style{size={length,thickness},backgroundColor=ink,anchorPoint={0,.5}}
+      local meta=style{size={length,thickness},backgroundColor1=ink,anchorPoint={0,.5}}
       meta.class='bulb-branch-stroke, bulb-track-angle'..(angle+90)
       positioned(children,builtin.Component{meta=meta},a.x,railY+a.y,width,height,segment.key..suffix)
-      if dy~=0 then
-        for i,point in ipairs({a,b})do
+      for i,point in ipairs({a,b})do
+        local capKey=string.format('%s:%s:%.5f:%.5f',suffix,segment.color,point.x,point.y)
+        if not caps[capKey]then
+          caps[capKey]=true
+          local meta=style{size={thickness,thickness},color=ink,anchorPoint={.5,.5}}
+          meta.class='bulb-track-cap'
           local cap=builtin.ImageView{path='linnan_bulb_cockpit::/gui/bulb_cockpit/symbols/circle.tga',
-            scaling=builtin.type.ImageViewScaling.Stretch,meta=style{size={thickness,thickness},color=ink,anchorPoint={.5,.5}}}
+            scaling=builtin.type.ImageViewScaling.Stretch,meta=meta}
           positioned(children,cap,point.x,railY+point.y,width,height,segment.key..suffix..':cap'..i)
         end
       end
     end
-    for _,segment in ipairs(plan.segments)do stroke(segment,plan.track.rail,color(segment.color),':rail')end
+    for _,segment in ipairs(plan.rails)do stroke(segment,plan.track.rail,color(segment.color),':rail')end
     if plan.track.stripe>0 then
-      for _,segment in ipairs(plan.segments)do
+      for _,segment in ipairs(plan.rails)do
         local c=color(segment.color)
         stroke(segment,plan.track.stripe,{c[1]*.45+.55,c[2]*.45+.55,c[3]*.45+.55,1},':stripe')
       end
@@ -200,11 +207,26 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker)
       0,0,width,height,'linnan.bulb.track-layer')
   elseif count>1 then
     positioned(children,rectangle(right-left,plan.track.rail,lineColor,'bulb-track'),left,railY-plan.track.rail/2,width,height)
+    local caps={}
+    local function endCaps(thickness,ink,suffix)
+      for i,x in ipairs({left,right})do
+        local meta=style{size={thickness,thickness},color=ink,anchorPoint={.5,.5}}
+        meta.class='bulb-track-cap'
+        positioned(caps,builtin.ImageView{path='linnan_bulb_cockpit::/gui/bulb_cockpit/symbols/circle.tga',
+          scaling=builtin.type.ImageViewScaling.Stretch,meta=meta},x,railY,width,height,'track'..suffix..':cap'..i)
+      end
+    end
+    endCaps(plan.track.rail,lineColor,':rail')
     if plan.track.stripe>0 then
       local stripe={lineColor[1]*.45+.55,lineColor[2]*.45+.55,lineColor[3]*.45+.55,1}
       positioned(children,rectangle(right-left,plan.track.stripe,stripe,'bulb-track-stripe'),
         left,railY-plan.track.stripe/2,width,height)
+      endCaps(plan.track.stripe,stripe,':stripe')
     end
+    -- Share the stable background parent with merged diagrams so a newly
+    -- attached cap cannot paint above an already-mounted station marker.
+    positioned(children,floatingPanel(width,height,caps,nil,{0,0},'bulb-track-layer',true),
+      0,0,width,height,'linnan.bulb.track-layer')
   end
   for _,gap in ipairs(plan.gaps)do
     local tooltip=gap.first and string.format('省略 %d 站（第 %d–%d 站）',gap.count,gap.first,gap.last) or '该支线省略 '..gap.count..' 站'
@@ -315,8 +337,8 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
         return string.format('rawSize=%.6fx%.6f; visible=%s; topLeft=%.3f,%.3f; bottomRight=%.3f,%.3f',
           size.x,size.y,tostring(api.gui.byId.isVisibleRecursive('linnan.bulb.hud')),first.x,first.y,last.x,last.y)
       end)
-      if ok then log.verbose('[BULB native 0.1.59dev] HUD bounds: '..report)
-      else log.warning('[BULB native 0.1.59dev] HUD bounds failed: '..tostring(report)) end
+      if ok then log.verbose('[BULB native 0.1.60dev] HUD bounds: '..report)
+      else log.warning('[BULB native 0.1.60dev] HUD bounds failed: '..tostring(report)) end
     end
     local aliases=param.aliases:old()
     if configuredEntity:get()~=entity then
@@ -335,7 +357,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
             react.enqueueJoin(param.refreshAliases,'LinnanBulbCockpitHudNative:labelsSaved')
           end
         end)
-        if not saved then log.warning('[BULB native 0.1.59dev] default labels: '..tostring(err))end
+        if not saved then log.warning('[BULB native 0.1.60dev] default labels: '..tostring(err))end
       end
       if state:old()==snapshot and failure:old()=='' and errorRef:get()=='' then return end
       if state:old()~=snapshot then state:set(snapshot)end
@@ -348,7 +370,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
       if key~=routeRef:get() then
         routeRef:set(key)
         if snapshot then
-          log.verbose(string.format('[BULB native 0.1.59dev] route ready: line=%s; stops=%d',
+          log.verbose(string.format('[BULB native 0.1.60dev] route ready: line=%s; stops=%d',
             snapshot.route.name,#snapshot.route.stops))
         end
       end
@@ -358,7 +380,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
       if failure:old()=='' then failure:set('线路图暂时无法读取车辆数据，请查看游戏日志。')end
       setHudVisible(true)
       if errorRef:get()~=tostring(snapshot) then
-        log.warning('[BULB native 0.1.59dev] '..tostring(snapshot));errorRef:set(tostring(snapshot))
+        log.warning('[BULB native 0.1.60dev] '..tostring(snapshot));errorRef:set(tostring(snapshot))
       end
     end
   end
@@ -401,7 +423,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
     local unsubscribeExit=exitSubscription:get()
     if unsubscribeExit then unsubscribeExit();exitSubscription:set(nil)end
     scan:set({});numberedLines:set(nil);numberedConfig:set(nil);hudVisibility=nil
-    log.verbose('[BULB native 0.1.59dev] HUD disposed; session callbacks and route cache released')
+    log.verbose('[BULB native 0.1.60dev] HUD disposed; session callbacks and route cache released')
   end)
   -- onStepTimer runs with a restricted API. Camera access belongs in the
   -- main-thread join, as documented by React.enqueueJoin in this game build.
@@ -494,7 +516,7 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
     local loaded,stored,revision=pcall(aliasStore.read,aliasRevision:get())
     if loaded and stored and revision~=aliasRevision:get() then
       aliases:set(stored);aliasRevision:set(revision)
-      log.verbose('[BULB native 0.1.59dev] aliases state loaded; revision='..tostring(revision))
+      log.verbose('[BULB native 0.1.60dev] aliases state loaded; revision='..tostring(revision))
     end
     return loaded and stored or aliases:old()
   end
@@ -517,7 +539,7 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
     report=(ok and 'GUI bounds: ' or 'GUI bounds failed: ')..tostring(report)
     if report~=lastGeometry:get() then
       lastGeometry:set(report)
-      log.verbose('[BULB native 0.1.59dev] '..report)
+      log.verbose('[BULB native 0.1.60dev] '..report)
     end
   end
   local function requestMeasure()
@@ -603,6 +625,6 @@ function data()
     cameraState.install(free.FreeCamTool,function()setHudVisible(false)end)
     diagnostic.setCameraReader(cameraState.getEntity)
     replacementApi.ReplaceRecipe(free.FreeCamOptions,mount)
-    log.verbose('[BULB native 0.1.59dev] installed; compact station-count layout; explicit anchors; transparent transfers; savegame aliases')
+    log.verbose('[BULB native 0.1.60dev] installed; compact station-count layout; explicit anchors; transparent transfers; savegame aliases')
   end}
 end

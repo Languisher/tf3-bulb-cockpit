@@ -8,7 +8,7 @@ python3 tools/run_tests.py
 
 运行器使用 `lua`；可以用 `--lua /path/to/lua` 指定 Lua 5.4。检测到 `luac` 时检查模组与测试脚本语法，也可用 `--luac /path/to/luac` 指定。
 
-43 个 Lua 测试文件中，39 项使用本仓库的模拟环境，4 项需要从自己安装的 Build 40420 游戏提取 GUI 源文件：
+44 个 Lua 测试文件中，40 项使用本仓库的模拟环境，4 项需要从自己安装的 Build 40420 游戏提取 GUI 源文件：
 
 ```sh
 python3 tools/run_tests.py --game-gui /path/to/extracted/gui/main
@@ -21,6 +21,7 @@ python3 tools/run_tests.py --game-gui /path/to/extracted/gui/main
 ## 实机验收
 
 - 在两条同号线路的各个成员和往返方向检查：共同站点只画一次，分叉接入正确，不经过的分支站点内部为白色，站点不被轨道遮住。
+- 查看 RER、Metro、电车的左右分叉及汇合：横线与斜线通过相切圆弧连接，终端有圆头，站点不移动；电车中间细纹连续。分别检查第一人称与静态图、窄视口及多分支。
 - 开关闪烁、到达终点并自动折返，确认当前路径的已过站和下一站正确。
 - 打开目录，搜索公交、点击线路及换乘、返回目录，确认图和状态不继续累积。
 - 进入车辆第一人称后，左上角线路图设置按钮应隐藏；退出后应恢复。暂停菜单中仍应隐藏，底部站点图保持正常。
@@ -29,3 +30,5 @@ python3 tools/run_tests.py --game-gui /path/to/extracted/gui/main
 - 进出第一人称后，在同存档、同车辆、同视角与速度下对照启用／禁用模组的 FPS、内存和保存耗时。
 
 Lua 测试和离线组件树不运行游戏 C++ GUI，不能替代这些实机检查。
+
+`test_track_curves.lua` 检查圆弧相切、连续性、端点、窄视口和回环，限制每个拐角最多 12 段；原版样式解析器检查柔化边缘的遮罩和旋转选择器确实匹配。遮罩由 `tools/make_track_mask.py` 离线生成，所有线路共用，游戏运行时不生成图片。
