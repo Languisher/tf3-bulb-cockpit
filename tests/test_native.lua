@@ -820,20 +820,23 @@ do
     aliases.__busNaming=config
     callback(nil,true)
   end
-  contexts.LinnanBulbSettingsContentNative={}
-  local content=render('LinnanBulbSettingsContentNative',{aliases=aliasState,lines=lines,towns=towns,
+  contexts.LinnanBulbBrowserNative={}
+  local content=render('LinnanBulbBrowserNative',{aliases=aliasState,lines=lines,towns=towns,
     viewport={x=400,y=300},geometry=S.geometry({x=400,y=300}),color=settingsParam.color})
   local entry
   walk(content,function(kind,param)if kind=='Button' and param.meta.id=='linnan.bulb.settings.city'then entry=param end end)
-  assert(entry,'batch naming entry exists inside the native settings window')
+  assert(entry and entry.content.param.text=='公交线路编号一键配置',
+    'batch naming opens directly from the directory home')
   entry.onClick()
   local param=windowParam
   assert(param.width<=400-48 and param.listHeight==32)
   local cityWindow=render('LinnanBulbCityWindowNative',param)
-  assert(cityWindow.kind=='Window' and cityWindow.param.id=='linnan.bulb.city.window')
+  assert(cityWindow.kind=='Window' and cityWindow.param.id=='linnan.bulb.city.window'
+    and cityWindow.param.title=='公交线路编号一键配置')
   local function draw()
     local result={}
     walk(render('LinnanBulbCityContentNative',param),function(kind,p)
+      assert(kind~='ComboBox','bus batch configuration uses a toggle button rather than a dropdown')
       if p.meta and p.meta.id then result[p.meta.id]=p end
       if kind=='TextView'then result[p.text]=true end
       if kind=='TextView' and p.meta.styleSheet.size[1]>0 then
@@ -844,10 +847,10 @@ do
     return result
   end
   local widgets=draw()
-  assert(widgets['linnan.bulb.city.enabled'].value==1 and calls==0,'default off, opening performs no write')
+  assert(widgets['linnan.bulb.city.enabled'].value==0 and calls==0,'default off, opening performs no write')
   assert(widgets['linnan.bulb.city.100'].value=='10','initial city code comes from the mapping table')
   assert(widgets['linnan.bulb.city.express'].value=='51','Express has an editable numeric mapping in the same table')
-  widgets['linnan.bulb.city.enabled'].onValueChange(2)
+  widgets['linnan.bulb.city.enabled'].onValueChange(1)
   widgets['linnan.bulb.city.express'].onTyping('52')
   widgets['linnan.bulb.city.100'].onTyping('杭')
   widgets=draw();widgets['linnan.bulb.city.apply'].onClick()
@@ -1201,11 +1204,11 @@ do
   modules['aliases.lua'].saveOptions=function(value,callback)
     optionsWrites=optionsWrites+1;requests[#requests+1]={value=value,callback=callback}
   end
-  contexts.LinnanBulbSettingsContentNative={}
-  local params={aliases=aliasState,lines={},geometry=S.geometry({x=1280,y=720}),color=settingsParam.color}
+  contexts.LinnanBulbBrowserNative={}
+  local params={aliases=aliasState,lines={},viewport={x=1280,y=720},geometry=S.geometry({x=1280,y=720}),color=settingsParam.color}
   local function drawFlash()
     local control,warning
-    walk(render('LinnanBulbSettingsContentNative',params),function(k,p)
+    walk(render('LinnanBulbBrowserNative',params),function(k,p)
       if p.meta and p.meta.id=='linnan.bulb.settings.flash'then control=p end
       if k=='TextView' and p.text:find('开启可能降低性能',1,true)then warning=true end
     end)
@@ -1252,7 +1255,7 @@ do
     'synchronous submission failure must roll back and release the toggle too')
   modules['aliases.lua'].saveOptions=saveOptions
   toggle.onValueChange(1)
-  for _,state in ipairs(contexts.LinnanBulbSettingsContentNative)do state.expired=true end
+  for _,state in ipairs(contexts.LinnanBulbBrowserNative)do state.expired=true end
   requests[4].callback(nil,true);join()
   assert(aliases.__options.flashNextStop,'closing settings must not discard an acknowledged option')
   modules['aliases.lua'].read=readOptions

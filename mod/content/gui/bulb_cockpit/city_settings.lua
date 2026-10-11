@@ -53,11 +53,13 @@ function C.create(react,builtin,style,aliasStore,windows,P)
       rows[#rows+1]=row(town.id,town.name,districts:old()[tostring(town.id)].code,update)
     end
     return builtin.BoxLayout{children={box({
-      builtin.ComboBox{value=enabled:old() and 2 or 1,compact=true,
-        meta={id='linnan.bulb.city.enabled',class='bulb-settings-mode',styleSheet=style{size={width,32}}.styleSheet},
-        items={builtin.ComboBoxItem{value=1,content=label('关闭（默认）')},
-          builtin.ComboBoxItem{value=2,content=label('启用编号对照表')}},
-        onValueChange=function(value)if value==1 or value==2 then enabled:set(value==2)end end},
+      box({builtin.ToggleButton{value=enabled:old() and 1 or 0,
+        meta={id='linnan.bulb.city.enabled',class='bulb-settings-flash',
+          tooltip='默认关闭；选择后点击“应用到全部公交”保存。',
+          styleSheet=style{size={72,24}}.styleSheet},
+        content=label(enabled:old() and '已开启' or '已关闭',nil,24),
+        onValueChange=function(value)if value==0 or value==1 then enabled:set(value==1)end end},
+        label('公交批量编号',width-96,32)},width,true),
       label(string.format('市内 %d · 跨城 %d · 城市不明跳过 %d',localCount,expressCount,unknown),width,24),
       box({label('城市／类别',width-180,24),label('前缀',64,24),label('预览',80,24)},width-20,true),
       builtin.ScrollArea{content=box(rows,width-20),
@@ -99,7 +101,7 @@ function C.create(react,builtin,style,aliasStore,windows,P)
   local Window=react.RegisterWrapperRecipe('LinnanBulbCityWindowNative',builtin.Window,function(param)
     react.useInputAction('IA_MENU_BACK',react.iaHandler(param.onClose))
     react.useInputAction('IA_BACK',react.iaHandler(param.onClose))
-    return builtin.Window{title='公交编号对照表',id='linnan.bulb.city.window',
+    return builtin.Window{title='公交线路编号一键配置',id='linnan.bulb.city.window',
       meta={class='bulb-settings-window'},closable=true,movable=true,pinnable=false,
       autoFocusOnBecomingVisible=true,autoVisibilityOnFocusChange=false,
       initialX=param.x,initialY=param.y,onClose=param.onClose,content=Content(param)}

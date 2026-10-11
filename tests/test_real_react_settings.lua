@@ -47,6 +47,11 @@ local function context()
     self.states[self.index]=self.states[self.index] or state(value)
     return self.states[self.index]
   end
+  function ctx:declareStateLazy(initializer)
+    self.index=self.index+1
+    self.states[self.index]=self.states[self.index] or state(initializer())
+    return self.states[self.index]
+  end
   ctx.declareRef=ctx.declareState
   function ctx:onUnmount(fn)self.unmount=fn end
   function ctx:onMount(fn)self.mount=fn end
@@ -145,13 +150,22 @@ for _,viewport in ipairs({{x=1280,y=720},{x=400,y=300}}) do
   assert(names[browserNode.recipeId]=='LinnanBulbBrowserNative','directory is the first settings page')
   local firstNode=nextNode
   local _,browserCtx=render(browserNode.recipeId,content)
-  local lineButton,lineButtonMeta
+  local lineButton,lineButtonMeta,cityButton,configButton
   for id,node in pairs(nodes)do
     if id>firstNode and node.recipeId==1 and node.props.props[1].id=='linnan.bulb.browser.line.10' then
       lineButtonMeta=node.props.props[1]
       lineButton=nodes[lineButtonMeta.item].props.props[1]
     end
+    if id>firstNode and node.recipeId==1 then
+      local meta=node.props.props[1]
+      if meta.id=='linnan.bulb.settings.city'then
+        cityButton=nodes[meta.item];assert(names[cityButton.recipeId]=='Button')
+      elseif meta.id=='linnan.bulb.browser.configure'then configButton=nodes[meta.item]end
+    end
   end
+  assert(cityButton and configButton,'directory home has direct native configuration buttons')
+  local configCaption=nodes[nodes[configButton.props.props[1].content].props.props[1].item]
+  assert(configCaption.props.props[1].text=='线路')
   assert(lineButton and type(lineButton.onClick)=='function')
   assert(lineButtonMeta.styleSheet.size[1]==44 and lineButtonMeta.styleSheet.size[2]==32)
   local badgeNode=nodes[lineButton.content]
@@ -218,6 +232,16 @@ for _,viewport in ipairs({{x=1280,y=720},{x=400,y=300}}) do
   local cityWindow,cityCtx=render(react.GetRecipeId(windowFn),windowParam)
   assert(cityWindow.recipeId==39 and cityWindow.props.props[1].id=='linnan.bulb.city.window',
     'batch naming must return the direct native Window as well')
+  local cityContent=nodes[cityWindow.props.props[1].content]
+  firstNode=nextNode;render(cityContent.recipeId,cityContent.props.props[1])
+  local cityToggle
+  for id,node in pairs(nodes)do if id>firstNode then
+    assert(names[node.recipeId]~='ComboBox','bus enablement must not use a dropdown')
+    if node.recipeId==1 and node.props.props[1].id=='linnan.bulb.city.enabled'then
+      cityToggle=nodes[node.props.props[1].item]
+    end
+  end end
+  assert(cityToggle and names[cityToggle.recipeId]=='ToggleButton' and cityToggle.props.props[1].value==0)
   cityCtx.actions.IA_MENU_BACK.handlerFn();assert(windowParam==nil)
   stationSettings.open{aliases=aliases,viewport=viewport}
   local stationWindow,stationCtx=render(react.GetRecipeId(windowFn),windowParam)
@@ -299,15 +323,18 @@ stationSettings.close();contentCtx.unmount()
 assert(windowParam==nil and mapTool==nil)
 -- Build the actual settings content through the game's Lua React adapter.
 -- Pending C++ command completion must not delay the controlled toggle/caption.
-local contentId
-for id,name in pairs(names)do if name=='LinnanBulbSettingsContentNative'then contentId=id end end
-assert(contentId)
+local contentId,browserId
+for id,name in pairs(names)do
+  if name=='LinnanBulbSettingsContentNative'then contentId=id end
+  if name=='LinnanBulbBrowserNative'then browserId=id end
+end
+assert(contentId and browserId)
 local flashAliases=state({__options={flashNextStop=false,otherOption=true}})
-local flashParam={aliases=flashAliases,lines={},geometry=S.geometry({x=1280,y=720}),color=function()return {1,1,0,1}end}
+local flashParam={aliases=flashAliases,lines={},viewport={x=1280,y=720},geometry=S.geometry({x=1280,y=720}),color=function()return {1,1,0,1}end}
 local flashCtx=context()
 local function drawFlash()
   lowerBound=nextNode
-  render(contentId,flashParam,flashCtx)
+  render(browserId,flashParam,flashCtx)
   local result=control('linnan.bulb.settings.flash')
   local captionMeta=nodes[result.params.content].props.props[1]
   result.caption=nodes[captionMeta.item].props.props[1]

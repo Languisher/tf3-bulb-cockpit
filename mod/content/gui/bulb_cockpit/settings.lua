@@ -78,14 +78,13 @@ function S.geometry(viewport)
   local number=compact and field or 64
   local mode,save=136,56
   local fixed=badge+field+number+field+mode+save+6*8
-  local extraToolbar=content<304 and 40 or 0
-  local listHeight=math.max(64,math.min(304,viewport.y-280-extraToolbar))
+  local listHeight=math.max(64,math.min(304,viewport.y-280))
   return {width=width,content=content,compact=compact,rowWidth=rowWidth,inner=inner,badge=badge,
     line=compact and inner or inner-fixed,
     prefix=field,number=number,suffix=field,alias=number,
     mode=mode,save=save,rowHeight=compact and 120 or 40,
     listHeight=listHeight,
-    x=24/viewport.x,y=math.min(64,math.max(8,viewport.y-listHeight-264-extraToolbar))/viewport.y}
+    x=24/viewport.x,y=math.min(64,math.max(8,viewport.y-listHeight-264))/viewport.y}
 end
 local function prepareChanges(lines,aliases,drafts,P)
   local changes,candidate={},{}
@@ -246,7 +245,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           end,'LinnanBulbAliasRowNative:confirmSave')
         end,wantedMode,parts)
         if not ok then
-          log.warning('[BULB native 0.1.61dev] settings save: '..tostring(err))
+          log.warning('[BULB native 0.1.62dev] settings save: '..tostring(err))
           param.message:set('应用失败，请稍后重试。')
         end
       end},
@@ -284,10 +283,6 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local scope=react.useState(2)
     local order=react.useState(1)
     local message=react.useState('同类型、同完整标号且起终点连通的线路合并显示；请保存游戏。')
-    local initialOptions=param.aliases:old().__options
-    local flashChoice=react.useState(initialOptions and initialOptions.flashNextStop==true or false)
-    local flashPending=react.useState(false)
-    local flashBusy=react.useRef(false)
     -- Parent-owned drafts survive row unmounts caused by search/sorting.
     -- Closing this editor releases them; no global cache or timer is needed.
     local drafts=react.useRef({})
@@ -320,39 +315,22 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         label('显示类型',g.mode,24,'font-scale-annotation'),label('操作',g.save,24,'font-scale-annotation')}
     local children={}
     local footer={}
-    if not stationSettings then footer[1]=label(tostring(count)..' 条线路',citySettings and 56 or 80,32,'font-scale-annotation')end
-    if citySettings then footer[#footer+1]=builtin.Button{
-      meta={id='linnan.bulb.settings.city',class='bulb-settings-save',
-        styleSheet=style{size=buttonSize(112)}.styleSheet,tooltip='维护城市与 Express 的数字前缀对照表，默认关闭'},
-      content=label('编号对照表',nil,24),onClick=function()
-        local ok,lines=pcall(collect.listLines,true)
-        if not ok then message:set('未能读取公交线路，请稍后重试。');return end
-        local towns={}
-        if collect.listTowns then
-          local loaded,result=pcall(collect.listTowns)
-          if not loaded then message:set('未能读取城市，请稍后重试。');return end
-          towns=result
-        end
-        citySettings.open{aliases=param.aliases,lines=lines,towns=towns,viewport=param.viewport}
-      end}
-    end
+    if not stationSettings then footer[1]=label(tostring(count)..' 条线路',80,32,'font-scale-annotation')end
     if stationSettings then footer[#footer+1]=builtin.Button{
       meta={id='linnan.bulb.settings.stations',class='bulb-settings-save',
         styleSheet=style{size=buttonSize(96)}.styleSheet,tooltip='让独立站组在线路图中共享换乘，例如火车站与站前公交站'},
       content=label('关联车站',nil,24),onClick=function()
         local ok,err=pcall(stationSettings.open,{aliases=param.aliases,viewport=param.viewport})
         if not ok then
-          log.warning('[BULB native 0.1.61dev] station settings: '..tostring(err))
+          log.warning('[BULB native 0.1.62dev] station settings: '..tostring(err))
           message:set('未能读取车站，请稍后重试。')
         end
       end}
     end
-    local statusWidth=g.content-(stationSettings and (citySettings and 224 or 104) or (citySettings and 184 or 88))
+    local statusWidth=g.content-(stationSettings and 104 or 88)
     local status=(stationSettings and tostring(count)..' 条 · ' or '')..message:old()
     footer[#footer+1]=label(P.ellipsize(status,math.max(2,math.floor(statusWidth/17)*2),true),
       statusWidth,40,'font-scale-annotation',status)
-    local flashing=flashChoice:old()
-    local stackedApply=g.content<304
     local function applyAll()
       if batchBusy:get()then return end
       local changes,candidate,defaults=prepareChanges(param.lines,param.aliases:old(),drafts:get(),P)
@@ -392,51 +370,13 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       local ok,err=pcall(aliasStore.saveAll,changes,function(_,success)
         react.enqueueJoin(function()complete(success==true)end,'LinnanBulbSettingsContentNative:confirmAll')
       end,assignments)
-      if not ok then log.warning('[BULB native 0.1.61dev] apply all: '..tostring(err));complete(false)end
+      if not ok then log.warning('[BULB native 0.1.62dev] apply all: '..tostring(err));complete(false)end
     end
     local applyButton=builtin.Button{meta={id='linnan.bulb.settings.apply-all',class='primary, bulb-settings-save',
       enabled=not batchPending:old(),tooltip='应用所有已编辑线路，包含被搜索筛选隐藏的修改',
       styleSheet=style{size=buttonSize(88)}.styleSheet},content=label('全部应用',nil,24),onClick=applyAll}
     local body={
-      horizontal({builtin.ToggleButton{value=flashing and 1 or 0,
-        meta={id='linnan.bulb.settings.flash',class='bulb-settings-flash',enabled=not flashPending:old(),
-          styleSheet=style{size=buttonSize(88)}.styleSheet,
-          tooltip='默认关闭，下一站黄灯常亮；开启后每半秒闪烁，可能降低性能'},
-        content=label(flashing and '已开启' or '已关闭'),onValueChange=function(value)
-          if (value~=0 and value~=1) or flashBusy:get()then return end
-          local wanted=value==1
-          if wanted==flashing then return end
-          flashBusy:set(true);flashPending:set(true);flashChoice:set(wanted)
-          message:set('正在应用…')
-          local function complete(success)
-            if param.aliases:hasExpired()then return end
-            local current=param.aliases:old()
-            if success then
-              -- The command callback acknowledges the event; a GAME_SCRIPT
-              -- component read can still contain its previous snapshot.
-              -- Merge the accepted option without overwriting other edits.
-              param.aliases:transform(function(latest)
-                local updated,options={},{}
-                for k,v in pairs(latest)do updated[k]=v end
-                for k,v in pairs(latest.__options or {})do options[k]=v end
-                options.flashNextStop=wanted;updated.__options=options
-                return updated
-              end)
-            end
-            -- The window may close before the command finishes. Keep the
-            -- accepted root option, but never write expired local UI state.
-            if message:hasExpired()then return end
-            flashBusy:set(false);flashPending:set(false)
-            if not success then flashChoice:set(current.__options and current.__options.flashNextStop==true or false)end
-            message:set(success and '已应用，请保存游戏。' or '配置未写入，请稍后重试。')
-          end
-          local ok,err=pcall(aliasStore.saveOptions,{flashNextStop=wanted},function(_,success)
-            react.enqueueJoin(function()complete(success==true)end,'LinnanBulbSettingsContentNative:confirmOptions')
-          end)
-          if not ok then log.warning('[BULB native 0.1.61dev] options: '..tostring(err));complete(false)end
-        end},label(g.compact and '闪烁可能降低性能' or '下一站黄灯闪烁 · 开启可能降低性能',g.content-(stackedApply and 96 or 192),32,
-          'font-scale-annotation','关闭时下一站黄灯常亮；开关随存档保存。'),
-          not stackedApply and applyButton or nil},'bulb-settings-controls',g.content,32),
+      horizontal({label('',g.content-96,32),applyButton},'bulb-settings-controls',g.content,32),
       horizontal({builtin.TextInputField{value=query:old(),placeholderText=scope:old()==1 and '搜索编号' or '搜索名称',
           meta={id='linnan.bulb.settings.search',class='font-scale-body',
             styleSheet=style{size=inputSize(g.content-200)}.styleSheet},
@@ -451,7 +391,6 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         meta={class='bulb-settings-scroll',styleSheet=style{size={g.content,g.listHeight}}.styleSheet}},
       horizontal(footer,'bulb-settings-footer',g.content,40),
     }
-    if stackedApply then table.insert(body,2,horizontal({applyButton},'bulb-settings-controls',g.content,32))end
     for _,item in ipairs(body) do children[#children+1]=item end
     return builtin.BoxLayout{children={vertical(children,'bulb-settings-body',g.content)}}
   end)
@@ -481,7 +420,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         h.aliases=effective
         local ok,snapshot=pcall(collect.readLine,param.lineId,false,aliases.__stationLinks,effective)
         if ok then h.snapshot=snapshot
-        else log.warning('[BULB native 0.1.61dev] static read: '..tostring(snapshot))end
+        else log.warning('[BULB native 0.1.62dev] static read: '..tostring(snapshot))end
         ready:set(true)
       end,'LinnanBulbStaticRouteNative:load')
     end)
@@ -508,7 +447,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         release();param.onClose()
       elseif not locateError:hasExpired()then
         locateError:set(ok and '线路已删除，无法定位。请返回目录刷新。' or '定位失败，请稍后重试。')
-        if not ok then log.warning('[BULB native 0.1.61dev] locate line: '..tostring(located))end
+        if not ok then log.warning('[BULB native 0.1.62dev] locate line: '..tostring(located))end
       end
     end
     local children={horizontal({button('linnan.bulb.browser.back','返回线路目录',param.home,120),
@@ -557,7 +496,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           meta={id='linnan.bulb.browser.map',class='bulb-settings-scroll',
             styleSheet=style{size={g.content,mapHeight}}.styleSheet}}
       else
-        log.warning('[BULB native 0.1.61dev] static render: '..tostring(diagram))
+        log.warning('[BULB native 0.1.62dev] static render: '..tostring(diagram))
         children[#children+1]=label('线路图暂时无法绘制。请返回目录重试。',g.content-inset,96,'font-scale-body, bulb-static-message')
       end
     elseif ready:old()then
@@ -568,6 +507,11 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     return builtin.BoxLayout{children={vertical(children,'bulb-settings-body, bulb-static-page',g.content)}}
   end)
   local Browser=react.RegisterRecipe('LinnanBulbBrowserNative',function(param)
+    local initialOptions=param.aliases:old().__options
+    local flashChoice=react.useState(initialOptions and initialOptions.flashNextStop==true or false)
+    local flashPending=react.useState(false)
+    local flashBusy=react.useRef(false)
+    local message=react.useState('')
     local page=react.useState(nil)
     local busQuery=react.useState('')
     local owner=react.useRef(nil)
@@ -623,13 +567,72 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       end
       sections[#sections+1]=vertical(section,'bulb-directory-section',g.content-16)
     end
-    return builtin.BoxLayout{children={vertical({
-      horizontal({label('线路目录',g.content-152,32),button('linnan.bulb.browser.configure','线路与显示设置',function()navigate('config')end,144)},
-        'bulb-settings-controls'),
-      builtin.ScrollArea{content=vertical(sections,'bulb-directory-sections'),
+    local homeControls={horizontal({label('线路目录',g.content-88,32),
+      button('linnan.bulb.browser.configure','线路',function()navigate('config')end,80)},
+      'bulb-settings-controls',g.content,32)}
+    if citySettings then homeControls[#homeControls+1]=horizontal({builtin.Button{
+      meta={id='linnan.bulb.settings.city',class='bulb-settings-save',
+        styleSheet=style{size=buttonSize(math.min(224,g.content))}.styleSheet,tooltip='维护城市与 Express 的数字前缀对照表，默认关闭'},
+      content=label('公交线路编号一键配置',nil,24),onClick=function()
+        local ok,lines=pcall(collect.listLines,true)
+        if not ok then message:set('未能读取公交线路，请稍后重试。');return end
+        local towns={}
+        if collect.listTowns then
+          local loaded,result=pcall(collect.listTowns)
+          if not loaded then message:set('未能读取城市，请稍后重试。');return end
+          towns=result
+        end
+        citySettings.open{aliases=param.aliases,lines=lines,towns=towns,viewport=param.viewport}
+      end}},'bulb-settings-controls',g.content,32)
+    end
+    local flashing=flashChoice:old()
+    homeControls[#homeControls+1]=horizontal({builtin.ToggleButton{value=flashing and 1 or 0,
+        meta={id='linnan.bulb.settings.flash',class='bulb-settings-flash',enabled=not flashPending:old(),
+          styleSheet=style{size=buttonSize(88)}.styleSheet,
+          tooltip='默认关闭，下一站黄灯常亮；开启后每半秒闪烁，可能降低性能'},
+        content=label(flashing and '已开启' or '已关闭'),onValueChange=function(value)
+          if (value~=0 and value~=1) or flashBusy:get()then return end
+          local wanted=value==1
+          if wanted==flashing then return end
+          flashBusy:set(true);flashPending:set(true);flashChoice:set(wanted)
+          message:set('正在应用…')
+          local function complete(success)
+            if param.aliases:hasExpired()then return end
+            local current=param.aliases:old()
+            if success then
+              -- The command callback acknowledges the event; a GAME_SCRIPT
+              -- component read can still contain its previous snapshot.
+              -- Merge the accepted option without overwriting other edits.
+              param.aliases:transform(function(latest)
+                local updated,options={},{}
+                for k,v in pairs(latest)do updated[k]=v end
+                for k,v in pairs(latest.__options or {})do options[k]=v end
+                options.flashNextStop=wanted;updated.__options=options
+                return updated
+              end)
+            end
+            -- The window may close before the command finishes. Keep the
+            -- accepted root option, but never write expired local UI state.
+            if message:hasExpired()then return end
+            flashBusy:set(false);flashPending:set(false)
+            if not success then flashChoice:set(current.__options and current.__options.flashNextStop==true or false)end
+            message:set(success and '已应用，请保存游戏。' or '配置未写入，请稍后重试。')
+          end
+          local ok,err=pcall(aliasStore.saveOptions,{flashNextStop=wanted},function(_,success)
+            react.enqueueJoin(function()complete(success==true)end,'LinnanBulbBrowserNative:confirmOptions')
+          end)
+          if not ok then log.warning('[BULB native 0.1.62dev] options: '..tostring(err));complete(false)end
+        end},label(g.compact and '黄灯闪烁（可能降帧）' or '下一站黄灯闪烁 · 开启可能降低性能',g.content-96,32,
+          'font-scale-annotation','关闭时下一站黄灯常亮；开关随存档保存。')},'bulb-settings-controls',g.content,32)
+    local statusHeight=0
+    if message:old()~=''then
+      homeControls[#homeControls+1]=label(message:old(),g.content,24,'font-scale-annotation')
+      statusHeight=32
+    end
+    homeControls[#homeControls+1]=builtin.ScrollArea{content=vertical(sections,'bulb-directory-sections'),
         horizontalPolicy=builtin.type.ScrollBarPolicy.AlwaysOff,verticalPolicy=builtin.type.ScrollBarPolicy.AsNeeded,
-        meta={class='bulb-settings-scroll',styleSheet=style{size={g.content,math.max(128,math.min(620,param.viewport.y-220))}}.styleSheet}},
-    },'bulb-settings-body',g.content)}}
+        meta={class='bulb-settings-scroll',styleSheet=style{size={g.content,math.max(64,math.min(620,param.viewport.y-300-statusHeight))}}.styleSheet}}
+    return builtin.BoxLayout{children={vertical(homeControls,'bulb-settings-body',g.content)}}
   end)
   local Window=react.RegisterWrapperRecipe('LinnanBulbSettingsWindowNative',builtin.Window,function(param)
     react.useInputAction('IA_MENU_BACK',react.iaHandler(param.onClose))
@@ -670,12 +673,12 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         local function show(viewport)
           if open:hasExpired() or control.request~=request then return end
           local wc=windows.getDefaultWindowApi()
-          if not wc then log.warning('[BULB native 0.1.61dev] window manager unavailable');return end
+          if not wc then log.warning('[BULB native 0.1.62dev] window manager unavailable');return end
           local ok,lines=pcall(collect.listLines,false)
-          if not ok then log.warning('[BULB native 0.1.61dev] settings: '..tostring(lines));return end
+          if not ok then log.warning('[BULB native 0.1.62dev] settings: '..tostring(lines));return end
           if aliasStore.saveDefaults then
             local saved,err=pcall(aliasStore.saveDefaults,P.pendingDefaults(lines,param.aliases:old()))
-            if not saved then log.warning('[BULB native 0.1.61dev] default labels: '..tostring(err))end
+            if not saved then log.warning('[BULB native 0.1.62dev] default labels: '..tostring(err))end
           end
           viewport=viewport or param.viewport
           wc.addSingletonWindow(Window,{aliases=param.aliases,lines=lines,geometry=S.geometry(viewport),

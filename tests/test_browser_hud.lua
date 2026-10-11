@@ -40,6 +40,10 @@ do
     visit(tree);return found
   end
   local home=render(browserName,param);local c=controls(home)
+  assert(c['linnan.bulb.browser.configure'].content.param.text=='线路','short native line-editor entry')
+  assert(c['linnan.bulb.settings.city'].content.param.text=='公交线路编号一键配置',
+    'bus configuration is a direct button on the directory home')
+  assert(c['linnan.bulb.settings.flash'].value==1,'home reflects the saved flash option')
   assert(c['linnan.bulb.browser.line.10'] and c['linnan.bulb.browser.line.20'])
   assert(not c['linnan.bulb.browser.line.30'] and loaded==0,'directory is metadata only, bus empty')
   c['linnan.bulb.browser.bus-search'].onTyping('1001')
@@ -69,6 +73,11 @@ do
   home=render(browserName,param);assert(not child(home))
   controls(home)['linnan.bulb.browser.configure'].onClick()
   local config=render(browserName,param);assert(controls(config)['linnan.bulb.browser.back'])
+  local editor=controls(render('LinnanBulbSettingsContentNative',param))
+  assert(not editor['linnan.bulb.settings.city'] and not editor['linnan.bulb.settings.flash'],
+    'line editor does not duplicate the home controls')
+  assert(editor['linnan.bulb.settings.apply-all'] and editor['linnan.bulb.settings.search'],
+    'line editing and apply-all remain available')
   controls(config)['linnan.bulb.browser.back'].onClick()
   assert(controls(render(browserName,param))['linnan.bulb.browser.bus-search'].value=='1001','bus search preserved on back')
   -- Drop old native trees/callbacks, as a real unmounted subtree does.

@@ -36,6 +36,12 @@ do
     {id=40,name=string.rep('很长的地铁线路名称',12),mode='METRO'}}
   for _,width in ipairs({320,400,640,800,1024,2560})do
     local g=S.geometry({x=width,y=900})
+    contexts.LinnanBulbBrowserNative={}
+    local home=render('LinnanBulbBrowserNative',{aliases=aliasState,lines=roster,geometry=g,
+      viewport={x=width,y=900},color=function()return {1,.8,0,1}end})
+    walk(home,function(kind,p)
+      if kind=='Component' and has(p,'bulb-settings-controls')then positions({kind=kind,param=p})end
+    end)
     contexts.LinnanBulbSettingsContentNative={}
     local tree=render('LinnanBulbSettingsContentNative',{aliases=aliasState,lines=roster,geometry=g,
       color=function()return {1,.8,0,1}end})
