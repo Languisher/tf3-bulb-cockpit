@@ -1,6 +1,27 @@
 -- Use the game's own window manager and themed controls. Diagram typography
 -- and colors must not leak into the settings UI.
 local S={}
+-- Window removal is reconciled by the engine. Release plain data on the
+-- close action as well, even if the native subtree has not unmounted yet.
+-- Fixed owner slots replace callbacks rather than accumulating a history.
+local function releaseSession(session)
+  if not session or session.closed then return end
+  session.closed=true
+  local owners=session.owners;session.owners={}
+  for _,owner in pairs(owners)do owner.release()end
+  local count=#session.lines
+  for i=#session.lines,1,-1 do session.lines[i]=nil end
+  log.verbose('[BULB native 0.1.64dev] settings closed; released roster='..count..'; page data released')
+end
+local function ownSession(session,key,token,release)
+  if not session then return end
+  if session.closed then release()else session.owners[key]={token=token,release=release}end
+end
+local function dropSessionOwner(session,key,token)
+  if not session then return end
+  local owner=session.owners[key]
+  if owner and owner.token==token then session.owners[key]=nil end
+end
 local modeNames={'RER','地铁','电车','公交','轮渡','航空','货运'}
 local modeChoices={'RER','METRO','TRAM','BUS','BOAT','AIR','TRUCK'}
 local function numberKey(value)
@@ -246,7 +267,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           end,'LinnanBulbAliasRowNative:confirmSave')
         end,wantedMode,parts)
         if not ok then
-          log.warning('[BULB native 0.1.63dev] settings save: '..tostring(err))
+          log.warning('[BULB native 0.1.64dev] settings save: '..tostring(err))
           param.message:set('应用失败，请稍后重试。')
         end
       end},
@@ -291,6 +312,12 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     -- Parent-owned drafts survive row unmounts caused by search/sorting.
     -- Closing this editor releases them; no global cache or timer is needed.
     local drafts=react.useRef({})
+    local draftValues=drafts:get()
+    local function releaseDrafts()for key in pairs(draftValues)do draftValues[key]=nil end end
+    ownSession(param.session,'drafts',draftValues,releaseDrafts)
+    react.onUnmount(function()
+      releaseDrafts();dropSessionOwner(param.session,'drafts',draftValues)
+    end)
     local batchBusy=react.useRef(false)
     local batchPending=react.useState(false)
     local rows,g={},param.geometry
@@ -327,7 +354,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       content=label('关联车站',nil,24),onClick=function()
         local ok,err=pcall(stationSettings.open,{aliases=param.aliases,viewport=param.viewport})
         if not ok then
-          log.warning('[BULB native 0.1.63dev] station settings: '..tostring(err))
+          log.warning('[BULB native 0.1.64dev] station settings: '..tostring(err))
           message:set('未能读取车站，请稍后重试。')
         end
       end}
@@ -375,7 +402,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       local ok,err=pcall(aliasStore.saveAll,changes,function(_,success)
         react.enqueueJoin(function()complete(success==true)end,'LinnanBulbSettingsContentNative:confirmAll')
       end,assignments)
-      if not ok then log.warning('[BULB native 0.1.63dev] apply all: '..tostring(err));complete(false)end
+      if not ok then log.warning('[BULB native 0.1.64dev] apply all: '..tostring(err));complete(false)end
     end
     local controls={}
     if citySettings then controls[#controls+1]=builtin.Button{
@@ -428,7 +455,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           local ok,err=pcall(aliasStore.saveOptions,{flashNextStop=wanted},function(_,success)
             react.enqueueJoin(function()complete(success==true)end,'LinnanBulbSettingsContentNative:confirmOptions')
           end)
-          if not ok then log.warning('[BULB native 0.1.63dev] options: '..tostring(err));complete(false)end
+          if not ok then log.warning('[BULB native 0.1.64dev] options: '..tostring(err));complete(false)end
         end}
 
     local applyButton=builtin.Button{meta={id='linnan.bulb.settings.apply-all',class='primary, bulb-settings-save',
@@ -467,15 +494,15 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     -- Only this keyed child owns the visited graph. Parent navigation stores
     -- an ID and a release function; neither a diagram history nor a cache.
     local holder=react.useRef({disposed=false})
+    local h=holder:get()
     local ready=react.useState(false)
     local locateError=react.useState('')
-    local function release()local h=holder:get();h.snapshot=nil;h.aliases=nil;h.disposed=true end
+    local function release()h.snapshot=nil;h.aliases=nil;h.disposed=true end
     react.onUnmount(release)
     param.onReady(release)
-    local h=holder:get()
     react.onMount(function()
       react.enqueueJoin(function()
-        if h.disposed or ready:hasExpired() or param.aliases:hasExpired()then return end
+        if h.disposed or (param.session and param.session.closed) or ready:hasExpired() or param.aliases:hasExpired()then return end
         local aliases=param.aliases:old()
         -- Match the directory even before the defaults-save command has
         -- been acknowledged. A scoped read must not renumber B back to A.
@@ -485,7 +512,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         h.aliases=effective
         local ok,snapshot=pcall(collect.readLine,param.lineId,false,aliases.__stationLinks,effective)
         if ok then h.snapshot=snapshot
-        else log.warning('[BULB native 0.1.63dev] static read: '..tostring(snapshot))end
+        else log.warning('[BULB native 0.1.64dev] static read: '..tostring(snapshot))end
         ready:set(true)
       end,'LinnanBulbStaticRouteNative:load')
     end)
@@ -512,7 +539,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         release();param.onClose()
       elseif not locateError:hasExpired()then
         locateError:set(ok and '线路已删除，无法定位。请返回目录刷新。' or '定位失败，请稍后重试。')
-        if not ok then log.warning('[BULB native 0.1.63dev] locate line: '..tostring(located))end
+        if not ok then log.warning('[BULB native 0.1.64dev] locate line: '..tostring(located))end
       end
     end
     local children={horizontal({button('linnan.bulb.browser.back','返回线路目录',param.home,120),
@@ -558,10 +585,10 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           math.min(540,param.viewport.y-290-(h.snapshot.mergeWarning and 84 or 0)))
         children[#children+1]=builtin.ScrollArea{content=diagram,
           horizontalPolicy=builtin.type.ScrollBarPolicy.AsNeeded,verticalPolicy=builtin.type.ScrollBarPolicy.AsNeeded,
-          meta={id='linnan.bulb.browser.map',class='bulb-settings-scroll',
+          meta={id='linnan.bulb.browser.map',class='bulb-settings-scroll, bulb-static-map',
             styleSheet=style{size={g.content,mapHeight}}.styleSheet}}
       else
-        log.warning('[BULB native 0.1.63dev] static render: '..tostring(diagram))
+        log.warning('[BULB native 0.1.64dev] static render: '..tostring(diagram))
         children[#children+1]=label('线路图暂时无法绘制。请返回目录重试。',g.content-inset,96,'font-scale-body, bulb-static-message')
       end
     elseif ready:old()then
@@ -574,14 +601,18 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
   local Browser=react.RegisterRecipe('LinnanBulbBrowserNative',function(param)
     local page=react.useState(nil)
     local busQuery=react.useState('')
-    local owner=react.useRef(nil)
+    local owner=react.useRef({})
+    local ownership=owner:get()
     local function release()
-      local fn=owner:get();owner:set(nil)
+      local fn=ownership.release;ownership.release=nil
       if fn then fn()end
     end
-    react.onUnmount(release)
+    ownSession(param.session,'browser',ownership,release)
+    react.onUnmount(function()
+      release();dropSessionOwner(param.session,'browser',ownership)
+    end)
     local function navigate(id)
-      if page:hasExpired()then return end
+      if page:hasExpired() or (param.session and param.session.closed)then return end
       release();page:set(id)
     end
     local function home()navigate(nil)end
@@ -595,7 +626,10 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     elseif type(page:old())=='number' then
       return builtin.BoxLayout{children={Static{meta={localKey='static:'..page:old()},lineId=page:old(),
         aliases=param.aliases,lines=param.lines,viewport=param.viewport,geometry=g,color=param.color,
-        navigate=navigate,home=home,onClose=param.onClose,onReady=function(fn)owner:set(fn)end}}}
+        session=param.session,navigate=navigate,home=home,onClose=param.onClose,
+        onReady=function(fn)
+          if param.session and param.session.closed then fn()else ownership.release=fn end
+        end}}}
     end
     local groups=S.directory(param.lines,param.aliases:old(),busQuery:old(),P)
     local sections={}
@@ -654,6 +688,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local control=opening:get()
     local function close()
       control.request=control.request+1
+      releaseSession(control.session);control.session=nil
       if param.onOpenChange then param.onOpenChange(false)end
       local wc=windows.getDefaultWindowApi()
       if wc then wc.removeAllWindows(Window) end
@@ -674,16 +709,22 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         local function show(viewport)
           if open:hasExpired() or control.request~=request then return end
           local wc=windows.getDefaultWindowApi()
-          if not wc then log.warning('[BULB native 0.1.63dev] window manager unavailable');return end
+          if not wc then log.warning('[BULB native 0.1.64dev] window manager unavailable');return end
           local ok,lines=pcall(collect.listLines,false)
-          if not ok then log.warning('[BULB native 0.1.63dev] settings: '..tostring(lines));return end
+          if not ok then log.warning('[BULB native 0.1.64dev] settings: '..tostring(lines));return end
           if aliasStore.saveDefaults then
             local saved,err=pcall(aliasStore.saveDefaults,P.pendingDefaults(lines,param.aliases:old()))
-            if not saved then log.warning('[BULB native 0.1.63dev] default labels: '..tostring(err))end
+            if not saved then log.warning('[BULB native 0.1.64dev] default labels: '..tostring(err))end
           end
           viewport=viewport or param.viewport
+          releaseSession(control.session)
+          control.session={closed=false,lines=lines,owners={}}
+          local openedSession=control.session
+          log.verbose('[BULB native 0.1.64dev] settings opened; roster='..#lines)
           wc.addSingletonWindow(Window,{aliases=param.aliases,lines=lines,geometry=S.geometry(viewport),
-            viewport=viewport,color=param.color,onClose=close})
+            viewport=viewport,color=param.color,session=openedSession,onClose=function()
+              if control.session==openedSession then close()else releaseSession(openedSession)end
+            end})
           open:set(true)
           if param.onOpenChange then param.onOpenChange(true)end
         end

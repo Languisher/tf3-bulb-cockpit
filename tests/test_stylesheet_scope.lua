@@ -1,6 +1,9 @@
 local file=assert(io.open('tests/test_native.lua'));local harness=file:read('*a');file:close()
 assert(load(harness..[=[
 do
+  for _,rule in ipairs(css)do
+    assert(not rule.selector:find('*',1,true),'global BULB selectors must never have universal leaves')
+  end
   local angles,scales=0,0
   for _,rule in ipairs(css)do
     if rule.selector:find('bulb-track-angle',1,true)then

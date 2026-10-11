@@ -409,7 +409,7 @@ assert(measured.x==1280 and measured.y==720,
   'measure GUI host units after mount; camera pixels are unavailable in this test')
 guiWidth,guiHeight=640,360
 local readsBeforeBounds=aliasReads
-timers.LinnanBulbFreeCamNative();join()
+assert(not timers.LinnanBulbFreeCamNative,'the root must own no idle timer');join()
 assert(aliasReads==readsBeforeBounds,'viewport polling must not read saved game configuration')
 assert(contexts.LinnanBulbFreeCamNative[3]:old()==measured,'normal play must not poll bounds')
 snapshot.next,snapshot.passed=3,2
@@ -639,7 +639,7 @@ assert(render('LinnanBulbCockpitHudNative',{aliases=aliasState})==nil,
 -- A stale snapshot is deliberately retained until the next tick; it must
 -- stay hidden even while the normal camera changes the host dimensions.
 guiWidth,guiHeight=1200,720
-timers.LinnanBulbFreeCamNative();join()
+assert(not timers.LinnanBulbFreeCamNative,'the root must own no idle timer');join()
 assert(hudVisible==false,'host recalibration after exit must not reveal the old route')
 collect.read=function(vehicle)assert(vehicle==nil);return nil end;tick()
 assert(hudVisible==false,'a pending HUD refresh must keep the exited camera hidden')

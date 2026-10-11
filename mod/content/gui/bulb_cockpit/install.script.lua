@@ -333,6 +333,9 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
       scan:set({});numberedLines:set(nil);numberedConfig:set(nil)
       return
     end
+    -- Share the vehicle's existing join instead of keeping a second bounds
+    -- timer alive on the full-screen host.
+    if param.measureHost then param.measureHost()end
     -- Read after the preceding state has been rendered, so these are the
     -- actual component bounds, not the requested layout dimensions.
     local old=state:old()
@@ -347,8 +350,8 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
         return string.format('rawSize=%.6fx%.6f; visible=%s; topLeft=%.3f,%.3f; bottomRight=%.3f,%.3f',
           size.x,size.y,tostring(api.gui.byId.isVisibleRecursive('linnan.bulb.hud')),first.x,first.y,last.x,last.y)
       end)
-      if ok then log.verbose('[BULB native 0.1.63dev] HUD bounds: '..report)
-      else log.warning('[BULB native 0.1.63dev] HUD bounds failed: '..tostring(report)) end
+      if ok then log.verbose('[BULB native 0.1.64dev] HUD bounds: '..report)
+      else log.warning('[BULB native 0.1.64dev] HUD bounds failed: '..tostring(report)) end
     end
     local aliases=param.aliases:old()
     if configuredEntity:get()~=entity then
@@ -367,7 +370,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
             react.enqueueJoin(param.refreshAliases,'LinnanBulbCockpitHudNative:labelsSaved')
           end
         end)
-        if not saved then log.warning('[BULB native 0.1.63dev] default labels: '..tostring(err))end
+        if not saved then log.warning('[BULB native 0.1.64dev] default labels: '..tostring(err))end
       end
       if state:old()==snapshot and failure:old()=='' and errorRef:get()=='' then return end
       if state:old()~=snapshot then state:set(snapshot)end
@@ -380,7 +383,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
       if key~=routeRef:get() then
         routeRef:set(key)
         if snapshot then
-          log.verbose(string.format('[BULB native 0.1.63dev] route ready: line=%s; stops=%d',
+          log.verbose(string.format('[BULB native 0.1.64dev] route ready: line=%s; stops=%d',
             snapshot.route.name,#snapshot.route.stops))
         end
       end
@@ -390,7 +393,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
       if failure:old()=='' then failure:set('线路图暂时无法读取车辆数据，请查看游戏日志。')end
       setHudVisible(true)
       if errorRef:get()~=tostring(snapshot) then
-        log.warning('[BULB native 0.1.63dev] '..tostring(snapshot));errorRef:set(tostring(snapshot))
+        log.warning('[BULB native 0.1.64dev] '..tostring(snapshot));errorRef:set(tostring(snapshot))
       end
     end
   end
@@ -433,7 +436,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
     local unsubscribeExit=exitSubscription:get()
     if unsubscribeExit then unsubscribeExit();exitSubscription:set(nil)end
     scan:set({});numberedLines:set(nil);numberedConfig:set(nil);hudVisibility=nil
-    log.verbose('[BULB native 0.1.63dev] HUD disposed; session callbacks and route cache released')
+    log.verbose('[BULB native 0.1.64dev] HUD disposed; session callbacks and route cache released')
   end)
   -- onStepTimer runs with a restricted API. Camera access belongs in the
   -- main-thread join, as documented by React.enqueueJoin in this game build.
@@ -502,6 +505,13 @@ local Settings=settingsUI.create(react,builtin,style,P,modeMarks,collect,aliasSt
   stationUI.create(react,builtin,style,aliasStore,windows,P,collect),
   {badge=lineBadge,draw=staticDiagram,mark=modeMark})
 
+-- Layout may not be ready on the first join. This child retries only until
+-- calibration succeeds; removing the child also removes its native timer.
+local Calibration=react.RegisterRecipe('LinnanBulbCalibrationNative',function(param)
+  react.onStepTimer(param.requestMeasure,0.5,false)
+  return builtin.FloatingLayout{children={}}
+end)
+
 local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
   react.setMouseTransparent(true)
   react.setDisableFocusable(true)
@@ -515,7 +525,7 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
   local session=react.useState(nil)
   local enterSubscription=react.useRef(nil)
   local exitSubscription=react.useRef(nil)
-  local work=react.useRef({alive=true,pending=false,calibrated=false,settingsOpen=false})
+  local work=react.useRef({alive=true,pending=false,calibrated=false})
   local control=work:get()
   diagnostic.note('root.render')
   diagnostic.watch('root',self,viewport)
@@ -526,7 +536,7 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
     local loaded,stored,revision=pcall(aliasStore.read,aliasRevision:get())
     if loaded and stored and revision~=aliasRevision:get() then
       aliases:set(stored);aliasRevision:set(revision)
-      log.verbose('[BULB native 0.1.63dev] aliases state loaded; revision='..tostring(revision))
+      log.verbose('[BULB native 0.1.64dev] aliases state loaded; revision='..tostring(revision))
     end
     return loaded and stored or aliases:old()
   end
@@ -539,8 +549,8 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
       local size=P.viewport(raw,gauge)
       if size then control.calibrated=true end
       local previous=viewport:old()
-      if size and (previous.x~=size.x or previous.y~=size.y) then
-        viewport:set({x=size.x,y=size.y})
+      if size and (not previous.calibrated or previous.x~=size.x or previous.y~=size.y) then
+        viewport:set({x=size.x,y=size.y,calibrated=true})
       end
       size=size or previous
       return string.format('gui=%.0fx%.0f; hostRaw=%.6fx%.6f; gaugeRaw=%.6fx%.6f',
@@ -549,17 +559,17 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
     report=(ok and 'GUI bounds: ' or 'GUI bounds failed: ')..tostring(report)
     if report~=lastGeometry:get() then
       lastGeometry:set(report)
-      log.verbose('[BULB native 0.1.63dev] '..report)
+      log.verbose('[BULB native 0.1.64dev] '..report)
     end
   end
-  local function requestMeasure()
+  local function requestMeasure(force)
     local job=control
     if not job.alive or viewport:hasExpired() or job.pending then return end
-    if job.calibrated and not cameraState.getEntity() and not job.settingsOpen then return end
+    if job.calibrated and force~=true then return end
     job.pending=true
     react.enqueueJoin(function()
       job.pending=false
-      if job.alive and (not job.calibrated or cameraState.getEntity() or job.settingsOpen)then measureHost()end
+      if job.alive and (not job.calibrated or force==true)then measureHost()end
     end,'LinnanBulbFreeCamNative:bounds')
   end
   react.onMount(function()
@@ -568,7 +578,7 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
     local function enter()
       if session:hasExpired()then return end
       session:set({vehicle=cameraState.getEntity(),generation=cameraState.getGeneration()})
-      requestMeasure()
+      requestMeasure(true)
     end
     enterSubscription:set(cameraState.onEnter(enter))
     exitSubscription:set(cameraState.onExit(function()
@@ -584,11 +594,6 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
     if enter then enter();enterSubscription:set(nil)end
     if exit then exit();exitSubscription:set(nil)end
   end)
-  -- Ordinary play has no bounds queries/joins after initial calibration.
-  -- Resize checks are needed only while the diagram/settings are in use.
-  react.onStepTimer(function()
-    requestMeasure()
-  end,0.5,false)
   local children={
     builtin.FloatingLayoutChild{h=1,v=0,item=param.nativeControls},
   }
@@ -600,7 +605,7 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
       overflowMode=builtin.type.FloatingLayoutOverflowMode.KeepInside,
       item=Hud{meta={id='linnan.bulb.hud',localKey='cockpit:'..active.generation,
       styleSheet=styleutil.makeStyle{anchorPoint={0,0},size={viewport:old().x,viewport:old().y}}},
-      aliases=aliases,viewport=viewport:old(),refreshAliases=refreshAliases}}
+      aliases=aliases,viewport=viewport:old(),refreshAliases=refreshAliases,measureHost=measureHost}}
   end
   children[#children+1]=builtin.FloatingLayoutChild{h=112/viewport:old().x,v=12/viewport:old().y,
     localKey='settings',overflowMode=builtin.type.FloatingLayoutOverflowMode.KeepInside,
@@ -608,7 +613,6 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
         class=cameraState.getEntity() and 'bulb-settings-cockpit-hidden' or nil,
         styleSheet=styleutil.makeStyle{anchorPoint={0,0}}},
       aliases=aliases,viewport=viewport:old(),color=color,
-      onOpenChange=function(value)control.settingsOpen=value end,
       prepareOpen=function(open)
         react.enqueueJoin(function()
           if not control.alive or viewport:hasExpired()then return end
@@ -618,6 +622,10 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
   children[#children+1]=builtin.FloatingLayoutChild{h=0,v=0,localKey='gauge',item=builtin.Component{
       mouseTransparent=true,
       meta={id='linnan.bulb.gauge',styleSheet=styleutil.makeStyle{size={100,100}}}}}
+  if not viewport:old().calibrated then
+    children[#children+1]=builtin.FloatingLayoutChild{h=0,v=0,localKey='calibration',
+      item=Calibration{requestMeasure=requestMeasure}}
+  end
   return builtin.FloatingLayout{children=children}
 end)
 
@@ -635,6 +643,6 @@ function data()
     cameraState.install(free.FreeCamTool,function()setHudVisible(false)end)
     diagnostic.setCameraReader(cameraState.getEntity)
     replacementApi.ReplaceRecipe(free.FreeCamOptions,mount)
-    log.verbose('[BULB native 0.1.63dev] installed; compact station-count layout; explicit anchors; transparent transfers; savegame aliases')
+    log.verbose('[BULB native 0.1.64dev] installed; compact station-count layout; explicit anchors; transparent transfers; savegame aliases')
   end}
 end

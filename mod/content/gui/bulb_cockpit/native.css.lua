@@ -93,7 +93,9 @@ function data()
   -- Static page: one left column shared by navigation, identity and the
   -- diagram's first station (24 GUI units inside its measured canvas).
   add('R::Component!bulb-static-page > BoxLayout', {outerSpacing={0,0},innerSpacing={12,12},gravity={0,0}})
-  add('R::Component!bulb-static-page > BoxLayout > *', {gravity={0,0}})
+  -- Avoid a universal leaf selector in the game's global stylesheet. These
+  -- are the only static-page children that need fixed left-aligned bounds.
+  add('R::Component!bulb-static-toolbar, R::Component!bulb-static-identity, ScrollArea!bulb-static-map', {gravity={0,0}})
   add('R::Component!bulb-static-toolbar > BoxLayout, R::Component!bulb-static-identity > BoxLayout', {
     outerSpacing={0,0},innerSpacing={24,24},padding={0,0,0,24},margin={0,0,0,0},gravity={0,0.5},
   })

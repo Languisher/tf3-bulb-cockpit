@@ -30,10 +30,10 @@ end
 ug_require=function(path)return assert(modules[path:match('([^/]+)$')],path)end
 assert(loadfile(base..'install.script.lua'))()
 data().replace({ReplaceRecipe=react.GloballyReplaceRecipeBeforeInitInternal})
-local queries=0
+local queries,laidOut=0,false
 api.gui.byId={setVisible=function()end,getSize=function(id)
   queries=queries+1
-  return id=='linnan.bulb.gauge' and {x=100/1280,y=100/720} or {x=1,y=1}
+  return id=='linnan.bulb.gauge' and (laidOut and {x=100/800,y=100/600} or {x=0,y=0}) or {x=1,y=1}
 end}
 local function context()
   local ctx={states={},index=0,writes=0,internals={}}
@@ -63,19 +63,30 @@ local parent=react.RegisterRecipe('TestParent',function()return free.FreeCamOpti
 local parentCtx=context();_react.recipes[react.GetRecipeId(parent)](parentCtx,{props={}})
 local host=nodes[nodes[parentCtx.result[1]].props.props[1].item]
 local ctx=context()
+local calibration
 local function draw()
+  calibration=nil
   ctx.index=0;_react.recipes[host.recipeId](ctx,host.props)
   local function hud(id)
     local n=nodes[id];local p=n.props.props[1]
+    if names[n.recipeId]=='LinnanBulbCalibrationNative'then calibration=n end
     if names[n.recipeId]=='LinnanBulbCockpitHudNative'then return n end
     for _,key in ipairs({'item','layout'})do if p and p[key]then local found=hud(p[key]);if found then return found end end end
     for _,child in ipairs(p and p.children or {})do local found=hud(child);if found then return found end end
   end
   return hud(ctx.result[1])
 end
-assert(not draw());ctx.mount();_reactDoExecuteJoins()
+assert(not draw() and calibration);ctx.mount();_reactDoExecuteJoins()
+assert(not draw() and calibration,'retry only while layout is unavailable')
+local retry=context()
+_react.recipes[calibration.recipeId](retry,calibration.props)
+assert(retry.timer and not ctx.timer,'the disposable calibration child owns the retry timer')
+laidOut=true
+retry.timer();_reactDoExecuteDeferredSteps();_reactDoExecuteJoins()
+assert(not draw() and not calibration,'valid 800x600 calibration must remove retries even when fallback dimensions match')
 local initialQueries=queries
-for i=1,2000 do ctx.timer();_reactDoExecuteDeferredSteps();_reactDoExecuteJoins()end
+assert(not ctx.timer,'actual root context must not register an idle timer')
+for i=1,2000 do retry.timer();_reactDoExecuteDeferredSteps();_reactDoExecuteJoins()end
 assert(queries==initialQueries,'real React timer/deferred/join chain must do zero idle geometry reads')
 local previousKey
 for i=1,50 do
@@ -88,6 +99,6 @@ for i=1,50 do
 end
 ctx.unmount();local writes=ctx.writes
 free.FreeCamTool.push({}, {cockpitCameraForEntity=200})
-ctx.timer();_reactDoExecuteDeferredSteps();_reactDoExecuteJoins()
+_reactDoExecuteDeferredSteps();_reactDoExecuteJoins()
 assert(ctx.writes==writes,'disposed root cannot receive camera events or queued updates')
 print('PASS: actual React adapter; 50 keyed HUD lifetimes, removal without child rendering, stable active identities, idle budget and unsubscription')

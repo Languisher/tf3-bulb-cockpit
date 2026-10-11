@@ -14,7 +14,8 @@ do
   local root=render('LinnanBulbFreeCamNative',mounted.param)
   local idleQueries,oldGetSize=0,api.gui.byId.getSize
   api.gui.byId.getSize=function(...)idleQueries=idleQueries+1;return oldGetSize(...)end
-  for i=1,2000 do timers.LinnanBulbFreeCamNative();join()end
+  assert(not timers.LinnanBulbFreeCamNative,'ordinary play cannot register an empty root timer')
+  for i=1,2000 do join()end
   api.gui.byId.getSize=oldGetSize
   print('idle: retained HUD='..tostring(containsHud(root))..'; GUI size queries='..idleQueries)
   assert(not containsHud(root),'exit must unmount the entire HUD in the visible parent, not only hide its component')
@@ -71,7 +72,7 @@ do
     render('LinnanBulbCockpitHudNative',hudParam)
     mounts.LinnanBulbCockpitHudNative()
     if i==1 then
-      for j=1,500 do timers.LinnanBulbFreeCamNative();timers.LinnanBulbCockpitHudNative()end
+      for j=1,500 do timers.LinnanBulbCockpitHudNative()end
       assert(#joins==2,'500 delayed ticks must retain only one route join and one bounds join')
     end
     join()
@@ -101,16 +102,16 @@ do
   local oldSize=api.gui.byId.getSize
   local queries=0
   api.gui.byId.getSize=function(...)queries=queries+1;return oldSize(...)end
-  for i=1,2000 do timers.LinnanBulbFreeCamNative();join()end
+  assert(not timers.LinnanBulbFreeCamNative,'ordinary play cannot register an empty root timer')
+  for i=1,2000 do join()end
   assert(queries==0 and #joins==0)
   api.gui.byId.getSize=oldSize
   print(string.format('PASS: 1,001 sessions; retained routes=%d; heap delta=%.1f KiB; idle queries=%d; delayed 500 ticks -> 2 jobs',
     retained,after-before,queries))
-  local oldRootTimer=timers.LinnanBulbFreeCamNative
   unmounts.LinnanBulbFreeCamNative()
   for _,state in ipairs(contexts.LinnanBulbFreeCamNative)do state.expired=true end
   free.FreeCamTool.push({}, {cockpitCameraForEntity=200})
-  for i=1,500 do oldRootTimer()end
+  for i=1,500 do join()end
   assert(#joins==0,'disposed parent must release camera subscriptions and make deferred timers inert')
   free.FreeCamTool.pop()
 end

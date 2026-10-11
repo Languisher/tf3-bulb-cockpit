@@ -1,5 +1,5 @@
 -- Use the real collector inside the native HUD harness, including asynchronous
--- label confirmation and the host's otherwise independent viewport timer.
+-- label confirmation and viewport work sharing the vehicle join.
 local file=assert(io.open('tests/test_native.lua'));local harness=file:read('*a');file:close()
 assert(load(harness..[=[
 do
@@ -36,7 +36,7 @@ do
   local rootWrites,hudWrites=writes('LinnanBulbFreeCamNative'),writes('LinnanBulbCockpitHudNative')
   local old=contexts.LinnanBulbCockpitHudNative[1]:old()
   f.reset();configurationReads=0
-  for i=1,100 do timers.LinnanBulbFreeCamNative();tick()end
+  for i=1,100 do tick()end
   assert(f.calls.component==100 and f.calls.TRANSPORT_VEHICLE==100)
   assert(not f.calls.transfers and not f.calls.fleet and not f.calls.town and not f.calls.roster)
   assert(configurationReads==0 and commands==1,'ride timers cannot poll configuration or persist unchanged labels')
@@ -54,7 +54,7 @@ do
     'the real HUD updates once on arrival and not again on departure')
   assert(commands==1 and configurationReads==0)
   free.FreeCamTool.pop();f.reset()
-  for i=1,10 do timers.LinnanBulbFreeCamNative();tick()end
+  for i=1,10 do tick()end
   assert(not f.calls.component and configurationReads==0 and not hudVisible,'exit stops all game-data polling immediately')
   print('PASS: real collector + HUD, confirmation-driven labels, vehicle-only idle, zero root/HUD writes, one arrival update, departure reuse and exit')
 end
