@@ -78,6 +78,7 @@ function data()
   add('!action-follow Window!bulb-settings-window, !action-camera Window!bulb-settings-window', {visibility='visible'})
   -- Match game.css.lua's pause tool state, independently of simulation speed.
   add('#mainView!tool-pause #linnan.bulb.settings, #mainView!tool-pause Window!bulb-settings-window', {visibility='none'})
+  add('#linnan.bulb.settings!bulb-settings-cockpit-hidden', {visibility='none'})
   add('Window!bulb-settings-window Window::Content', {padding={12,12,12,12}})
   add('Window!bulb-settings-window TextView', {color=colors.NeutralLightest})
   add('R::Component!bulb-settings-body > BoxLayout', {outerSpacing={0,0},innerSpacing={8,8},gravity={-1,0}})

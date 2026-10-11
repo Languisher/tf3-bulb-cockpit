@@ -451,6 +451,13 @@ assert(tree.param.children[2].param.item.recipe=='LinnanBulbCockpitHudNative',
   'HUD must be a sibling of native controls, never a descendant of their hidden ID')
 assert(tree.param.children[3].param.item.recipe=='LinnanBulbSettingsNative',
   'settings must also be outside the game-controlled native component')
+assert(tree.param.children[3].param.item.param.meta.class=='bulb-settings-cockpit-hidden',
+  'first-person camera hides the settings entry using the existing camera lifecycle')
+local hiddenSettingsRule
+for _,rule in ipairs(css)do
+  if rule.selector=='#linnan.bulb.settings!bulb-settings-cockpit-hidden'then hiddenSettingsRule=rule.style end
+end
+assert(hiddenSettingsRule and hiddenSettingsRule.visibility=='none','hidden settings must neither draw nor accept clicks')
 local gauge
 walk(tree,function(kind,param)
   if kind=='Component' and param.meta and param.meta.id=='linnan.bulb.gauge' then gauge=param end
