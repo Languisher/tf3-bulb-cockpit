@@ -18,7 +18,7 @@ def main():
         raise SystemExit("VERSION and game revision disagree")
     destination = ROOT / "dist"
     destination.mkdir(exist_ok=True)
-    archive = destination / f"tf3-bulb-cockpit-{version}.zip"
+    archive = destination / f"tf3-route-display-{version}.zip"
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as output:
         for path in sorted((ROOT / "mod").rglob("*")):
             if not path.is_file() or path.name in {".DS_Store", "mod.io_fileid.txt"} or "__pycache__" in path.parts:

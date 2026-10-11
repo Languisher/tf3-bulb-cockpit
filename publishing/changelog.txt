@@ -1,7 +1,7 @@
-0.1.65dev — Development preview / 开发测试版
+In-Game Route Display / 游戏线路显示 · 0.1.66dev
 
-English / Chinese interface switch, saved with the game. Native dynamic route maps, clickable transfers, connected same-badge route branches, custom line badges and configurable bus numbering. Includes an AI-generated cover and two real gameplay screenshots.
+Renamed the mod to describe its in-game route display function. Updated the mod profile, AI cover, bilingual instructions and download package name. Existing saves and badge configurations retain the same mod ID. Runtime behavior is unchanged from 0.1.65dev.
 
-新增中英文界面切换并随存档保存。提供原生动态线路图、可点击换乘、同号连通线路分支合并、自定义编号及公交编号配置。附 AI 宣传封面与两张真实游戏截图。
+模组改名为「游戏线路显示」，英文为「In-Game Route Display」。同步模组资料、AI 封面、中英文说明与下载包名称。沿用原模组 ID，保留现有存档与编号配置；运行逻辑与 0.1.65dev 一致。
 
 Target: macOS Build 40420. Windows/Linux/console are untested. Long-session FPS degradation remains under investigation. / 针对 macOS Build 40420；其他平台未实测，长时间 FPS 下降仍在排查中。

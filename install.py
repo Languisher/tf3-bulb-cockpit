@@ -17,4 +17,4 @@ if destination.exists():
     shutil.copytree(destination, backup)
 shutil.copytree(root/'mod', destination, dirs_exist_ok=True)
 print('Installed: '+str(destination))
-print('Save and fully restart TF3, then load the save with BULB 风格 · 动态车内线路图 enabled.')
+print('Save and fully restart TF3, then load the save with In-Game Route Display / 游戏线路显示 enabled.')
