@@ -26,9 +26,12 @@ function A.read(previousRevision)
 end
 function A.saveOptions(options,callback)
   assert(A.read(),'线路配置尚未初始化，请稍后重试。')
-  assert(type(options.flashNextStop)=='boolean','闪烁开关无效。')
-  api.cmd.sendCommand(api.cmd.makeScriptingSendEventCmd('',A.id,A.optionsEvent,
-    {flashNextStop=options.flashNextStop}),callback)
+  assert(type(options)=='table','Invalid options.')
+  assert(options.flashNextStop==nil or type(options.flashNextStop)=='boolean','Invalid blink option.')
+  assert(options.language==nil or options.language=='zh' or options.language=='en','Invalid language.')
+  local patch={flashNextStop=options.flashNextStop,language=options.language}
+  assert(next(patch),'Empty options patch.')
+  api.cmd.sendCommand(api.cmd.makeScriptingSendEventCmd('',A.id,A.optionsEvent,patch),callback)
 end
 function A.saveDefaults(defaults,callback)
   if not next(defaults) or not A.read()then return end

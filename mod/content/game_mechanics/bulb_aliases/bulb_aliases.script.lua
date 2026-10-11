@@ -103,11 +103,17 @@ function S.update(_,state)
 end
 function S.handleEvent(_,state,_,id,name,param)
   if id=='linnan.bulb.aliases' and name==OPTIONS_EVENT then
-    if type(param)~='table' or type(param.flashNextStop)~='boolean'then return end
+    if type(param)~='table'
+      or (param.flashNextStop~=nil and type(param.flashNextStop)~='boolean')
+      or (param.language~=nil and param.language~='zh' and param.language~='en')then return end
+    if param.flashNextStop==nil and param.language==nil then return end
     local old=state:get() or {}
-    if (old.options and old.options.flashNextStop or false)~=param.flashNextStop then
-      replace(state,{options={flashNextStop=param.flashNextStop}})
-    end
+    local options={};for k,v in pairs(old.options or {})do options[k]=v end
+    -- Option commands are patches: language and blinking must never reset
+    -- each other, including commands acknowledged after another UI edit.
+    if param.flashNextStop~=nil then options.flashNextStop=param.flashNextStop end
+    if param.language~=nil then options.language=param.language end
+    replace(state,{options=options})
     return
   end
   if id=='linnan.bulb.aliases' and name==DEFAULTS_EVENT then
