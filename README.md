@@ -87,6 +87,6 @@ python3 tools/package.py
 
 ## 素材与归属
 
-本项目受 BULB 的排版启发，与 BULB、RATP、Île-de-France Mobilités 及游戏开发商无隶属或背书关系。RER A–E 图形的来源与归属见 [素材说明](mod/content/gui/bulb_cockpit/symbols/NOTICE.md)。不包含 Parisine 商业字体、游戏原版脚本或游戏字体，文字使用游戏原生语言字体。
+本项目受 BULB 的排版启发，与 BULB、RATP、Île-de-France Mobilités 及游戏开发商无隶属或背书关系。RER A–E 图形的来源与归属见 [素材说明](mod/content/gui/bulb_cockpit/symbols/notice.md)。不包含 Parisine 商业字体、游戏原版脚本或游戏字体，文字使用游戏原生语言字体。
 
 问题反馈请附版本号、游戏 Build、复现步骤，以及去除个人信息后的相关错误片段。

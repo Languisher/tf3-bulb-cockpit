@@ -73,4 +73,4 @@ The directory must contain `react.lua`, `stylesheetutil.lua` and the relative `.
 
 Version 0.1.65dev passed 48 Lua tests and 66 syntax checks locally, including bilingual persistence, failure rollback, native React wrappers, layout bounds and resource-lifetime budgets. These checks mock the game’s C++ GUI and cannot replace in-game visual and performance checks.
 
-The mod includes no commercial Parisine font or game fonts. It uses the game’s native fonts and approximates BULB’s visual style. Asset attribution is in [NOTICE.md](mod/content/gui/bulb_cockpit/symbols/NOTICE.md). This project is not affiliated with BULB, RATP, Île-de-France Mobilités or the game developer.
+The mod includes no commercial Parisine font or game fonts. It uses the game’s native fonts and approximates BULB’s visual style. Asset attribution is in [notice.md](mod/content/gui/bulb_cockpit/symbols/notice.md). This project is not affiliated with BULB, RATP, Île-de-France Mobilités or the game developer.

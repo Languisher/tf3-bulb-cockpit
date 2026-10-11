@@ -1,5 +1,5 @@
 -- Mode-specific primitives; RER A–E use BULB's Paris preset outline masks.
--- See symbols/NOTICE.md for the graphical marks' source and attribution.
+-- See symbols/notice.md for the graphical marks' source and attribution.
 -- All shapes are white alpha masks; the live game line color supplies tint.
 local B={}
 local DARK={0.137,0.122,0.125,1}
