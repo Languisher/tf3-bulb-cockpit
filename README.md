@@ -1,4 +1,4 @@
-# TF3 BULB Cockpit · 0.1.57dev
+# TF3 BULB Cockpit · 0.1.58dev
 
 为《Transport Fever 3》第一人称车辆视角提供 BULB 风格的动态线路图，以及可点击换乘标识的线路目录。
 
@@ -8,7 +8,7 @@ A native in-game route diagram and line browser inspired by [BULB](https://bulb.
 
 ## 下载与安装
 
-在 [Releases](https://github.com/Languisher/tf3-bulb-cockpit/releases) 下载 `tf3-bulb-cockpit-0.1.57dev.zip`。
+在 [Releases](https://github.com/Languisher/tf3-bulb-cockpit/releases) 下载 `tf3-bulb-cockpit-0.1.58dev.zip`。
 
 1. 完整退出游戏。
 2. 解压，将 `linnan_bulb_cockpit` 文件夹放入游戏用户目录的 `local/mods/`。
@@ -59,7 +59,7 @@ python3 tools/package.py
 
 第一条命令运行独立测试，明确跳过四项需要游戏原版 GUI 文件的集成检查。完整检查方式与手工验收场景见 [测试说明](docs/TESTING.md)。生成的安装包与 SHA-256 校验文件位于 `dist/`。
 
-发布版本以 [VERSION](VERSION) 为准，当前为 `0.1.57dev`，对应 Git 标签 `v0.1.57dev` 和游戏数值 revision `57`。开发后缀按本项目命名习惯保留为 `dev`。
+发布版本以 [VERSION](VERSION) 为准，当前为 `0.1.58dev`，对应 Git 标签 `v0.1.58dev` 和游戏数值 revision `58`。开发后缀按本项目命名习惯保留为 `dev`。
 
 ## 素材与归属
 

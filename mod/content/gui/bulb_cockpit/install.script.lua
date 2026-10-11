@@ -315,8 +315,8 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
         return string.format('rawSize=%.6fx%.6f; visible=%s; topLeft=%.3f,%.3f; bottomRight=%.3f,%.3f',
           size.x,size.y,tostring(api.gui.byId.isVisibleRecursive('linnan.bulb.hud')),first.x,first.y,last.x,last.y)
       end)
-      if ok then log.verbose('[BULB native 0.1.57dev] HUD bounds: '..report)
-      else log.warning('[BULB native 0.1.57dev] HUD bounds failed: '..tostring(report)) end
+      if ok then log.verbose('[BULB native 0.1.58dev] HUD bounds: '..report)
+      else log.warning('[BULB native 0.1.58dev] HUD bounds failed: '..tostring(report)) end
     end
     local aliases=param.aliases:old()
     if configuredEntity:get()~=entity then
@@ -335,7 +335,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
             react.enqueueJoin(param.refreshAliases,'LinnanBulbCockpitHudNative:labelsSaved')
           end
         end)
-        if not saved then log.warning('[BULB native 0.1.57dev] default labels: '..tostring(err))end
+        if not saved then log.warning('[BULB native 0.1.58dev] default labels: '..tostring(err))end
       end
       if state:old()==snapshot and failure:old()=='' and errorRef:get()=='' then return end
       if state:old()~=snapshot then state:set(snapshot)end
@@ -348,7 +348,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
       if key~=routeRef:get() then
         routeRef:set(key)
         if snapshot then
-          log.verbose(string.format('[BULB native 0.1.57dev] route ready: line=%s; stops=%d',
+          log.verbose(string.format('[BULB native 0.1.58dev] route ready: line=%s; stops=%d',
             snapshot.route.name,#snapshot.route.stops))
         end
       end
@@ -358,7 +358,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
       if failure:old()=='' then failure:set('线路图暂时无法读取车辆数据，请查看游戏日志。')end
       setHudVisible(true)
       if errorRef:get()~=tostring(snapshot) then
-        log.warning('[BULB native 0.1.57dev] '..tostring(snapshot));errorRef:set(tostring(snapshot))
+        log.warning('[BULB native 0.1.58dev] '..tostring(snapshot));errorRef:set(tostring(snapshot))
       end
     end
   end
@@ -401,7 +401,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
     local unsubscribeExit=exitSubscription:get()
     if unsubscribeExit then unsubscribeExit();exitSubscription:set(nil)end
     scan:set({});numberedLines:set(nil);numberedConfig:set(nil);hudVisibility=nil
-    log.verbose('[BULB native 0.1.57dev] HUD disposed; session callbacks and route cache released')
+    log.verbose('[BULB native 0.1.58dev] HUD disposed; session callbacks and route cache released')
   end)
   -- onStepTimer runs with a restricted API. Camera access belongs in the
   -- main-thread join, as documented by React.enqueueJoin in this game build.
@@ -494,7 +494,7 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
     local loaded,stored,revision=pcall(aliasStore.read,aliasRevision:get())
     if loaded and stored and revision~=aliasRevision:get() then
       aliases:set(stored);aliasRevision:set(revision)
-      log.verbose('[BULB native 0.1.57dev] aliases state loaded; revision='..tostring(revision))
+      log.verbose('[BULB native 0.1.58dev] aliases state loaded; revision='..tostring(revision))
     end
     return loaded and stored or aliases:old()
   end
@@ -517,7 +517,7 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
     report=(ok and 'GUI bounds: ' or 'GUI bounds failed: ')..tostring(report)
     if report~=lastGeometry:get() then
       lastGeometry:set(report)
-      log.verbose('[BULB native 0.1.57dev] '..report)
+      log.verbose('[BULB native 0.1.58dev] '..report)
     end
   end
   local function requestMeasure()
@@ -601,6 +601,6 @@ function data()
     cameraState.install(free.FreeCamTool,function()setHudVisible(false)end)
     diagnostic.setCameraReader(cameraState.getEntity)
     replacementApi.ReplaceRecipe(free.FreeCamOptions,mount)
-    log.verbose('[BULB native 0.1.57dev] installed; compact station-count layout; explicit anchors; transparent transfers; savegame aliases')
+    log.verbose('[BULB native 0.1.58dev] installed; compact station-count layout; explicit anchors; transparent transfers; savegame aliases')
   end}
 end

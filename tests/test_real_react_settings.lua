@@ -359,6 +359,17 @@ do
   assert(control('linnan.bulb.settings.scope').params.value==2,'name search is the initial choice')
   local apply=control('linnan.bulb.settings.apply-all').params
   drawRow(rows[10]);assert(control('linnan.bulb.identifier.10').params.placeholderText=='1')
+  local types=control('linnan.bulb.mode.10').params
+  assert(#types.items==7 and types.value==3,'default tram selects its single actual type')
+  local typeLabels={}
+  for _,id in ipairs(types.items)do
+    local item=nodes[id].props.props[1]
+    local textMeta=nodes[item.content].props.props[1]
+    local text=nodes[textMeta.item].props.props[1].text
+    assert(not typeLabels[text],'native dropdown must not duplicate a type')
+    typeLabels[text]=true
+  end
+  assert(typeLabels.RER and not typeLabels['火车 RER'],'railway and RER share one native option')
   local badgeFound=false
   for id,node in pairs(nodes)do
     if id>lowerBound and node.recipeId==1 then

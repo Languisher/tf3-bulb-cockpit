@@ -642,9 +642,11 @@ walk(tree,function(kind,param)
   elseif kind=='Button' and param.meta.id=='linnan.bulb.save.10' then save=param
   elseif kind=='ComboBox' and param.meta.id=='linnan.bulb.mode.10' then modeButton=param end
 end)
-assert(#modeButton.items==8 and modeButton.compact==true,'official type dropdown exposes all eight choices')
-assert(modeButton.items[2].param.content.param.text=='火车 RER' and modeButton.items[3].param.content.param.text=='地铁')
-modeButton.onValueChange(3)
+assert(#modeButton.items==7 and modeButton.compact==true,'type dropdown shows each actual type exactly once')
+for i,name in ipairs({'RER','地铁','电车','公交','轮渡','航空','货运'})do
+  assert(modeButton.items[i].param.content.param.text==name,'one RER option with no duplicate automatic choice')
+end
+modeButton.onValueChange(2)
 assert(input,'structured identifier input exists')
 input.onTyping('  9  ');save.onClick();join()
 assert(#saved==1 and saved[1].file=='savegame' and aliases['10'].shortName=='T9')
@@ -772,22 +774,24 @@ for _,actual in ipairs({'TRAIN','TRAM'}) do
     end)
     local expected=index==1 and (rowParam.defaultBadge:match('^T(%d+)$') or rowParam.defaultBadge)
       or (index==2 and 'A' or '1')
-    assert(combo.items[1].param.content.param.text==(actual=='TRAIN' and 'RER' or '电车'),
-      'show the resolved engine type in the automatic choice')
+    local prior=index==1 and (actual=='TRAIN' and 'RER' or '电车') or (index==2 and 'RER' or '地铁')
+    assert(combo.items[combo.value].param.content.param.text==prior,
+      'default and saved types select the same unique menu item')
     assert(input.placeholderText==expected,'automatic center follows the current draft mode without extra placeholder words')
-    combo.onValueChange(index+1);apply.onClick();join()
+    combo.onValueChange(index);apply.onClick();join()
     assert(aliases[tostring(line.id)].displayMode==choice and aliases[tostring(line.id)].identifier=='',
       'native settings applies '..choice..' to an actual '..actual..' line without forcing a custom alias')
     assert(P.alias(line,aliases,P.defaults({line},aliases))==({'A','1','T1'})[index])
     row=render('LinnanBulbAliasRowNative',rowParam)
-    walk(row,function(kind,param)if kind=='ComboBox' then assert(param.value==index+1) end end)
+    walk(row,function(kind,param)if kind=='ComboBox' then assert(param.value==index) end end)
   end
 end
 contexts.LinnanBulbAliasRowNative={}
 aliases['400']={name='TRAIN 可配置线路',shortName='',displayMode='TRAIN'}
 tree=render('LinnanBulbAliasRowNative',{line={id=400,name='TRAIN 可配置线路',mode='TRAIN'},
   aliases=aliasState,message=message,geometry=S.geometry({x=1280,y=720}),lineColor={.1,.4,.8,1}})
-walk(tree,function(kind,param)if kind=='ComboBox' then assert(param.value==2,'old railway selections display as RER') end end)
+walk(tree,function(kind,param)if kind=='ComboBox' then assert(param.value==1,'old railway selections display as RER') end end)
+assert(aliases['400'].displayMode=='TRAIN','opening settings preserves legacy saved configuration without a migration write')
 -- Open the batch window through its actual settings button, edit district,
 -- enable, apply, confirm/reload, then close the direct native Window.
 do
