@@ -122,9 +122,9 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
   -- Keep official skins/insets while budgeting their complete outer bounds.
   local function inputSize(width)return {width-8,28}end
   local function buttonSize(width)return {width-16,24}end
-  local function label(value,width,height,class,tooltip)
+  local function label(value,width,height,class,tooltip,id)
     local meta=style{size={width or -1,height or -1},padding={0,0,0,0},margin={0,0,0,0},gravity={0,0.5}}
-    meta.class=class or 'font-scale-body';meta.tooltip=tooltip
+    meta.class=class or 'font-scale-body';meta.tooltip=tooltip;meta.id=id
     return builtin.TextView{text=value,useUnicodeCompatibilityFont=false,meta=meta}
   end
   local function wrap(layout,class,width,height)
@@ -249,7 +249,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           end,'LinnanBulbAliasRowNative:confirmSave')
         end,wantedMode,parts)
         if not ok then
-          log.warning('[BULB native 0.1.56dev] settings save: '..tostring(err))
+          log.warning('[BULB native 0.1.57dev] settings save: '..tostring(err))
           param.message:set('应用失败，请稍后重试。')
         end
       end},
@@ -345,7 +345,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       content=label('关联车站',nil,24),onClick=function()
         local ok,err=pcall(stationSettings.open,{aliases=param.aliases,viewport=param.viewport})
         if not ok then
-          log.warning('[BULB native 0.1.56dev] station settings: '..tostring(err))
+          log.warning('[BULB native 0.1.57dev] station settings: '..tostring(err))
           message:set('未能读取车站，请稍后重试。')
         end
       end}
@@ -395,7 +395,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       local ok,err=pcall(aliasStore.saveAll,changes,function(_,success)
         react.enqueueJoin(function()complete(success==true)end,'LinnanBulbSettingsContentNative:confirmAll')
       end,assignments)
-      if not ok then log.warning('[BULB native 0.1.56dev] apply all: '..tostring(err));complete(false)end
+      if not ok then log.warning('[BULB native 0.1.57dev] apply all: '..tostring(err));complete(false)end
     end
     local applyButton=builtin.Button{meta={id='linnan.bulb.settings.apply-all',class='primary, bulb-settings-save',
       enabled=not batchPending:old(),tooltip='应用所有已编辑线路，包含被搜索筛选隐藏的修改',
@@ -436,7 +436,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           local ok,err=pcall(aliasStore.saveOptions,{flashNextStop=wanted},function(_,success)
             react.enqueueJoin(function()complete(success==true)end,'LinnanBulbSettingsContentNative:confirmOptions')
           end)
-          if not ok then log.warning('[BULB native 0.1.56dev] options: '..tostring(err));complete(false)end
+          if not ok then log.warning('[BULB native 0.1.57dev] options: '..tostring(err));complete(false)end
         end},label(g.compact and '闪烁可能降低性能' or '下一站黄灯闪烁 · 开启可能降低性能',g.content-(stackedApply and 96 or 192),32,
           'font-scale-annotation','关闭时下一站黄灯常亮；开关随存档保存。'),
           not stackedApply and applyButton or nil},'bulb-settings-controls',g.content,32),
@@ -467,6 +467,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     -- an ID and a release function; neither a diagram history nor a cache.
     local holder=react.useRef({disposed=false})
     local ready=react.useState(false)
+    local locateError=react.useState('')
     local function release()local h=holder:get();h.snapshot=nil;h.aliases=nil;h.disposed=true end
     react.onUnmount(release)
     param.onReady(release)
@@ -483,7 +484,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         h.aliases=effective
         local ok,snapshot=pcall(collect.readLine,param.lineId,false,aliases.__stationLinks,effective)
         if ok then h.snapshot=snapshot
-        else log.warning('[BULB native 0.1.56dev] static read: '..tostring(snapshot))end
+        else log.warning('[BULB native 0.1.57dev] static read: '..tostring(snapshot))end
         ready:set(true)
       end,'LinnanBulbStaticRouteNative:load')
     end)
@@ -491,8 +492,39 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     -- Match the diagram's first-station column; keep these two spacing tokens
     -- in sync with bulb-static-toolbar/identity in native.css.lua.
     local inset,identityGap=24,24
-    local children={horizontal({button('linnan.bulb.browser.back','返回线路目录',param.home,120)},
+    local function locate()
+      if h.disposed or ready:hasExpired() or not h.snapshot then return end
+      local ok,located=pcall(function()
+        -- Locate the real selected service, not its display number or the
+        -- representative of a merged group. Validate only on this click.
+        local id=param.lineId
+        if not api.engine.entityExists(id) or not api.engine.getComponent(id,api.type.ComponentType.LINE)then return false end
+        local stack=windows.getDefaultToolStackApi()
+        local tool=stack and stack.getActiveTool()
+        -- Match the native map picker: stop the cockpit camera before
+        -- asking the game's Locate Line action to frame the route.
+        if tool and tool.name=='FreeCam'then stack.pop(tool,nil)end
+        api.gui.camera.followEntity(id,true)
+        return true
+      end)
+      if ok and located then
+        release();param.onClose()
+      elseif not locateError:hasExpired()then
+        locateError:set(ok and '线路已删除，无法定位。请返回目录刷新。' or '定位失败，请稍后重试。')
+        if not ok then log.warning('[BULB native 0.1.57dev] locate line: '..tostring(located))end
+      end
+    end
+    local children={horizontal({button('linnan.bulb.browser.back','返回线路目录',param.home,120),
+      builtin.Button{meta={id='linnan.bulb.browser.locate',class='bulb-static-locate',tooltip='在地图上定位此线路',
+          enabled=h.snapshot~=nil and not h.disposed,styleSheet=style{size={24,24}}.styleSheet},
+        content=builtin.ImageView{path='::/gui/line_vehicle_mgmt/icons/symbol_locate_20.tga',
+          scaling=builtin.type.ImageViewScaling.AutoFit,
+          meta=style{size={20,20},anchorPoint={0.5,0.5},padding={0,0,0,0},margin={0,0,0,0}}},onClick=locate}},
       'bulb-static-toolbar',g.content,32)}
+    if locateError:old()~=''then
+      children[#children+1]=label(locateError:old(),g.content-inset,36,'font-scale-annotation, bulb-static-message',
+        nil,'linnan.bulb.browser.locate-error')
+    end
     if h.snapshot then
       local route=h.snapshot.route
       local aliases=h.aliases;local defaults=P.defaults(h.snapshot.lines,aliases)
@@ -528,7 +560,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           meta={id='linnan.bulb.browser.map',class='bulb-settings-scroll',
             styleSheet=style{size={g.content,mapHeight}}.styleSheet}}
       else
-        log.warning('[BULB native 0.1.56dev] static render: '..tostring(diagram))
+        log.warning('[BULB native 0.1.57dev] static render: '..tostring(diagram))
         children[#children+1]=label('线路图暂时无法绘制。请返回目录重试。',g.content-inset,96,'font-scale-body, bulb-static-message')
       end
     elseif ready:old()then
@@ -562,7 +594,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     elseif type(page:old())=='number' then
       return builtin.BoxLayout{children={Static{meta={localKey='static:'..page:old()},lineId=page:old(),
         aliases=param.aliases,lines=param.lines,viewport=param.viewport,geometry=g,color=param.color,
-        navigate=navigate,home=home,onReady=function(fn)owner:set(fn)end}}}
+        navigate=navigate,home=home,onClose=param.onClose,onReady=function(fn)owner:set(fn)end}}}
     end
     local groups=S.directory(param.lines,param.aliases:old(),busQuery:old(),P)
     local sections={}
@@ -641,12 +673,12 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         local function show(viewport)
           if open:hasExpired() or control.request~=request then return end
           local wc=windows.getDefaultWindowApi()
-          if not wc then log.warning('[BULB native 0.1.56dev] window manager unavailable');return end
+          if not wc then log.warning('[BULB native 0.1.57dev] window manager unavailable');return end
           local ok,lines=pcall(collect.listLines,false)
-          if not ok then log.warning('[BULB native 0.1.56dev] settings: '..tostring(lines));return end
+          if not ok then log.warning('[BULB native 0.1.57dev] settings: '..tostring(lines));return end
           if aliasStore.saveDefaults then
             local saved,err=pcall(aliasStore.saveDefaults,P.pendingDefaults(lines,param.aliases:old()))
-            if not saved then log.warning('[BULB native 0.1.56dev] default labels: '..tostring(err))end
+            if not saved then log.warning('[BULB native 0.1.57dev] default labels: '..tostring(err))end
           end
           viewport=viewport or param.viewport
           wc.addSingletonWindow(Window,{aliases=param.aliases,lines=lines,geometry=S.geometry(viewport),

@@ -111,7 +111,8 @@ local Entry=S.create(react,builtin,testStyle,P,B,
       staticLoads=staticLoads+1
       return {static=true,next=0,passed=0,lines={},route={lineId=id,name='Tram 乘客-杭州-LO-1',mode='TRAM',color='#006db8',stops={}}}
     end}, optionStore,
-  {note=function()end},{getDefaultWindowApi=function()return wc end},citySettings,stationSettings,
+  {note=function()end},{getDefaultWindowApi=function()return wc end,
+    getDefaultToolStackApi=function()return mapStack end},citySettings,stationSettings,
   {badge=badge,mark=mark,draw=function()
     return builtin.Component{meta=testStyle{size={1600,200}},layout=builtin.BoxLayout{children={testText('静态图',14,1600,200)}}}
   end})
@@ -172,11 +173,14 @@ for _,viewport in ipairs({{x=1280,y=720},{x=400,y=300}}) do
   local _,staticCtx=render(staticNode.recipeId,staticNode.props.props[1])
   staticCtx.mount();_reactDoExecuteJoins()
   firstNode=nextNode;render(staticNode.recipeId,staticNode.props.props[1],staticCtx)
-  local scroll,back
+  local scroll,back,pin,pinMeta
   local measuredHeader=false
   for id,node in pairs(nodes)do if id>firstNode then
     if names[node.recipeId]=='ScrollArea'then scroll=node end
     if node.recipeId==1 and node.props.props[1].id=='linnan.bulb.browser.back'then back=nodes[node.props.props[1].item].props.props[1]end
+    if node.recipeId==1 and node.props.props[1].id=='linnan.bulb.browser.locate'then
+      pinMeta=node.props.props[1];pin=nodes[pinMeta.item].props.props[1]
+    end
     if names[node.recipeId]=='Component' and node.props.style and node.props.style.class=='bulb-mode-mark'then
       local layout=nodes[node.props.props[1].layout]
       assert(names[layout.recipeId]=='FloatingLayout' and layout.props.style.class=='bulb-fixed-layout')
@@ -191,7 +195,13 @@ for _,viewport in ipairs({{x=1280,y=720},{x=400,y=300}}) do
       measuredHeader=true
     end
   end end
-  assert(scroll and back and measuredHeader,'static page and fixed header convert through actual game React')
+  assert(scroll and back and pin and measuredHeader,'static page and fixed header convert through actual game React')
+  assert(pinMeta.enabled and pinMeta.styleSheet.size[1]==24 and pinMeta.styleSheet.size[2]==24)
+  local imageMeta=nodes[pin.content].props.props[1]
+  local image=nodes[imageMeta.item]
+  assert(names[image.recipeId]=='ImageView' and image.props.props[1].path=='::/gui/line_vehicle_mgmt/icons/symbol_locate_20.tga')
+  assert(imageMeta.styleSheet.size[1]==20 and imageMeta.styleSheet.anchorPoint[1]==.5)
+  assert(type(staticNode.props.props[1].onClose)=='function','browser must pass window close to the static pin')
   local scrollContent=nodes[scroll.props.props[1].content]
   assert(scrollContent.recipeId==1 and names[nodes[scrollContent.props.props[1].item].recipeId]=='Component',
     'ScrollArea receives Component metadata, never a Layout')
@@ -216,6 +226,32 @@ for _,viewport in ipairs({{x=1280,y=720},{x=400,y=300}}) do
   assert(#windowParam.stations==2)
   stationCtx.actions.IA_BACK.handlerFn();assert(windowParam==nil)
   stationSettings.open{aliases=aliases,viewport=viewport};stationSettings.close();assert(windowParam==nil)
+end
+-- Click the pin after conversion through the real React parameter adapter.
+do
+  local located,closed=0,0
+  api.type={ComponentType={LINE=1}}
+  api.engine={entityExists=function(id)return id==10 end,getComponent=function(id,kind)
+    assert(id==10 and kind==1);return {}
+  end}
+  api.gui.camera={followEntity=function(id,animate)assert(id==10 and animate);located=located+1 end}
+  local staticId
+  for id,name in pairs(names)do if name=='LinnanBulbStaticRouteNative'then staticId=id end end
+  local ctx=context()
+  local param={lineId=10,aliases=aliases,lines={},geometry=S.geometry({x=1280,y=720}),viewport={x=1280,y=720},
+    color=function()return {.1,.4,.8,1}end,onReady=function()end,home=function()end,navigate=function()end,
+    onClose=function()assert(ctx.states[1]:get().snapshot==nil);closed=closed+1 end}
+  render(staticId,param,ctx);ctx.mount();_reactDoExecuteJoins()
+  local first=nextNode;render(staticId,param,ctx)
+  local pin
+  for id,node in pairs(nodes)do
+    if id>first and node.recipeId==1 and node.props.props[1].id=='linnan.bulb.browser.locate'then
+      pin=nodes[node.props.props[1].item].props.props[1]
+    end
+  end
+  assert(pin);pin.onClick();pin.onClick()
+  assert(located==1 and closed==1,'native callback locates once and releases the full diagram before closing')
+  ctx.unmount()
 end
 -- Convert the map picker with the actual game's Lua node/metadata rules.
 api.type={ComponentType={STATION_GROUP=1},Vec4f={new=function(...)return {...}end}}
