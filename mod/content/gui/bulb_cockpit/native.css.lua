@@ -1,0 +1,120 @@
+local ssu = require '::/gui/main/stylesheetutil.lua'
+local transf = require '::/scripts/mat4.tl'
+function data()
+  local result = {}
+  local add = ssu.makeAdder(result)
+  local colors=api.gui.genericRep.get(api.gui.genericRep.find('::/gui/main/default_colors.gres')).data
+  -- GameUIProxyRoot mounts FreeCamOptions at the upper-right corner.
+  -- vw/vh are GUI viewport units, independent of render resolution/UI scale.
+  add('R::LinnanBulbFreeCamNative', {
+    size={'100vw','100vh'},anchorPoint={1,0},padding={0,0,0,0},margin={0,0,0,0},
+  })
+  add('#linnan.bulb.host > FloatingLayout, #linnan.bulb.hud > FloatingLayout', {
+    gravity={-1,-1},padding={0,0,0,0},margin={0,0,0,0},
+  })
+  add('FloatingLayout!bulb-fixed-layout', {
+    gravity={0,0},padding={0,0,0,0},margin={0,0,0,0},
+  })
+  add('R::Component!bulb-track-layer', {padding={0,0,0,0},margin={0,0,0,0},gravity={0,0}})
+  add('R::Component!bulb-layout-extent', {visibility='hidden',padding={0,0,0,0},margin={0,0,0,0}})
+  -- The game's ScrollArea::Content::Layout stretches horizontally by
+  -- default. This canvas owns fixed coordinates and scrolls at its natural
+  -- width, so a wide viewport must not spread stations beyond their rail.
+  add('ScrollArea#linnan.bulb.browser.map ScrollArea::Content::Layout', {gravity={0,0}})
+  add('#linnan.bulb.static-canvas', {gravity={0,0},padding={0,0,0,0},margin={0,0,0,0}})
+  -- Generic components are recipe-backed: the native selector is
+  -- R::Component (see the game's builtin.css.lua), not Component.
+  -- A non-matching selector silently leaves every joining rail horizontal.
+  for degree=-90,90 do
+    add('R::Component!bulb-track-angle'..(degree+90),{
+      transformOrigin={0,.5},transform=transf.rotZ(math.rad(degree)),
+      padding={0,0,0,0},margin={0,0,0,0},
+    })
+  end
+  for percent=1,99 do
+    add('R::Component!bulb-canvas-scale'..percent,{
+      transformOrigin={0,0},transform=transf.scaleRotZTransl(percent/100,0,{x=0,y=0,z=0}),
+      padding={0,0,0,0},margin={0,0,0,0},
+    })
+  end
+  local stationNameStyle={
+    fontWeight='Bold',
+    transformOrigin={0,1},transform=transf.rotZ(-math.pi/6),
+    padding={0,2,0,2},margin={0,0,0,0},
+  }
+  add('TextView!bulb-station-name',stationNameStyle)
+  add('TextView!bulb-station-terminus-name',stationNameStyle)
+  -- Only station names receive a backing. Route identity, transfers and
+  -- omission labels stay transparent; termini retain flat square boxes.
+  add('TextView!bulb-station-name', {
+    backgroundImage1={fileName='::/gui/builtin/popup/surface.tga',
+      horizontal={0,6,8,14},vertical={0,6,8,14}},
+  })
+  add('TextView!bulb-route-title', {fontWeight='Bold'})
+  add('TextView!bulb-omission-label', {textAlignment={0.5,0.5}})
+  add('TextView!bulb-line-badge, TextView!bulb-transfer-label, TextView!bulb-mode-letter', {textAlignment={0.5,0.5},fontWeight='Bold'})
+  add('R::Component!bulb-station-marker > FloatingLayout, R::LinnanBulbFlashingStationNative > FloatingLayout', {
+    gravity={-1,-1},padding={0,0,0,0},margin={0,0,0,0},
+  })
+  -- Match layers.css.lua's head button, including its hover scale. Keep
+  -- settings layout spacing out of the icon's measured bounds.
+  add('R::LinnanBulbSettingsNative, R::LinnanBulbSettingsNative > BoxLayout', {
+    padding={0,0,0,0},margin={0,0,0,0},outerSpacing={0,0},innerSpacing={0,0},gravity={0,0},
+  })
+  add('ToggleButton!bulb-settings-toggle', {
+    size={32,32},padding={4,4,4,4},margin={1,1,2,1},gravity={0.5,0.5},
+    transformOrigin={0.5,1},transform=transf.scaleRotZTransl(1,0,{x=0,y=0,z=0}),
+    transitionPropertyDuration={transform=0.1},
+  })
+  add('ImageView!bulb-settings-toggle-icon', {size={24,24}})
+  add('ToggleButton!bulb-settings-toggle!unchecked:hover, ToggleButton!bulb-settings-toggle!checked', {
+    transform=transf.scaleRotZTransl(1.15,0,{x=0,y=0,z=0}),
+  })
+  add('ToggleButton!bulb-settings-toggle!unchecked:active, ToggleButton!bulb-settings-toggle!checked:active', {
+    transform=transf.scaleRotZTransl(1,0,{x=0,y=0,z=0}),
+  })
+  -- Native Window supplies its themed surface, contour, title and close
+  -- control. Only this window stays visible during the cockpit action.
+  add('!action-follow Window!bulb-settings-window, !action-camera Window!bulb-settings-window', {visibility='visible'})
+  -- Match game.css.lua's pause tool state, independently of simulation speed.
+  add('#mainView!tool-pause #linnan.bulb.settings, #mainView!tool-pause Window!bulb-settings-window', {visibility='none'})
+  add('Window!bulb-settings-window Window::Content', {padding={12,12,12,12}})
+  add('Window!bulb-settings-window TextView', {color=colors.NeutralLightest})
+  add('R::Component!bulb-settings-body > BoxLayout', {outerSpacing={0,0},innerSpacing={8,8},gravity={-1,0}})
+  -- Static page: one left column shared by navigation, identity and the
+  -- diagram's first station (24 GUI units inside its measured canvas).
+  add('R::Component!bulb-static-page > BoxLayout', {outerSpacing={0,0},innerSpacing={12,12},gravity={0,0}})
+  add('R::Component!bulb-static-page > BoxLayout > *', {gravity={0,0}})
+  add('R::Component!bulb-static-toolbar > BoxLayout, R::Component!bulb-static-identity > BoxLayout', {
+    outerSpacing={0,0},innerSpacing={24,24},padding={0,0,0,24},margin={0,0,0,0},gravity={0,0.5},
+  })
+  add('TextView!bulb-static-title', {textAlignment={0,0.5},padding={0,0,0,0},margin={0,0,0,0}})
+  add('TextView!bulb-static-message, ComboBox!bulb-static-member', {margin={0,0,0,24},gravity={0,0}})
+  add('R::Component!bulb-settings-list > BoxLayout', {outerSpacing={0,0},innerSpacing={2,2},gravity={0,0}})
+  add('ScrollArea!bulb-settings-scroll ScrollArea::Content::Layout', {gravity={0,0}})
+  add('R::LinnanBulbAliasRowNative > BoxLayout', {outerSpacing={0,0},innerSpacing={0,0}})
+  add('R::Component!bulb-settings-row', {padding={4,4,4,4},margin={0,0,0,0}})
+  add('R::Component!bulb-settings-heading', {padding={0,4,0,4},margin={0,0,0,0}})
+  add('R::Component!bulb-settings-badge', {padding={0,0,0,0},margin={0,0,0,0},gravity={0,0.5}})
+  add('R::Component!bulb-settings-badge > FloatingLayout', {
+    padding={0,0,0,0},margin={0,0,0,0},gravity={-1,-1},
+  })
+  add('R::Component!bulb-settings-striped', {backgroundColor=colors.BaseMedium})
+  add('R::Component!bulb-settings-row > BoxLayout, R::Component!bulb-settings-name > BoxLayout, R::Component!bulb-settings-controls > BoxLayout, R::Component!bulb-settings-heading > BoxLayout, R::Component!bulb-settings-footer > BoxLayout', {
+    outerSpacing={0,0},innerSpacing={8,8},gravity={0,0.5},
+  })
+  add('ComboBox!bulb-settings-mode ComboBox::Entry, ComboBox!bulb-settings-mode ComboBox::DisplayEntry', {padding={4,8,4,8}})
+  add('ComboBox!bulb-settings-mode, ComboBox!bulb-settings-mode ComboBox::Button', {padding={0,0,0,0},margin={0,0,0,0}})
+  add('Button!bulb-settings-save', {padding={4,8,4,8},margin={0,0,0,0}})
+  add('ToggleButton!bulb-settings-flash', {padding={4,8,4,8},margin={0,0,0,0},gravity={0.5,0.5}})
+  add('R::Component!bulb-directory-sections > BoxLayout', {outerSpacing={0,0},innerSpacing={10,10},gravity={-1,0}})
+  add('R::Component!bulb-directory-section', {padding={8,8,8,8},margin={0,0,0,0},backgroundColor=colors.BaseMedium})
+  add('R::Component!bulb-directory-section > BoxLayout', {outerSpacing={0,0},innerSpacing={6,6},gravity={-1,0}})
+  add('R::Component!bulb-directory-row > BoxLayout', {outerSpacing={0,0},innerSpacing={8,8},gravity={0,0.5}})
+  add('Button!bulb-directory-tile', {padding={0,0,0,0},margin={0,0,0,0},gravity={0.5,0.5}})
+  add('Button!bulb-transfer-link', {padding={0,0,0,0},margin={0,0,0,0},gravity={0,0}})
+  -- r10's screenshot confirms the independent cockpit diagram is mounted.
+  -- Replace only the original two route labels; retain speed/horn/exit UI.
+  add('CockpitCamera::Line1, CockpitCamera::Line2', {visibility='none'})
+  return result
+end
