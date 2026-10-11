@@ -1,4 +1,6 @@
-# TF3 BULB Cockpit · 0.1.63dev
+# TF3 BULB Cockpit · 0.1.65dev
+
+[English guide](README.en.md) · 中文
 
 为《Transport Fever 3》第一人称车辆视角提供 BULB 风格的动态线路图，以及可点击换乘标识的线路目录。
 
@@ -8,7 +10,7 @@ A native in-game route diagram and line browser inspired by [BULB](https://bulb.
 
 ## 下载与安装
 
-在 [Releases](https://github.com/Languisher/tf3-bulb-cockpit/releases) 下载 `tf3-bulb-cockpit-0.1.63dev.zip`。
+已发布安装包见 [Releases](https://github.com/Languisher/tf3-bulb-cockpit/releases)。开发版本可从源码安装，或用 `python3 tools/package.py` 打包。
 
 1. 完整退出游戏。
 2. 解压，将 `linnan_bulb_cockpit` 文件夹放入游戏用户目录的 `local/mods/`。
@@ -28,6 +30,10 @@ python3 install.py
 ```
 
 此脚本仅自动识别本机 macOS Steam 目录；找到多个游戏用户目录时会停止，需手动复制 `mod/` 为 `linnan_bulb_cockpit`。覆盖本模组前会备份到 `previous-install-backups/`，不操作存档。升级后需完整重启游戏。
+
+## 界面语言
+
+打开线路图设置，在「线路目录」首页点击 **English** 切换英文；英文界面点击 **中文** 切回。立即生效，保存游戏后重载仍保留当前选择。语言仅作用于模组界面；游戏线路名、站名、城市名和手动编号保持原文。旧存档默认中文。
 
 ## 功能
 
@@ -61,7 +67,7 @@ python3 tools/package.py
 
 第一条命令运行独立测试，明确跳过四项需要游戏原版 GUI 文件的集成检查。完整检查方式与手工验收场景见 [测试说明](docs/TESTING.md)。生成的安装包与 SHA-256 校验文件位于 `dist/`。
 
-发布版本以 [VERSION](VERSION) 为准，当前为 `0.1.63dev`，对应 Git 标签 `v0.1.63dev` 和游戏数值 revision `63`。开发后缀按本项目命名习惯保留为 `dev`。
+发布版本以 [VERSION](VERSION) 为准，当前开发版本为 `0.1.65dev`，游戏数值 revision 为 `65`。开发后缀按本项目命名习惯保留为 `dev`。
 
 ## 素材与归属
 

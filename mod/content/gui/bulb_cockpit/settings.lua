@@ -11,7 +11,7 @@ local function releaseSession(session)
   for _,owner in pairs(owners)do owner.release()end
   local count=#session.lines
   for i=#session.lines,1,-1 do session.lines[i]=nil end
-  log.verbose('[BULB native 0.1.64dev] settings closed; released roster='..count..'; page data released')
+  log.verbose('[BULB native 0.1.65dev] settings closed; released roster='..count..'; page data released')
 end
 local function ownSession(session,key,token,release)
   if not session then return end
@@ -270,7 +270,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           end,'LinnanBulbAliasRowNative:confirmSave')
         end,wantedMode,parts)
         if not ok then
-          log.warning('[BULB native 0.1.64dev] settings save: '..tostring(err))
+          log.warning('[BULB native 0.1.65dev] settings save: '..tostring(err))
           param.message:set(tr('应用失败，请稍后重试。'))
         end
       end},
@@ -358,7 +358,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       content=label(tr('关联车站'),nil,24),onClick=function()
         local ok,err=pcall(stationSettings.open,{aliases=param.aliases,viewport=param.viewport})
         if not ok then
-          log.warning('[BULB native 0.1.64dev] station settings: '..tostring(err))
+          log.warning('[BULB native 0.1.65dev] station settings: '..tostring(err))
           message:set(tr('未能读取车站，请稍后重试。'))
         end
       end}
@@ -406,7 +406,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       local ok,err=pcall(aliasStore.saveAll,changes,function(_,success)
         react.enqueueJoin(function()complete(success==true)end,'LinnanBulbSettingsContentNative:confirmAll')
       end,assignments)
-      if not ok then log.warning('[BULB native 0.1.64dev] apply all: '..tostring(err));complete(false)end
+      if not ok then log.warning('[BULB native 0.1.65dev] apply all: '..tostring(err));complete(false)end
     end
     local controls={}
     if citySettings then controls[#controls+1]=builtin.Button{
@@ -459,7 +459,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           local ok,err=pcall(aliasStore.saveOptions,{flashNextStop=wanted},function(_,success)
             react.enqueueJoin(function()complete(success==true)end,'LinnanBulbSettingsContentNative:confirmOptions')
           end)
-          if not ok then log.warning('[BULB native 0.1.64dev] options: '..tostring(err));complete(false)end
+          if not ok then log.warning('[BULB native 0.1.65dev] options: '..tostring(err));complete(false)end
         end}
 
     local english=I.language(param.aliases:old())=='en'
@@ -525,7 +525,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         h.aliases=effective
         local ok,snapshot=pcall(collect.readLine,param.lineId,false,aliases.__stationLinks,effective)
         if ok then h.snapshot=snapshot
-        else log.warning('[BULB native 0.1.64dev] static read: '..tostring(snapshot))end
+        else log.warning('[BULB native 0.1.65dev] static read: '..tostring(snapshot))end
         ready:set(true)
       end,'LinnanBulbStaticRouteNative:load')
     end)
@@ -552,7 +552,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         release();param.onClose()
       elseif not locateError:hasExpired()then
         locateError:set(ok and tr('线路已删除，无法定位。请返回目录刷新。') or tr('定位失败，请稍后重试。'))
-        if not ok then log.warning('[BULB native 0.1.64dev] locate line: '..tostring(located))end
+        if not ok then log.warning('[BULB native 0.1.65dev] locate line: '..tostring(located))end
       end
     end
     local children={horizontal({button('linnan.bulb.browser.back',tr('返回线路目录'),param.home,I.language(param.aliases:old())=='en' and 144 or 120),
@@ -601,7 +601,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           meta={id='linnan.bulb.browser.map',class='bulb-settings-scroll, bulb-static-map',
             styleSheet=style{size={g.content,mapHeight}}.styleSheet}}
       else
-        log.warning('[BULB native 0.1.64dev] static render: '..tostring(diagram))
+        log.warning('[BULB native 0.1.65dev] static render: '..tostring(diagram))
         children[#children+1]=label(tr('线路图暂时无法绘制。请返回目录重试。'),g.content-inset,96,'font-scale-body, bulb-static-message')
       end
     elseif ready:old()then
@@ -769,18 +769,18 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         local function show(viewport)
           if open:hasExpired() or control.request~=request then return end
           local wc=windows.getDefaultWindowApi()
-          if not wc then log.warning('[BULB native 0.1.64dev] window manager unavailable');return end
+          if not wc then log.warning('[BULB native 0.1.65dev] window manager unavailable');return end
           local ok,lines=pcall(collect.listLines,false)
-          if not ok then log.warning('[BULB native 0.1.64dev] settings: '..tostring(lines));return end
+          if not ok then log.warning('[BULB native 0.1.65dev] settings: '..tostring(lines));return end
           if aliasStore.saveDefaults then
             local saved,err=pcall(aliasStore.saveDefaults,P.pendingDefaults(lines,param.aliases:old()))
-            if not saved then log.warning('[BULB native 0.1.64dev] default labels: '..tostring(err))end
+            if not saved then log.warning('[BULB native 0.1.65dev] default labels: '..tostring(err))end
           end
           viewport=viewport or param.viewport
           releaseSession(control.session)
           control.session={closed=false,lines=lines,owners={}}
           local openedSession=control.session
-          log.verbose('[BULB native 0.1.64dev] settings opened; roster='..#lines)
+          log.verbose('[BULB native 0.1.65dev] settings opened; roster='..#lines)
           wc.addSingletonWindow(Window,{aliases=param.aliases,lines=lines,geometry=S.geometry(viewport,I.language(param.aliases:old())),
             viewport=viewport,color=param.color,session=openedSession,onClose=function()
               if control.session==openedSession then close()else releaseSession(openedSession)end

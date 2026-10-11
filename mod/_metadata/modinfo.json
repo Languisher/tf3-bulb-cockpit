@@ -1,6 +1,6 @@
 {
   "name": "BULB 风格 · 动态车内线路图",
-  "description": "版本 0.1.64dev。游戏内直接绘制动态线路图，自动跟随当前车辆更新站灯、方向与换乘。无需浏览器、图片生成器或导出。开发版待实机验收。",
+  "description": "版本 0.1.65dev。原生动态线路图；设置首页可切换 English / 中文。Native in-game route maps with English / Chinese UI. No browser or image generator required. Development build; in-game verification pending.",
   "authors": [
     {
       "name": "linnan",
