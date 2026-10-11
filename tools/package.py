@@ -21,7 +21,7 @@ def main():
     archive = destination / f"tf3-bulb-cockpit-{version}.zip"
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as output:
         for path in sorted((ROOT / "mod").rglob("*")):
-            if not path.is_file() or path.name == ".DS_Store" or "__pycache__" in path.parts:
+            if not path.is_file() or path.name in {".DS_Store", "mod.io_fileid.txt"} or "__pycache__" in path.parts:
                 continue
             entry = zipfile.ZipInfo("linnan_bulb_cockpit/" + path.relative_to(ROOT / "mod").as_posix(),
                                     date_time=(2026, 10, 11, 0, 0, 0))

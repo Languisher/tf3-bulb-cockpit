@@ -8,3 +8,4 @@ previous-install-backups/
 work/
 *.sav
 *.log
+mod/_metadata/mod.io_fileid.txt
