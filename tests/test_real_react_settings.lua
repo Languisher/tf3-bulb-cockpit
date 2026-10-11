@@ -163,9 +163,9 @@ for _,viewport in ipairs({{x=1280,y=720},{x=400,y=300}}) do
       elseif meta.id=='linnan.bulb.browser.configure'then configButton=nodes[meta.item]end
     end
   end
-  assert(cityButton and configButton,'directory home has direct native configuration buttons')
+  assert(not cityButton and configButton,'directory home links to the line settings subpage')
   local configCaption=nodes[nodes[configButton.props.props[1].content].props.props[1].item]
-  assert(configCaption.props.props[1].text=='线路')
+  assert(configCaption.props.props[1].text=='线路设置')
   assert(lineButton and type(lineButton.onClick)=='function')
   assert(lineButtonMeta.styleSheet.size[1]==44 and lineButtonMeta.styleSheet.size[2]==32)
   local badgeNode=nodes[lineButton.content]
@@ -334,17 +334,18 @@ local flashParam={aliases=flashAliases,lines={},viewport={x=1280,y=720},geometry
 local flashCtx=context()
 local function drawFlash()
   lowerBound=nextNode
-  render(browserId,flashParam,flashCtx)
+  render(contentId,flashParam,flashCtx)
   local result=control('linnan.bulb.settings.flash')
   local captionMeta=nodes[result.params.content].props.props[1]
   result.caption=nodes[captionMeta.item].props.props[1]
-  assert(result.caption.useUnicodeCompatibilityFont==false)
+  assert(result.caption.useUnicodeCompatibilityFont==false and result.meta.tooltip==nil)
+  assert(control('linnan.bulb.settings.city'),'bus configuration belongs to the line settings subpage')
   return result
 end
-local first=drawFlash();assert(first.params.value==0 and first.caption.text=='已关闭')
+local first=drawFlash();assert(first.params.value==0 and first.caption.text=='黄灯闪烁：关闭')
 first.params.onValueChange(1)
 local pending=drawFlash()
-assert(pending.params.value==1 and pending.caption.text=='已开启' and pending.meta.enabled==false)
+assert(pending.params.value==1 and pending.caption.text=='黄灯闪烁：开启' and pending.meta.enabled==false)
 first.params.onValueChange(1);assert(#optionRequests==1,'guard repeated input before a command finishes')
 optionRequests[1].callback(nil,true);_reactDoExecuteJoins()
 local enabled=drawFlash()

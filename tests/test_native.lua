@@ -820,13 +820,13 @@ do
     aliases.__busNaming=config
     callback(nil,true)
   end
-  contexts.LinnanBulbBrowserNative={}
-  local content=render('LinnanBulbBrowserNative',{aliases=aliasState,lines=lines,towns=towns,
+  contexts.LinnanBulbSettingsContentNative={}
+  local content=render('LinnanBulbSettingsContentNative',{aliases=aliasState,lines=lines,towns=towns,
     viewport={x=400,y=300},geometry=S.geometry({x=400,y=300}),color=settingsParam.color})
   local entry
   walk(content,function(kind,param)if kind=='Button' and param.meta.id=='linnan.bulb.settings.city'then entry=param end end)
   assert(entry and entry.content.param.text=='公交线路编号一键配置',
-    'batch naming opens directly from the directory home')
+    'batch naming opens directly from the line settings page')
   entry.onClick()
   local param=windowParam
   assert(param.width<=400-48 and param.listHeight==32)
@@ -1204,23 +1204,25 @@ do
   modules['aliases.lua'].saveOptions=function(value,callback)
     optionsWrites=optionsWrites+1;requests[#requests+1]={value=value,callback=callback}
   end
-  contexts.LinnanBulbBrowserNative={}
+  contexts.LinnanBulbSettingsContentNative={}
   local params={aliases=aliasState,lines={},viewport={x=1280,y=720},geometry=S.geometry({x=1280,y=720}),color=settingsParam.color}
   local function drawFlash()
-    local control,warning
-    walk(render('LinnanBulbBrowserNative',params),function(k,p)
+    local control,flashTexts
+    flashTexts=0
+    walk(render('LinnanBulbSettingsContentNative',params),function(k,p)
       if p.meta and p.meta.id=='linnan.bulb.settings.flash'then control=p end
-      if k=='TextView' and p.text:find('开启可能降低性能',1,true)then warning=true end
+      if k=='TextView' and p.text:find('闪烁',1,true)then flashTexts=flashTexts+1 end
     end)
-    assert(control and warning,'native settings must explain performance cost')
+    assert(control and flashTexts==1 and control.meta.tooltip==nil,
+      'flash setting shows only its name and on/off state, without auxiliary text or tooltip')
     return control
   end
   local toggle=drawFlash()
-  assert(toggle.value==0 and toggle.content.param.text=='已关闭','default OFF')
+  assert(toggle.value==0 and toggle.content.param.text=='黄灯闪烁：关闭','default OFF')
   local readsBefore=aliasReads
   toggle.onValueChange(1)
   local applying=drawFlash()
-  assert(applying.value==1 and applying.content.param.text=='已开启',
+  assert(applying.value==1 and applying.content.param.text=='黄灯闪烁：开启',
     'the first click must change both native toggle value and caption before the save callback')
   assert(applying.meta.enabled==false,'disable the control while its save is in flight')
   toggle.onValueChange(1);assert(optionsWrites==1,'rapid clicks cannot submit the same pending toggle twice')
@@ -1241,10 +1243,10 @@ do
   assert(timers.LinnanBulbFlashingStationNative,'enabling mounts only the isolated next-station animation')
   toggle.onValueChange(0);assert(drawFlash().value==0,'turn OFF on the first click too')
   requests[2].callback(nil,false);join()
-  toggle=drawFlash();assert(toggle.value==1 and toggle.content.param.text=='已开启'
+  toggle=drawFlash();assert(toggle.value==1 and toggle.content.param.text=='黄灯闪烁：开启'
     and toggle.meta.enabled==true and aliases.__options.flashNextStop,'failed save rolls back the caption and unlocks the control')
   toggle.onValueChange(0);requests[3].callback(nil,true);join()
-  toggle=drawFlash();assert(toggle.value==0 and toggle.content.param.text=='已关闭')
+  toggle=drawFlash();assert(toggle.value==0 and toggle.content.param.text=='黄灯闪烁：关闭')
   render('LinnanBulbCockpitHudNative',{aliases=aliasState,viewport={x=1280,y=720}})
   assert(not timers.LinnanBulbFlashingStationNative,'disabling must unmount the animation immediately')
   local saveOptions=modules['aliases.lua'].saveOptions
@@ -1255,7 +1257,7 @@ do
     'synchronous submission failure must roll back and release the toggle too')
   modules['aliases.lua'].saveOptions=saveOptions
   toggle.onValueChange(1)
-  for _,state in ipairs(contexts.LinnanBulbBrowserNative)do state.expired=true end
+  for _,state in ipairs(contexts.LinnanBulbSettingsContentNative)do state.expired=true end
   requests[4].callback(nil,true);join()
   assert(aliases.__options.flashNextStop,'closing settings must not discard an acknowledged option')
   modules['aliases.lua'].read=readOptions
