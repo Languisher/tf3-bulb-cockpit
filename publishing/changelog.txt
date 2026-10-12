@@ -1,9 +1,9 @@
-In-Game Route Display / 游戏线路显示 · 0.1.68dev
+In-Game Route Display / 游戏线路显示 · 0.1.69dev
 
-The route-map button now starts at the upper right, aligned with and sized like the layers button. Hold its small top grip to drag it; click the body to open settings. Removed the hover/checked enlargement and tightened the settings window's top spacing. No new timers or idle mouse/geometry polling. First-person and pause-menu hiding is preserved.
+Fixed Chinese text remaining after switching to English. The already-open window title, entry button hints and drag-grip hint now subscribe to language changes and update immediately. Switching back or rolling back a failed save updates them too. No new timers or polling.
 
-线路图按钮改到右上角，与图层按钮同一行、同样大小；按住上沿短横条拖动，点击主体打开设置。取消悬停／选中放大，修复设置窗口顶部留白。不增加计时器或空闲鼠标／尺寸轮询，保留第一人称和暂停菜单隐藏。
+修复切换英文后“线路图设置”仍显示中文：已打开的窗口标题、入口打开／关闭提示及拖动提示立即跟随语言变化，切回中文及保存失败回退同步刷新。不增加计时器或轮询。
 
-49 Lua tests and 68 syntax checks passed, including native-window wrapping, placement parameters, disposal and zero idle queries. Actual in-game dragging and layout require validation. / 49 项 Lua 回归及 68 项语法检查通过，包含原生窗口包装、初始位置、释放和零空闲查询；实际游戏拖动及布局待验证。
+49 Lua tests and 68 syntax checks passed, including mounted-text state notifications and mutation checks. / 49 项 Lua 回归及 68 项语法检查通过，覆盖已挂载文字的状态通知与删除订阅后的失败检查。
 
 Target: macOS Build 40420. Windows/Linux/console are untested. Long-session FPS degradation remains under investigation. / 针对 macOS Build 40420；其他平台未实测，长时间 FPS 下降仍在排查中。

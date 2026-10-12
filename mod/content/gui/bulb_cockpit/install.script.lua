@@ -513,7 +513,7 @@ local Settings=settingsUI.create(react,builtin,style,P,modeMarks,collect,aliasSt
 -- The compact native window supplies dragging, bounds clamping and position
 -- retention. Its small title grip overlaps the button instead of adding a row.
 local Launcher=react.RegisterWrapperRecipe('LinnanBulbLauncherNative',builtin.Window,function(param)
-  local tr=I.bind(param.aliases:old())
+  local tr=I.bind(react.useMirrorState(param.aliases):old())
   return builtin.Window{title='',id='linnan.bulb.launcher.window',
     meta={class='bulb-entry-window'},compact=true,movable=true,
     closable=false,pinnable=false,pinned=true,
@@ -544,7 +544,7 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
     if not control.alive or aliases:hasExpired()then return end
     local ok,stored=pcall(aliasStore.read)
     if ok and stored then aliases:set(stored)
-    elseif not ok then log.warning('[Route Display 0.1.68dev] launcher settings: '..tostring(stored))end
+    elseif not ok then log.warning('[Route Display 0.1.69dev] launcher settings: '..tostring(stored))end
   end
   local function prepareOpen(open)
     react.enqueueJoin(function()
@@ -569,8 +569,8 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
       if wc then
         wc.addSingletonWindow(Launcher,{aliases=aliases,viewport=viewport:old(),prepareOpen=prepareOpen,
           initialX=1,initialY=0})
-        log.verbose('[Route Display 0.1.68dev] floating entry mounted; extension=::ModEntryPointExtension')
-      else log.warning('[Route Display 0.1.68dev] launcher window manager unavailable')end
+        log.verbose('[Route Display 0.1.69dev] floating entry mounted; extension=::ModEntryPointExtension')
+      else log.warning('[Route Display 0.1.69dev] launcher window manager unavailable')end
     end,'LinnanBulbMainButtonNative:mount')
   end)
   react.onUnmount(function()

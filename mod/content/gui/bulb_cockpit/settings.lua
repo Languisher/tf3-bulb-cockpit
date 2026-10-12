@@ -728,7 +728,8 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     return builtin.BoxLayout{children={vertical(homeControls,'bulb-settings-body',g.content)}}
   end)
   local Window=react.RegisterWrapperRecipe('LinnanBulbSettingsWindowNative',builtin.Window,function(param)
-    local tr=I.bind(param.aliases:old())
+    -- Reading another recipe's state does not subscribe this native wrapper.
+    local tr=I.bind(react.useMirrorState(param.aliases):old())
     react.useInputAction('IA_MENU_BACK',react.iaHandler(param.onClose))
     react.useInputAction('IA_BACK',react.iaHandler(param.onClose))
     -- Wrapper recipes must return Window directly. Non-class metadata here
@@ -741,7 +742,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       content=Browser(param)}
   end)
   return react.RegisterRecipe('LinnanBulbSettingsNative',function(param)
-    local tr=I.bind(param.aliases:old())
+    local tr=I.bind(react.useMirrorState(param.aliases):old())
     diagnostic.note('settings.render')
     local open=react.useState(false)
     local opening=react.useRef({request=0})

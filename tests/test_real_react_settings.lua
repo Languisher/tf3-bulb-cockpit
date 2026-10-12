@@ -32,9 +32,16 @@ local builtin={type={ImageViewScaling={AutoFit='auto-fit',Stretch='stretch'},Ori
 for _,name in ipairs(builtinNames) do
   builtin[name]=react.DeclareBuiltinWithUserdata(name,function()end)
 end
-local function state(value)
-  return {value=value,old=function(self)return self.value end,get=function(self)return self.value end,set=function(self,v)self.value=v end,
-    transform=function(self,fn)self.value=fn(self.value)end,hasExpired=function()return false end}
+local function state(value,owner)
+  local result={value=value,dependents={},old=function(self)return self.value end,get=function(self)return self.value end,
+    getUnderlyingState=function(self)return self end,hasExpired=function()return false end}
+  function result:set(v)
+    if self.value==v then return end
+    self.value=v;if owner then owner.dirty=true end
+    for _,dependent in ipairs(self.dependents)do dependent:set(v)end
+  end
+  function result:transform(fn)self:set(fn(self.value))end
+  return result
 end
 local function context()
   local ctx={states={},actions={},index=0}
@@ -44,12 +51,20 @@ local function context()
   function ctx:setResult(result)self.result=result end
   function ctx:declareState(value)
     self.index=self.index+1
-    self.states[self.index]=self.states[self.index] or state(value)
+    self.states[self.index]=self.states[self.index] or state(value,self)
     return self.states[self.index]
   end
   function ctx:declareStateLazy(initializer)
     self.index=self.index+1
-    self.states[self.index]=self.states[self.index] or state(initializer())
+    self.states[self.index]=self.states[self.index] or state(initializer(),self)
+    return self.states[self.index]
+  end
+  function ctx:declareDependentState(source)
+    self.index=self.index+1
+    if not self.states[self.index]then
+      local mirror=state(source:old(),self)
+      self.states[self.index]=mirror;source.dependents[#source.dependents+1]=mirror
+    end
     return self.states[self.index]
   end
   ctx.declareRef=ctx.declareState
@@ -67,7 +82,7 @@ local function context()
   return ctx
 end
 local function render(recipeId,param,ctx)
-  ctx=ctx or context();ctx.index=0
+  ctx=ctx or context();ctx.index=0;ctx.dirty=false
   _react.recipes[recipeId](ctx,{props={param}})
   return nodes[assert(ctx.result[1])],ctx
 end
@@ -473,6 +488,22 @@ do
     lowerBound=nextNode;render(browserId,param,ctx)
     return assert(control('linnan.bulb.browser.language'))
   end
+  local windowId
+  for id,name in pairs(names)do if name=='LinnanBulbSettingsWindowNative'then windowId=id end end
+  local window,windowCtx=render(assert(windowId),param)
+  local entry,entryCtx=render(entryId,param)
+  local function windowTitle()
+    -- A parent does not re-render just because a foreign state was read.
+    -- Only run contexts dirtied by their own/dependent state, as the engine does.
+    if windowCtx.dirty then window=render(windowId,param,windowCtx)end
+    assert(window.recipeId==39,'language updates retain the direct Window contract')
+    return window.props.props[1].title
+  end
+  local function entryTooltip()
+    if entryCtx.dirty then entry=render(entryId,param,entryCtx)end
+    return nodes[entry.props.props[1].children[1]].props.props[1].tooltip
+  end
+  assert(windowTitle()=='线路图设置' and entryTooltip()=='线路图设置')
   local first=draw();assert(caption(first).text=='English' and caption(first).useUnicodeCompatibilityFont)
   local before=#optionRequests
   first.params.onClick()
@@ -481,16 +512,17 @@ do
   assert(caption(control('linnan.bulb.browser.configure')).text=='Line settings')
   first.params.onClick();assert(#optionRequests==before+1)
   assert(optionRequests[#optionRequests].value.language=='en' and config:old().__options.flashNextStop)
-  local windowId
-  for id,name in pairs(names)do if name=='LinnanBulbSettingsWindowNative'then windowId=id end end
-  local window=render(assert(windowId),param)
-  assert(window.recipeId==39 and window.props.props[1].title=='Route maps',
-    'language switch preserves the direct Window wrapper contract')
+  assert(windowTitle()=='Route maps','switching language must invalidate the existing window title')
+  assert(entryTooltip()=='Route maps','the already-mounted entry tooltip must update without a click')
   optionRequests[#optionRequests].callback(nil,true);_reactDoExecuteJoins()
   local saved=draw();assert(saved.meta.enabled and config:old().__options.language=='en')
   saved.params.onClick();assert(config:old().__options.language=='zh')
+  assert(windowTitle()=='线路图设置' and entryTooltip()=='线路图设置','switching back updates mounted text')
   optionRequests[#optionRequests].callback(nil,false);_reactDoExecuteJoins()
   assert(config:old().__options.language=='en' and caption(draw()).text=='中文')
+  assert(windowTitle()=='Route maps' and entryTooltip()=='Route maps','failed saves restore mounted text too')
+  toggleFrom(entry).onValueChange(1)
+  assert(entryTooltip()=='Close route maps','open entry uses the English close hint')
   -- English line-editor geometry includes a full-width narrow-screen search.
   local englishParam={};for k,v in pairs(param)do englishParam[k]=v end
   englishParam.geometry=S.geometry(viewport,'en')

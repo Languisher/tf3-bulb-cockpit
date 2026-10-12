@@ -80,6 +80,7 @@ local react={
     return function(param)return {recipe=name,param=param}end
   end,
   useState=function(v)return hook(v,false)end,useStateLazy=function(v)return hook(v,true)end,
+  useMirrorState=function(source)return source end,
   useRef=function(v)return hook(v,false)end,
   onStepTimer=function(fn,interval,jitter)
     assert(jitter==nil or type(jitter)=='boolean','onStepTimer jitter must be a boolean')

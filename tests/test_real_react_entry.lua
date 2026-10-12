@@ -57,11 +57,23 @@ local function context()
     self.index=self.index+1
     local h=self.states[self.index]
     if not h then
-      h={value=value,old=function(s)return s.value end,get=function(s)return s.value end,
-        set=function(s,v)s.value=v;ctx.writes=ctx.writes+1 end,hasExpired=function()return false end}
+      h={value=value,dependents={},old=function(s)return s.value end,get=function(s)return s.value end,
+        getUnderlyingState=function(s)return s end,
+        set=function(s,v)
+          if s.value==v then return end
+          s.value=v;ctx.writes=ctx.writes+1;ctx.dirty=true
+          for _,dependent in ipairs(s.dependents)do dependent:set(v)end
+        end,hasExpired=function()return false end}
       self.states[self.index]=h
     end
     return h
+  end
+  function ctx:declareDependentState(source)
+    local mirror=self:declareState(source:old())
+    if not mirror.source then
+      mirror.source=source;source.dependents[#source.dependents+1]=mirror
+    end
+    return mirror
   end
   ctx.declareRef=ctx.declareState
   function ctx:declareSelfRef()return {get=function()return nil end}end
@@ -117,6 +129,20 @@ assert(names[window.recipeId]=='Window','launcher uses the native Window drag im
 local wp=window.props.props[1]
 assert(wp.initialX==1 and wp.initialY==0 and wp.movable and wp.compact and wp.pinned)
 assert(not wp.autoFocusOnBecomingVisible and not wp.closable and not wp.pinnable)
+local function gripTooltip()
+  if floatingCtx.dirty then
+    floatingCtx.index=0;floatingCtx.dirty=false
+    _react.recipes[react.GetRecipeId(launcher)](floatingCtx,{props={launcherParams}})
+    window=nodes[floatingCtx.result[1]]
+  end
+  return nodes[window.props.props[1].header].props.props[1].tooltip
+end
+assert(gripTooltip()=='拖动此处移动线路图按钮')
+launcherParams.aliases:set({__options={language='en'}})
+assert(gripTooltip()=='Drag here to move the route map button',
+  'the existing floating grip must subscribe to language changes')
+launcherParams.aliases:set({__options={language='zh'}})
+assert(gripTooltip()=='拖动此处移动线路图按钮','switching back updates the existing grip')
 local function draw()
   local settings
   local function visit(id)
