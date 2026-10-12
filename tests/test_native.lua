@@ -329,6 +329,14 @@ do
   end
   assert(frame and frame.size[1]==44 and frame.size[2]==44 and frame.margin[1]==12,
     'floating entry starts on the native layer-button row')
+  -- Zero shadowWidth only changes the outside extents. The inherited native
+  -- nine-patch still needs clearing for a frameless, draggable button.
+  for _,property in ipairs({'backgroundImage1','borderImage','shadowNinePatch'})do
+    assert(frame[property] and frame[property].fileName=='',
+      'floating entry must clear inherited window paint: '..property)
+  end
+  assert(frame.shadowColor and frame.shadowColor[4]==0,
+    'floating entry must not tint the inherited window shadow')
   local pad,margin=entryRule.padding,entryRule.margin
   assert(entryRule.size[1]+pad[2]+pad[4]+margin[2]+margin[4]<=frame.size[1]
     and entryRule.size[2]+pad[1]+pad[3]+margin[1]+margin[3]<=frame.size[2],

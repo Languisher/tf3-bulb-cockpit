@@ -71,7 +71,10 @@ function data()
   add('Window!bulb-entry-window', {
     size={44,44},minSize={44,44},maxSize={44,44},anchorPoint={1,0},
     padding={0,0,0,0},margin={12,12,0,0},gravity={0,0},
-    backgroundColor1={0,0,0,0},borderColor={0,0,0,0},shadowWidth={0,0,0,0},
+    -- A zero shadowWidth leaves the native Window nine-patch installed.
+    -- Clear its paint explicitly; only the child toggle supplies a surface.
+    backgroundImage1={fileName=''},borderImage={fileName=''},shadowNinePatch={fileName=''},
+    backgroundColor1={0,0,0,0},borderColor={0,0,0,0},shadowColor={0,0,0,0},shadowWidth={0,0,0,0},
   })
   add('Window!bulb-entry-window Window::Content, Window!bulb-entry-window Window::Layout', {
     padding={0,0,0,0},margin={0,0,0,0},outerSpacing={0,0},innerSpacing={0,0},gravity={0,0},

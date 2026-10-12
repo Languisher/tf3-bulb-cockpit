@@ -48,16 +48,17 @@ local parser=dofile(gui..'/stylesheetutil.lua')
 require=previous
 local file=assert(io.open('tests/test_native.lua'));local harness=file:read('*a');file:close()
 _branchSelectorParser=parser
+_branchGuiPath=gui
 assert(load(harness..[=[
 do
   local parsed={};local add=_branchSelectorParser.makeAdder(parsed)
   for _,rule in ipairs(css)do add(rule.selector,rule.style)end
-  local function applied(kind,meta)
+  local function applied(kind,meta,rules)
     local element=(kind=='Component' or kind:match('^LinnanBulb')) and 'R::'..kind or kind
     local classes={}
     for class in (meta.class or ''):gmatch('[%w%-]+')do classes[class]=true end
     local result={}
-    for _,rule in ipairs(parsed)do if #rule.levels==1 then
+    for _,rule in ipairs(rules or parsed)do if #rule.levels==1 then
       local level=rule.levels[1];local match=not level.element or level.element==element
       if level.id and level.id~=meta.id then match=false end
       if #level.pseudoClassList>0 then match=false end
@@ -66,6 +67,32 @@ do
     end end
     return result
   end
+  -- Use the real Window/no-close-window defaults, including the shadow's
+  -- center patch. Zero outside shadow extents alone must not leave it painted.
+  local builtinFile=assert(io.open(_branchGuiPath..'/builtin.css.lua'))
+  local builtinSource=builtinFile:read('*a');builtinFile:close()
+  local windowRules={}
+  local environment={a=_branchSelectorParser.makeAdder(windowRules),
+    windowBackgroundColor={0,0,0,1},windowBorderColor={0,0,0,1},
+    colorDefault={NeutralVeryDark={0,0,0,1}},transparency={Medium=.5},
+    color_util={withTransparencyRaw=function()return {0,0,0,.5}end}}
+  for _,prefix in ipairs({'Window,','Window!no%-close%-button,'})do
+    local source=assert(builtinSource:match('(a%(%[%['..prefix..'.-\n\t%}%))'),
+      'native Window paint defaults must be present')
+    assert(load(source,'@native-window-defaults','t',environment))()
+  end
+  local classes={class='bulb-entry-window no-close-button'}
+  local nativeWindow=applied('Window',classes,windowRules)
+  assert(nativeWindow.shadowNinePatch.fileName~='' and nativeWindow.shadowColor[4]>0)
+  for _,rule in ipairs(parsed)do windowRules[#windowRules+1]=rule end
+  local launcher=applied('Window',classes,windowRules)
+  for _,property in ipairs({'backgroundImage1','borderImage','shadowNinePatch'})do
+    assert(launcher[property].fileName=='','launcher must suppress the inherited '..property)
+  end
+  assert(launcher.shadowColor[4]==0,'launcher shadow must be transparent')
+  local settingsWindow=applied('Window',{class='bulb-settings-window'},windowRules)
+  assert(settingsWindow.shadowNinePatch.fileName~='' and settingsWindow.backgroundImage1.fileName~='',
+    'the settings window must retain the native surface and shadow')
   local hidden=applied('Component',{class='bulb-layout-extent'})
   assert(hidden.visibility=='hidden','measurement extent must match the real R::Component element')
   for _,spec in ipairs({{'Component','bulb-glass'},{'Component','bulb-transfer-group'},
@@ -213,6 +240,7 @@ do
 end
 ]=],'@test_branch_connections.lua'))()
 _branchSelectorParser=nil
+_branchGuiPath=nil
 _nativeMat4=nil
 math.atan,math.atan2=atan,atan2
 _twoArgumentAtan=nil
