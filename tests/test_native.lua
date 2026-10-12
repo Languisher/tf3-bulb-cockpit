@@ -299,7 +299,7 @@ walk(settings,function(kind,param)if kind=='ToggleButton' then toggle=param end 
 assert(toggle,'settings toggle exists at startup')
 assert(toggle.content.kind=='ImageView' and toggle.value==0 and toggle.meta.tooltip=='线路图设置')
 assert(toggle.meta.class=='bulb-settings-toggle' and toggle.meta.styleSheet==nil,
-  'entry size, themed feedback and hover scale are defined together by native CSS')
+  'entry size and themed feedback are defined together by native CSS')
 local entryRule,iconRule,windowVisibility
 for _,rule in ipairs(css) do
   if rule.selector=='ToggleButton!bulb-settings-toggle' then entryRule=rule.style end
@@ -307,7 +307,34 @@ for _,rule in ipairs(css) do
   if rule.selector:find('!action-follow Window!bulb-settings-window',1,true) then windowVisibility=rule.style end
 end
 assert(entryRule.size[1]==32 and entryRule.padding[1]==4 and entryRule.margin[3]==2)
+do
+  local topAligned=false
+  for _,rule in ipairs(css)do
+    if rule.selector=='Window!bulb-settings-window Window::Content'then
+      topAligned=rule.style.gravity and rule.style.gravity[2]==0 and rule.style.padding[1]<=4
+    end
+  end
+  assert(topAligned,'settings content must start below the title without stretch-generated top whitespace')
+end
 assert(iconRule.size[1]==24 and iconRule.size[2]==24,'native layer icon is 24 GUI units')
+do
+  local frame,grip
+  for _,rule in ipairs(css)do
+    if rule.selector=='Window!bulb-entry-window'then frame=rule.style end
+    if rule.selector=='Window!bulb-entry-window Window::TitleLayout'then grip=rule.style end
+    if rule.selector:find('bulb-settings-toggle',1,true)then
+      assert(not rule.style.transform,'hover and checked states must not enlarge or shift the entry')
+    end
+  end
+  assert(frame and frame.size[1]==44 and frame.size[2]==44 and frame.margin[1]==12,
+    'floating entry starts on the native layer-button row')
+  local pad,margin=entryRule.padding,entryRule.margin
+  assert(entryRule.size[1]+pad[2]+pad[4]+margin[2]+margin[4]<=frame.size[1]
+    and entryRule.size[2]+pad[1]+pad[3]+margin[1]+margin[3]<=frame.size[2],
+    'native button including padding and margins must fit its floating frame')
+  assert(grip and grip.size[1]==frame.size[1] and grip.size[2]<=8,
+    'drag grip overlays only the upper edge, leaving the button body clickable')
+end
 assert(windowVisibility.visibility=='visible','only the mod settings window stays visible in cockpit mode')
 local pauseRule
 for _,rule in ipairs(css)do
@@ -464,9 +491,17 @@ end
 assert(not findSettings(tree),'camera replacement must not own or duplicate the toolbar entry')
 local entryNode=installed.mainButton()
 local entryTree=render(entryNode.recipe,entryNode.param)
-local entrySettings=assert(findSettings(entryTree),'official toolbar owns the settings entry')
-assert(entrySettings.meta.id=='linnan.bulb.settings' and not entrySettings.meta.class)
+assert(not findSettings(entryTree),'entry extension occupies no upper-left toolbar space')
 mounts.LinnanBulbMainButtonNative();join()
+local launcherParam=assert(windowParam)
+local launcherTree=render('LinnanBulbLauncherNative',launcherParam)
+assert(launcherTree.kind=='Window' and launcherTree.param.movable and launcherTree.param.compact
+  and launcherTree.param.pinned and not launcherTree.param.pinnable and not launcherTree.param.closable)
+assert(launcherTree.param.initialX==1 and launcherTree.param.initialY==0,'launcher starts at upper right')
+assert(not launcherTree.param.autoFocusOnBecomingVisible,'launcher must not steal focus on load')
+local entrySettings=assert(findSettings(launcherTree),'native floating launcher owns the settings entry')
+assert(entrySettings.meta.id=='linnan.bulb.settings' and not entrySettings.meta.class)
+windowParam,windowRecipe=nil,nil
 assert(not timers.LinnanBulbMainButtonNative,'entry must not add background polling')
 local hiddenSettingsRule
 for _,rule in ipairs(css)do

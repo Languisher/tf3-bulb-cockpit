@@ -28,7 +28,7 @@ do
     for _,v in pairs(node)do local found=findSettings(v);if found then return found end end
   end
   contexts.LinnanBulbSettingsNative={}
-  local settingsParam=findSettings(render('LinnanBulbMainButtonNative',{}))
+  local settingsParam=findSettings(render('LinnanBulbLauncherNative',launcherParam))
   assert(settingsParam and not settingsParam.meta.class,'settings entry is visible outside first person')
   local function gear()
     local result
@@ -85,7 +85,7 @@ do
     free.FreeCamTool.pop()
     local empty=render('LinnanBulbFreeCamNative',mounted.param)
     assert(not containsHud(empty),'exit must remove HUD even if the child never rerenders')
-    assert(findSettings(render('LinnanBulbMainButtonNative',{})),'independent toolbar entry survives cockpit exit')
+    assert(findSettings(render('LinnanBulbLauncherNative',launcherParam)),'independent floating entry survives cockpit exit')
     dropHud();join();staleTimer();join()
     assert(collections==before and not hudVisible,'old joins/timers must be inert after disposal')
     hudParam=nil

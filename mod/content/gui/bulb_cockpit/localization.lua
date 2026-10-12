@@ -10,6 +10,7 @@ I.english={
   ["货运"]="Freight",
   ["线路图设置"]="Route maps",
   ["关闭线路图设置"]="Close route maps",
+  ["拖动此处移动线路图按钮"]="Drag here to move the route map button",
   ["线路目录"]="Route directory",
   ["线路设置"]="Line settings",
   ["返回线路目录"]="Back to routes",

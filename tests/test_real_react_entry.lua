@@ -24,10 +24,15 @@ for _,name in ipairs({'Component','FloatingLayout','FloatingLayoutChild','BoxLay
 end
 local free={FreeCamOptions=react.RegisterRecipe('FreeCamOptions',function()end),
   FreeCamTool={push=function()end,pop=function()end}}
+local launcher,launcherParams,removed= nil,nil,0
+local wc={addSingletonWindow=function(recipe,param)launcher,launcherParams=recipe,param end,
+  removeAllWindows=function(recipe)
+    assert(recipe==launcher);launcherParams=nil;removed=removed+1
+  end}
 local base='mod/content/gui/bulb_cockpit/'
 local modules={['react.lua']=react,['builtin.lua']=builtin,['free_cam_options.tl']=free,
   ['styleutil.tl']={makeStyle=function(v)return v end},['collect.lua']={},
-  ['aliases.lua']={read=function()return {},0 end},['game_react_globals.tl']={}}
+  ['aliases.lua']={read=function()return {},0 end},['game_react_globals.tl']={getDefaultWindowApi=function()return wc end}}
 for _,name in ipairs({'localization.lua','native_model.lua','mode_marks.lua','diagnostics.lua','settings.lua','city_settings.lua','station_settings.lua','camera_state.lua'})do
   modules[name]=dofile(base..name)
 end
@@ -64,6 +69,10 @@ local function context()
   function ctx:onMount(fn)self.mount=fn end
   function ctx:onUnmount(fn)self.unmount=fn end
   function ctx:onStepTimer(fn)self.timer=fn end
+  function ctx:checkRecipeMatch(id,expected)
+    assert(nodes[id].recipeId==expected,'launcher must directly return the native Window')
+    return true
+  end
   return ctx
 end
 -- Another UI mod wins the replacement slot. Its native controls must still
@@ -82,7 +91,7 @@ if descriptorFile then descriptorFile();descriptor=data()end
 api.res={genericRep={getAllOfType=function(kind)
   return descriptor and kind==descriptor.type and {1} or {}
 end,get=function(id)assert(id==1);return {data=descriptor.data}end}}
-local extension=react.RegisterExtensionPoint0('','MainModButtonAreaExtension')
+local extension=react.RegisterExtensionPoint0('','ModEntryPointExtension')
 local plugins=react.getPlugins(extension)
 assert(#plugins==1,'ordinary-map entry disappears when another mod replaces FreeCamOptions')
 local toolbar=react.RegisterRecipe('TestToolbar',function()
@@ -96,19 +105,29 @@ local function unwrap(id)
 end
 local entry=unwrap(nodes[toolbarCtx.result[1]].props.props[1].children[1])
 local ctx=context()
+ctx.index=0;_react.recipes[entry.recipeId](ctx,entry.props)
+ctx.mount();_reactDoExecuteJoins()
+assert(launcher and launcherParams,'extension must mount one floating launcher')
+assert(launcherParams.initialX==1 and launcherParams.initialY==0,
+  'the native window container must receive upper-right initial coordinates')
+local floatingCtx=context()
+_react.recipes[react.GetRecipeId(launcher)](floatingCtx,{props={launcherParams}})
+local window=nodes[floatingCtx.result[1]]
+assert(names[window.recipeId]=='Window','launcher uses the native Window drag implementation')
+local wp=window.props.props[1]
+assert(wp.initialX==1 and wp.initialY==0 and wp.movable and wp.compact and wp.pinned)
+assert(not wp.autoFocusOnBecomingVisible and not wp.closable and not wp.pinnable)
 local function draw()
-  ctx.index=0;_react.recipes[entry.recipeId](ctx,entry.props)
   local settings
   local function visit(id)
     local n=unwrap(id);local p=n.props.props[1]
     if names[n.recipeId]=='LinnanBulbSettingsNative'then settings=p end
-    for _,key in ipairs({'item','layout'})do if p and p[key]then visit(p[key])end end
+    for _,key in ipairs({'item','layout','content','header'})do if p and p[key]then visit(p[key])end end
     for _,child in ipairs(p and p.children or {})do visit(child)end
   end
-  visit(ctx.result[1]);return settings
+  visit(floatingCtx.result[1]);return settings
 end
-local params=assert(draw());ctx.mount();_reactDoExecuteJoins()
-params=assert(draw());assert(type(params.aliases:old())=='table')
+local params=assert(draw());assert(type(params.aliases:old())=='table')
 assert(not ctx.timer,'toolbar must not register an idle timer')
 local initialQueries=queries
 for i=1,2000 do _reactDoExecuteDeferredSteps();_reactDoExecuteJoins()end
@@ -120,4 +139,8 @@ _reactDoExecuteJoins()
 assert(opened.x==1280 and opened.y==720,'size settings without any free-camera host')
 params.prepareOpen(function()error('disposed toolbar must cancel queued opens')end)
 ctx.unmount();_reactDoExecuteJoins()
-print('PASS: official toolbar survives a competing FreeCam replacement, sizes independently, does no idle polling and cancels disposed work')
+assert(removed==1 and not launcherParams,'disposing the plugin removes its native launcher')
+local pending=context();_react.recipes[entry.recipeId](pending,entry.props)
+pending.mount();pending.unmount();_reactDoExecuteJoins()
+assert(not launcherParams,'unmount before join must not recreate a launcher')
+print('PASS: floating native launcher survives competing replacements, owns drag/clamping, sizes independently, has no idle polling and cancels disposed work')

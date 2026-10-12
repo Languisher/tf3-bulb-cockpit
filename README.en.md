@@ -1,4 +1,4 @@
-# In-Game Route Display · 0.1.67dev
+# In-Game Route Display · 0.1.68dev
 
 English · [中文说明](README.md)
 
@@ -28,7 +28,7 @@ Published packages are available under [Releases](https://github.com/Languisher/
 
 1. Fully quit the game before installing or upgrading.
 2. Load your save with **In-Game Route Display** (Chinese title: **游戏线路显示**) enabled.
-3. Open the route-map button in the upper-left corner of the normal map view.
+3. Open the route-map button in the upper-right corner of the normal map view. Hold its small top grip to drag it.
 4. On the directory homepage, click **English**. Click **中文** to switch back.
 5. Save your game to retain the language preference when reloading.
 
@@ -42,7 +42,7 @@ Typical macOS Steam installation location:
 
 ## Use
 
-- The settings entry uses the game's official upper-left mod toolbar and follows its layout. Enter a vehicle’s first-person view to show its identity at the upper left and its route map at the bottom center. The settings button is hidden in first-person view and in the pause menu.
+- The settings entry starts at the upper right, on the same row and at the same size as the native layers button. Hold its small top grip to drag it; click the button body to open settings. Enter a vehicle’s first-person view to show its identity at the upper left and its route map at the bottom center. The settings button is hidden in first-person view and in the pause menu.
 - The directory lists RER, Metro and Tramway badges. Bus lines appear only after a search. Click a badge to view the full static map; click a transfer badge to navigate to that line. Returning releases the current map’s data.
 - The pin beside **Back to routes** locates the selected real line on the game map and closes the window.
 - **Line settings** edits each badge as prefix + number/letters + suffix. Search by name or complete badge, such as `T1` or `T3b`. **Apply all** includes edits hidden by a search filter. These edits never rename real game lines.
@@ -71,14 +71,14 @@ python3 tools/run_tests.py --game-gui /path/to/extracted/gui/main
 
 The directory must contain `react.lua`, `stylesheetutil.lua` and the relative `../../scripts/mat4.tl`. Game sources are not redistributed. Without this argument, those tests are explicitly skipped.
 
-Version 0.1.67dev passed 49 Lua tests and 68 syntax checks locally, including a competing camera-replacement scenario, bilingual persistence, failure rollback, native React wrappers, layout bounds and resource-lifetime budgets. These checks mock the game’s C++ GUI and cannot replace in-game visual and performance checks.
+Version 0.1.68dev passed 49 Lua tests and 68 syntax checks locally, including floating-entry placement parameters, a competing camera-replacement scenario, bilingual persistence, failure rollback, native React wrappers, layout bounds and resource-lifetime budgets. These checks mock the game’s C++ GUI and cannot replace in-game visual, dragging and performance checks.
 
-## Missing toolbar button
+## Missing route-map button
 
 The button appears after loading a save in normal map view. It is hidden in first-person view, the pause menu and the game's main menu. Enable the mod for that save and fully restart the game after updating.
 
-Version 0.1.67dev mounts the entry through the official mod toolbar extension. Earlier versions attached it to `FreeCamOptions`; another UI mod replacing that component could remove the entry. The new entry also follows toolbar layout instead of fixed screen coordinates. The first-person HUD still adapts the camera component, so this does not establish compatibility with every UI mod.
+Version 0.1.68dev mounts an independent native floating window through the official `ModEntryPointExtension`. It starts at the upper right and can be dragged, without occupying the layers/clock toolbar. Earlier versions attached the entry to `FreeCamOptions`; another UI mod replacing that component could remove it. The first-person HUD still adapts the camera component, so this does not establish compatibility with every UI mod.
 
-If it remains missing, report your OS, game Build, mod version, other UI mods and startup errors mentioning `linnan_bulb_cockpit`. When verbose logging is retained, `[Route Display 0.1.67dev] toolbar mounted` confirms that the entry component mounted; an installed message alone does not.
+If it remains missing, report your OS, game Build, mod version, other UI mods and startup errors mentioning `linnan_bulb_cockpit`. When verbose logging is retained, `[Route Display 0.1.68dev] floating entry mounted` confirms that the entry was submitted to the native window manager; an installed message alone does not.
 
 The mod includes no commercial Parisine font or game fonts. It uses the game’s native fonts and approximates BULB’s visual style. Asset attribution is in [notice.md](mod/content/gui/bulb_cockpit/symbols/notice.md). This project is not affiliated with BULB, RATP, Île-de-France Mobilités or the game developer.

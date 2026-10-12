@@ -64,35 +64,45 @@ function data()
   add('R::Component!bulb-station-marker > FloatingLayout, R::LinnanBulbFlashingStationNative > FloatingLayout', {
     gravity={-1,-1},padding={0,0,0,0},margin={0,0,0,0},
   })
-  -- Match layers.css.lua's head button, including its hover scale. Keep
-  -- settings layout spacing out of the icon's measured bounds.
+  -- The entry point owns no toolbar space; the pinned native window floats.
   add('R::LinnanBulbMainButtonNative', {
-    size={44,44},padding={0,0,0,0},margin={0,0,0,0},anchorPoint={0,0},
+    size={0,0},padding={0,0,0,0},margin={0,0,0,0},
   })
-  add('R::LinnanBulbMainButtonNative > FloatingLayout', {gravity={-1,-1},padding={0,0,0,0},margin={0,0,0,0}})
+  add('Window!bulb-entry-window', {
+    size={44,44},minSize={44,44},maxSize={44,44},anchorPoint={1,0},
+    padding={0,0,0,0},margin={12,12,0,0},gravity={0,0},
+    backgroundColor1={0,0,0,0},borderColor={0,0,0,0},shadowWidth={0,0,0,0},
+  })
+  add('Window!bulb-entry-window Window::Content, Window!bulb-entry-window Window::Layout', {
+    padding={0,0,0,0},margin={0,0,0,0},outerSpacing={0,0},innerSpacing={0,0},gravity={0,0},
+  })
+  add('Window!bulb-entry-window Window::TitleLayout', {
+    size={44,8},padding={0,0,0,0},margin={0,0,0,0},innerSpacing={0,0},gravity={0,0},
+  })
+  add('Window!bulb-entry-window Window::Title, Window!bulb-entry-window Window::Icon, Window!bulb-entry-window Window::TitleLayout Button', {visibility='none'})
+  add('R::Component!bulb-entry-content', {size={44,44},padding={0,0,0,0},margin={0,0,0,0},gravity={0,0}})
+  add('R::Component!bulb-entry-content > FloatingLayout', {gravity={-1,-1},padding={0,0,0,0},margin={0,0,0,0}})
+  add('R::Component!bulb-entry-grip', {size={44,8},padding={0,0,0,0},margin={0,0,0,0}})
+  add('R::Component!bulb-entry-grip > FloatingLayout', {gravity={-1,-1},padding={0,0,0,0},margin={0,0,0,0}})
+  add('R::Component!bulb-entry-grip-line', {size={12,2},anchorPoint={.5,.5},backgroundColor=colors.NeutralLightest})
   add('#linnan.bulb.entry-gauge', {visibility='hidden',padding={0,0,0,0},margin={0,0,0,0}})
   add('R::LinnanBulbSettingsNative, R::LinnanBulbSettingsNative > BoxLayout', {
     padding={0,0,0,0},margin={0,0,0,0},outerSpacing={0,0},innerSpacing={0,0},gravity={0,0},
   })
   add('ToggleButton!bulb-settings-toggle', {
     size={32,32},padding={4,4,4,4},margin={1,1,2,1},gravity={0.5,0.5},
-    transformOrigin={0.5,1},transform=transf.scaleRotZTransl(1,0,{x=0,y=0,z=0}),
-    transitionPropertyDuration={transform=0.1},
   })
-  add('ImageView!bulb-settings-toggle-icon', {size={24,24}})
-  add('ToggleButton!bulb-settings-toggle!unchecked:hover, ToggleButton!bulb-settings-toggle!checked', {
-    transform=transf.scaleRotZTransl(1.15,0,{x=0,y=0,z=0}),
-  })
-  add('ToggleButton!bulb-settings-toggle!unchecked:active, ToggleButton!bulb-settings-toggle!checked:active', {
-    transform=transf.scaleRotZTransl(1,0,{x=0,y=0,z=0}),
-  })
+  add('ImageView!bulb-settings-toggle-icon', {size={24,24},color=colors.NeutralLightest})
   -- Native Window supplies its themed surface, contour, title and close
   -- control. Only this window stays visible during the cockpit action.
   add('!action-follow Window!bulb-settings-window, !action-camera Window!bulb-settings-window', {visibility='visible'})
   -- Match game.css.lua's pause tool state, independently of simulation speed.
   add('#mainView!tool-pause #linnan.bulb.settings, #mainView!tool-pause Window!bulb-settings-window', {visibility='none'})
+  add('#mainView!tool-pause Window!bulb-entry-window', {visibility='none'})
   add('!action-follow #linnan.bulb.settings, !action-camera #linnan.bulb.settings', {visibility='none'})
-  add('Window!bulb-settings-window Window::Content', {padding={12,12,12,12}})
+  add('Window!bulb-settings-window Window::Layout', {padding={0,0,0,0},margin={0,0,0,0},innerSpacing={0,0},gravity={0,0}})
+  add('Window!bulb-settings-window Window::Content', {padding={4,12,12,12},gravity={0,0}})
+  add('R::LinnanBulbBrowserNative > BoxLayout', {padding={0,0,0,0},margin={0,0,0,0},outerSpacing={0,0},innerSpacing={0,0},gravity={0,0}})
   add('Window!bulb-settings-window TextView', {color=colors.NeutralLightest})
   add('R::Component!bulb-settings-body > BoxLayout', {outerSpacing={0,0},innerSpacing={8,8},gravity={-1,0}})
   -- Static page: one left column shared by navigation, identity and the

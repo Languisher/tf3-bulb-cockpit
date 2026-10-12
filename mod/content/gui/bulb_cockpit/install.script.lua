@@ -510,8 +510,31 @@ local Settings=settingsUI.create(react,builtin,style,P,modeMarks,collect,aliasSt
   stationUI.create(react,builtin,style,aliasStore,windows,P,collect,I),
   {badge=lineBadge,draw=staticDiagram,mark=modeMark},I)
 
--- The ordinary-map entry uses the game's additive mod toolbar. It must not
--- depend on the replaceable FreeCamOptions constructor or its native ID.
+-- The compact native window supplies dragging, bounds clamping and position
+-- retention. Its small title grip overlaps the button instead of adding a row.
+local Launcher=react.RegisterWrapperRecipe('LinnanBulbLauncherNative',builtin.Window,function(param)
+  local tr=I.bind(param.aliases:old())
+  return builtin.Window{title='',id='linnan.bulb.launcher.window',
+    meta={class='bulb-entry-window'},compact=true,movable=true,
+    closable=false,pinnable=false,pinned=true,
+    autoFocusOnBecomingVisible=false,autoVisibilityOnFocusChange=false,
+    initialX=1,initialY=0,
+    header=builtin.Component{meta={class='bulb-entry-grip',
+      tooltip=tr('拖动此处移动线路图按钮'),mouseCursorOverride=1010},
+      layout=builtin.FloatingLayout{children={builtin.FloatingLayoutChild{h=.5,v=.5,
+        item=builtin.Component{mouseTransparent=true,meta={class='bulb-entry-grip-line'}}}}}},
+    content=builtin.Component{meta={class='bulb-entry-content'},layout=builtin.FloatingLayout{children={
+      builtin.FloatingLayoutChild{h=0,v=0,item=Settings{
+        meta={id='linnan.bulb.settings',styleSheet=styleutil.makeStyle{anchorPoint={0,0}}},
+        aliases=param.aliases,viewport=param.viewport,color=color,prepareOpen=param.prepareOpen}},
+      builtin.FloatingLayoutChild{h=0,v=0,item=builtin.Component{
+        mouseTransparent=true,meta={id='linnan.bulb.entry-gauge',
+          styleSheet=styleutil.makeStyle{size={16,16},anchorPoint={0,0}}}}},
+    }}}}
+end)
+
+-- The official entry extension owns the floating launcher independently of
+-- both camera replacements and the clipped upper-left toolbar ScrollArea.
 local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
   local aliases=react.useState({})
   local viewport=react.useState({x=800,y=600})
@@ -521,37 +544,41 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
     if not control.alive or aliases:hasExpired()then return end
     local ok,stored=pcall(aliasStore.read)
     if ok and stored then aliases:set(stored)
-    elseif not ok then log.warning('[Route Display 0.1.67dev] toolbar settings: '..tostring(stored))end
+    elseif not ok then log.warning('[Route Display 0.1.68dev] launcher settings: '..tostring(stored))end
+  end
+  local function prepareOpen(open)
+    react.enqueueJoin(function()
+      if not control.alive or viewport:hasExpired()then return end
+      refreshAliases()
+      -- A gauge inside the launcher cancels normalized/Retina scaling.
+      local ok,size=pcall(function()
+        return P.viewport(api.gui.byId.getSize('mainView'),
+          api.gui.byId.getSize('linnan.bulb.entry-gauge'),16)
+      end)
+      size=ok and size or viewport:old()
+      if size~=viewport:old()then viewport:set(size)end
+      open(size)
+    end,'LinnanBulbMainButtonNative:openSettings')
   end
   react.onMount(function()
     control.alive=true
-    log.verbose('[Route Display 0.1.67dev] toolbar mounted; extension=::MainModButtonAreaExtension')
-    react.enqueueJoin(refreshAliases,'LinnanBulbMainButtonNative:mount')
+    react.enqueueJoin(function()
+      if not control.alive then return end
+      refreshAliases()
+      local wc=windows.getDefaultWindowApi()
+      if wc then
+        wc.addSingletonWindow(Launcher,{aliases=aliases,viewport=viewport:old(),prepareOpen=prepareOpen,
+          initialX=1,initialY=0})
+        log.verbose('[Route Display 0.1.68dev] floating entry mounted; extension=::ModEntryPointExtension')
+      else log.warning('[Route Display 0.1.68dev] launcher window manager unavailable')end
+    end,'LinnanBulbMainButtonNative:mount')
   end)
-  react.onUnmount(function()control.alive=false end)
-  return builtin.FloatingLayout{children={
-    builtin.FloatingLayoutChild{h=0,v=0,item=Settings{
-      meta={id='linnan.bulb.settings',styleSheet=styleutil.makeStyle{anchorPoint={0,0}}},
-      aliases=aliases,viewport=viewport:old(),color=color,
-      prepareOpen=function(open)
-        react.enqueueJoin(function()
-          if not control.alive or viewport:hasExpired()then return end
-          refreshAliases()
-          -- mainView fills the GUI viewport. A small hidden gauge fits inside
-          -- the toolbar and cancels normalized-coordinate/Retina scaling.
-          local ok,size=pcall(function()
-            return P.viewport(api.gui.byId.getSize('mainView'),
-              api.gui.byId.getSize('linnan.bulb.entry-gauge'),16)
-          end)
-          size=ok and size or viewport:old()
-          if size~=viewport:old()then viewport:set(size)end
-          open(size)
-        end,'LinnanBulbMainButtonNative:openSettings')
-      end}},
-    builtin.FloatingLayoutChild{h=0,v=0,item=builtin.Component{
-      mouseTransparent=true,meta={id='linnan.bulb.entry-gauge',class='bulb-entry-gauge',
-        styleSheet=styleutil.makeStyle{size={16,16},anchorPoint={0,0}}}}},
-  }}
+  react.onUnmount(function()
+    control.alive=false
+    local wc=windows.getDefaultWindowApi()
+    if wc then wc.removeAllWindows(Launcher)end
+  end)
+  return builtin.FloatingLayout{children={}}
 end)
 
 local function mainButton()
