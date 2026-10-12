@@ -6,7 +6,7 @@ do
   modules['aliases.lua'].saveOptions=function(value,callback)requests[#requests+1]={value=value,callback=callback}end
   local browser='LinnanBulbBrowserNative'
   contexts[browser]={}
-  aliases={__options={flashNextStop=true,other=true}}
+  aliases={__options={flashNextStop=true,other=true,language='zh'}}
   local roster={{id=10,name='West Tram',mode='TRAM',color='#006db8'},
     {id=20,name='City Bus',mode='BUS',color='#ffcf00'}}
   local param={aliases=aliasState,lines=roster,geometry=S.geometry({x=1280,y=720}),viewport={x=1280,y=720},

@@ -4,7 +4,7 @@ do
   warnings={}
   local browserName,staticName='LinnanBulbBrowserNative','LinnanBulbStaticRouteNative'
   contexts[browserName]={};contexts[staticName]={}
-  aliases={__options={flashNextStop=true}}
+  aliases={__options={flashNextStop=true,language='zh'}}
   local roster={{id=10,name='Metro 1',mode='METRO',color='#006db8'},
     {id=20,name='Tram 2',mode='TRAM',color='#e0b332'},
     {id=30,name='Bus 1001',mode='BUS',color='#ba4c99'}}

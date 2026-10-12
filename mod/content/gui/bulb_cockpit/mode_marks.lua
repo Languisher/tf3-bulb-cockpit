@@ -13,8 +13,8 @@ function B.geometry(mode,small)
   return {shape=shapes[mode] or shapes.TRAIN,width=bus and (small and (mode=='BUS' and 34 or 38) or 50) or size,
     height=bus and (small and (mode=='BUS' and 15.3 or 17.1) or 22.5) or size,
     icon=small and 18 or 26,gap=small and 5 or 6,
-    font=small and (bus and (mode=='BUS' and 11 or 9) or (mode=='TRAM' and 16 or 18))
-      or (bus and 14 or (mode=='TRAM' and 20 or 28)),
+    font=small and (bus and (mode=='BUS' and 11 or 9) or (mode=='TRAM' and 16 or (mode=='METRO' and 20 or 18)))
+      or (bus and 14 or (mode=='TRAM' and 20 or (mode=='METRO' and 32 or 28))),
     minFont=small and 9 or 10}
 end
 -- Advance widths from the game's OFL Noto Sans CJK SC Bold face, rounded upward.
@@ -111,7 +111,7 @@ function B.create(builtin,style,text,gameIcon,theme)
         small and 'bulb-rer-transfer-preset' or 'bulb-rer-line-preset',tooltip),x,y,width,height)
     else
       add(children,mask(g.shape,g.width,g.height,fill,'bulb-shape-'..g.shape,tooltip),x,y,width,height)
-      local inset=(mode=='METRO' or mode=='RER' or mode=='TRAIN') and g.width*0.16
+      local inset=mode=='METRO' and g.width*0.06 or (mode=='RER' or mode=='TRAIN') and g.width*0.16
         or (mode=='TRAM' and small and g.width*0.05 or g.width*0.10)
       local labelWidth=g.width-2*inset
       local value,font=B.fit(label,labelWidth,g.font,g.minFont)

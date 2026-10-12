@@ -1,4 +1,4 @@
-# In-Game Route Display · 0.1.70dev
+# In-Game Route Display · 0.1.71dev
 
 English · [中文说明](README.md)
 
@@ -29,10 +29,10 @@ Published packages are available under [Releases](https://github.com/Languisher/
 1. Fully quit the game before installing or upgrading.
 2. Load your save with **In-Game Route Display** (Chinese title: **游戏线路显示**) enabled.
 3. Open the route-map button in the upper-right corner of the normal map view. Hold its small top grip to drag it.
-4. On the directory homepage, click **English**. Click **中文** to switch back.
+4. The interface defaults to English. Click **中文** on the directory homepage to use Chinese; click **English** to switch back.
 5. Save your game to retain the language preference when reloading.
 
-Existing saves default to Chinese. Only the mod interface is translated: line names, station names, city names and custom badges retain their original text. The existing window title, button hints and page content switch immediately. Language and blinking preferences are saved independently.
+Saves without a language preference default to English; explicitly saved English or Chinese preferences are preserved. Only the mod interface is translated: line names, station names, city names and custom badges retain their original text. The existing window title, button hints and page content switch immediately. Language and blinking preferences are saved independently.
 
 Typical macOS Steam installation location:
 
@@ -71,14 +71,14 @@ python3 tools/run_tests.py --game-gui /path/to/extracted/gui/main
 
 The directory must contain `react.lua`, `stylesheetutil.lua` and the relative `../../scripts/mat4.tl`. Game sources are not redistributed. Without this argument, those tests are explicitly skipped.
 
-Version 0.1.70dev passed 49 Lua tests and 68 syntax checks locally, including floating-entry placement parameters, a competing camera-replacement scenario, bilingual persistence, failure rollback, native React wrappers, layout bounds and resource-lifetime budgets. These checks mock the game’s C++ GUI and cannot replace in-game visual, dragging and performance checks.
+Version 0.1.71dev passed 49 Lua tests and 68 syntax checks locally, including floating-entry placement parameters, a competing camera-replacement scenario, bilingual persistence, failure rollback, native React wrappers, layout bounds and resource-lifetime budgets. These checks mock the game’s C++ GUI and cannot replace in-game visual, dragging and performance checks.
 
 ## Missing route-map button
 
 The button appears after loading a save in normal map view. It is hidden in first-person view, the pause menu and the game's main menu. Enable the mod for that save and fully restart the game after updating.
 
-Version 0.1.70dev mounts an independent native floating window through the official `ModEntryPointExtension`. It starts at the upper right and can be dragged, without occupying the layers/clock toolbar. Earlier versions attached the entry to `FreeCamOptions`; another UI mod replacing that component could remove it. The first-person HUD still adapts the camera component, so this does not establish compatibility with every UI mod.
+Version 0.1.71dev mounts an independent native floating window through the official `ModEntryPointExtension`. It starts at the upper right and can be dragged, without occupying the layers/clock toolbar. Earlier versions attached the entry to `FreeCamOptions`; another UI mod replacing that component could remove it. The first-person HUD still adapts the camera component, so this does not establish compatibility with every UI mod.
 
-If it remains missing, report your OS, game Build, mod version, other UI mods and startup errors mentioning `linnan_bulb_cockpit`. When verbose logging is retained, `[Route Display 0.1.70dev] floating entry mounted` confirms that the entry was submitted to the native window manager; an installed message alone does not.
+If it remains missing, report your OS, game Build, mod version, other UI mods and startup errors mentioning `linnan_bulb_cockpit`. When verbose logging is retained, `[Route Display 0.1.71dev] floating entry mounted` confirms that the entry was submitted to the native window manager; an installed message alone does not.
 
 The mod includes no commercial Parisine font or game fonts. It uses the game’s native fonts and approximates BULB’s visual style. Asset attribution is in [notice.md](mod/content/gui/bulb_cockpit/symbols/notice.md). This project is not affiliated with BULB, RATP, Île-de-France Mobilités or the game developer.

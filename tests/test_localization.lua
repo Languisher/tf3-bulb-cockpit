@@ -1,7 +1,9 @@
 local I=dofile('mod/content/gui/bulb_cockpit/localization.lua')
-assert(I.language()== 'zh' and I.language({__options={language='unknown'}})=='zh')
+assert(I.language()=='en' and I.language({})=='en'
+  and I.language({__options={language='unknown'}})=='en','unset or invalid language defaults to English')
+assert(I.bind({})('线路图设置')=='Route maps','first load uses English without writing a preference')
 local en=I.bind({__options={language='en'}})
-local zh=I.bind({})
+local zh=I.bind({__options={language='zh'}})
 assert(en('线路设置')=='Line settings' and zh('线路设置')=='线路设置')
 assert(en('已应用 %d 条修改，请保存游戏。',3)=='Applied 3 changes. Please save your game.')
 assert(en('杭州站')=='杭州站' and en('T1支线')=='T1支线','game data remains literal')

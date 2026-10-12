@@ -137,7 +137,7 @@ local function gripTooltip()
   end
   return nodes[window.props.props[1].header].props.props[1].tooltip
 end
-assert(gripTooltip()=='拖动此处移动线路图按钮')
+assert(gripTooltip()=='Drag here to move the route map button','fresh launcher defaults to English')
 launcherParams.aliases:set({__options={language='en'}})
 assert(gripTooltip()=='Drag here to move the route map button',
   'the existing floating grip must subscribe to language changes')

@@ -138,7 +138,7 @@ local Entry=S.create(react,builtin,testStyle,P,B,
     return builtin.Component{meta=testStyle{size={1600,200}},layout=builtin.BoxLayout{children={testText('静态图',14,1600,200)}}}
   end},I)
 local entryId=react.GetRecipeId(Entry)
-local aliases=state({})
+local aliases=state({__options={language='zh'}})
 local function toggleFrom(root)
   local wrapped=nodes[root.props.props[1].children[1]]
   assert(wrapped.recipeId==1,'toggle metadata should use WithComponentParams')
@@ -345,7 +345,7 @@ for id,name in pairs(names)do
   if name=='LinnanBulbBrowserNative'then browserId=id end
 end
 assert(contentId and browserId)
-local flashAliases=state({__options={flashNextStop=false,otherOption=true}})
+local flashAliases=state({__options={flashNextStop=false,otherOption=true,language='zh'}})
 local flashParam={aliases=flashAliases,lines={},viewport={x=1280,y=720},geometry=S.geometry({x=1280,y=720}),color=function()return {1,1,0,1}end}
 local flashCtx=context()
 local function drawFlash()
@@ -380,7 +380,7 @@ do
   end
   local roster={{id=10,name='电车甲',mode='TRAM'},{id=20,name='公交乙',mode='BUS'},
     {id=30,name='铁路丙',mode='TRAIN'}}
-  local config=state({['20']={name='公交乙',prefix='',identifier='1001',suffix='',displayMode='BUS'}})
+  local config=state({__options={language='zh'},['20']={name='公交乙',prefix='',identifier='1001',suffix='',displayMode='BUS'}})
   local param={aliases=config,lines=roster,geometry=S.geometry({x=1280,y=720}),
     color=function()return {1,.8,0,1}end}
   local ctx=context()
@@ -474,7 +474,7 @@ end
 print('PASS: actual game react.lua converts native settings, inline badges and bulk edits across filters, retry and confirmation')
 -- The native wrapper and dependent content must switch on the first click.
 do
-  local config=state({__options={flashNextStop=true}})
+  local config=state({__options={flashNextStop=true,language='zh'}})
   local viewport={x=400,y=600}
   local param={aliases=config,lines={},viewport=viewport,geometry=S.geometry(viewport),color=function()return {1,1,0,1}end,
     onClose=function()end,session={closed=false,lines={},owners={}}}
@@ -490,6 +490,18 @@ do
   end
   local windowId
   for id,name in pairs(names)do if name=='LinnanBulbSettingsWindowNative'then windowId=id end end
+  local fresh=state({})
+  local freshParam={};for key,value in pairs(param)do freshParam[key]=value end
+  freshParam.aliases=fresh;freshParam.geometry=S.geometry(viewport,'en')
+  local freshWindow=render(assert(windowId),freshParam)
+  local freshEntry=render(entryId,freshParam)
+  assert(freshWindow.props.props[1].title=='Route maps'
+    and nodes[freshEntry.props.props[1].children[1]].props.props[1].tooltip=='Route maps',
+    'first mount defaults to English for the existing window and entry')
+  lowerBound=nextNode;render(browserId,freshParam)
+  assert(caption(control('linnan.bulb.browser.language')).text=='中文'
+    and caption(control('linnan.bulb.browser.configure')).text=='Line settings'
+    and fresh:old().__options==nil,'fresh directory is English without writing a preference')
   local window,windowCtx=render(assert(windowId),param)
   local entry,entryCtx=render(entryId,param)
   local function windowTitle()

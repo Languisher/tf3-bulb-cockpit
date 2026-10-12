@@ -11,7 +11,7 @@ do
   local graph=assert(G.build({a,b}))
   snapshot={route={lineId=10,name=a.name,mode=a.mode,color=a.color,stops=a.stops},network=graph,
     lines={a,b},next=2,passed=1,vehicle=200}
-  aliases={__options={flashNextStop=true}}
+  aliases={__options={flashNextStop=true,language='zh'}}
   local hud={aliases=aliasState,viewport={x=1280,y=720}}
   tick();local drawn=render('LinnanBulbCockpitHudNative',hud)
   local strokes,diagonals,markers,light,canvas=0,0,0,0

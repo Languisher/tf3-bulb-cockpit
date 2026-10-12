@@ -5,15 +5,40 @@ for _,kind in ipairs({'ImageView','Component','FloatingLayout','FloatingLayoutCh
 end
 local function text(value,font,width,height,ink,_,class,anchor,tooltip)
   return {kind='TextView',param={text=value,meta={class=class,tooltip=tooltip,
-    styleSheet={size={width,height},color=ink}}}}
+    styleSheet={size={width,height},color=ink,fontSize=font}}}}
 end
-local _,group=B.create(builtin,function(value)return {styleSheet=value}end,text,
+local single,group,badge=B.create(builtin,function(value)return {styleSheet=value}end,text,
   function(mode,size)return {kind='ImageView',param={path=mode,meta={styleSheet={size={size,size}}}}}end)
 assert(type(group)=='function','the renderer must expose a shared-icon horizontal transfer row')
 local function walk(node,fn)
   if type(node)~='table'then return end
   if node.kind then fn(node.kind,node.param)end
   for _,value in pairs(node)do if type(value)=='table'then walk(value,fn)end end
+end
+-- The same numeric badge path is used by identity, directory and transfers.
+for _,small in ipairs({true,false})do
+  local diameter=small and 24 or 38
+  for _,label in ipairs({'1','8','10','18','99','1bis','123456789'})do
+    local function check(tree)
+      local seen=false
+      walk(tree,function(kind,p)
+        if kind=='TextView' and (p.meta.class=='bulb-line-badge' or p.meta.class=='bulb-transfer-label')then
+          seen=true
+          local st=p.meta.styleSheet
+          assert(B.textWidth(p.text,st.fontSize)<=st.size[1]+.001 and st.size[2]<=diameter,
+            'fitted metro labels stay inside their unchanged badge bounds')
+          if label:match('^%d%d?$')then
+            assert(p.text==label and st.fontSize>=(small and (#label==1 and 20 or 18) or (#label==1 and 32 or 29)),
+              'one/two digit metro numbers must use the enlarged type')
+          end
+        end
+      end)
+      assert(seen)
+    end
+    check(single('METRO',label,{1,.8,0,1},small))
+    check(badge('METRO',label,{1,.8,0,1},small))
+    if small then check(group('METRO',{{y=0,lines={{text=label,fullName='Metro',fill={1,.8,0,1}}}}}))end
+  end
 end
 for _,mode in ipairs({'METRO','RER','TRAM','BUS','BOAT','AIR','TRUCK'})do
   local lines={{text=mode=='RER' and 'A' or '1',fullName='full line one',fill={1,.8,0,1}},

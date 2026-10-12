@@ -4,7 +4,7 @@ local S=dofile('mod/content/gui/bulb_cockpit/settings.lua')
 local snapshot={route={lineId=10,name='tram 乘客-杭州-LO-1',mode='TRAM',color='#006db8',stops={}},next=3,passed=2}
 for i=1,23 do snapshot.route.stops[i]={id=i,name='杭州火车站'..i,transfers={}} end
 snapshot.route.stops[1].transfers={{id=20,name='tram 乘客-杭州-LO-2',mode='TRAM',color='#ba4c99'}}
-local aliases={__options={flashNextStop=true},['10']={name=snapshot.route.name,shortName='T1'},['20']={name='tram 乘客-杭州-LO-2',shortName='T2'}}
+local aliases={__options={flashNextStop=true,language='zh'},['10']={name=snapshot.route.name,shortName='T1'},['20']={name='tram 乘客-杭州-LO-2',shortName='T2'}}
 local on=P.plan(snapshot,aliases,true,1280)
 assert(on.badge=='T1' and on.name==snapshot.route.name)
 assert(on.stops[1].transfers[1].text=='T2' and on.stops[1].transfers[1].mode=='TRAM',
@@ -375,7 +375,7 @@ assert(emptyFound,'empty search has a useful state')
 -- Exercise the actual search/sort widget callbacks, not just the list helper.
 do
   local previousAliases=aliases
-  aliases={['10']={name='一号线',prefix='T',identifier='1',suffix=''},
+  aliases={__options={language='zh'},['10']={name='一号线',prefix='T',identifier='1',suffix=''},
     ['20']={name='机场线',prefix='2026-',identifier='2',suffix='-99'},
     ['30']={name='干线',prefix='',identifier='10',suffix=''}}
   local param={aliases=aliasState,geometry=S.geometry({x=1280,y=720}),color=settingsParam.color,
@@ -749,7 +749,7 @@ for mode,shape in pairs(shapes) do
   snapshot.route={lineId=10,name='test '..mode,mode=mode,color='#a13bcb',stops={
     {name='杭州火车站',transfers={{id=20,name='transfer',mode=mode,color='#26b775'}}},
     {name='北江路',transfers={}}}}
-  aliases={['10']={name=snapshot.route.name,shortName=labels[mode]},['20']={name='transfer',shortName=labels[mode]}}
+  aliases={__options={language='zh'},['10']={name=snapshot.route.name,shortName=labels[mode]},['20']={name='transfer',shortName=labels[mode]}}
   tick();tree=render('LinnanBulbCockpitHudNative',{aliases=aliasState,viewport={x=1280,y=720}})
   local own,transfer=false,false
   walk(tree,function(kind,param)
@@ -780,7 +780,7 @@ for _,case in ipairs({
   snapshot.route={lineId=10,name='主线 '..case.mode,mode=case.mode,color='#a13bcb',stops={
     {name='杭州火车站',transfers={{id=20,name='换乘线',mode=case.mode,color='#26b775'}}},
     {name='北江路',transfers={}}}}
-  aliases={}
+  aliases={__options={language='zh'},}
   for _,line in ipairs({{id=10,name=snapshot.route.name},{id=20,name='换乘线'}})do
     aliases[tostring(line.id)]={name=line.name,prefix=case.prefix,identifier=case.identifier,suffix=case.suffix}
   end
@@ -803,7 +803,7 @@ for _,case in ipairs({
 end
 snapshot.route=originalRoute
 -- Default badges must reach the renderer, even when a line is itself named A.
-aliases={}
+aliases={__options={language='zh'},}
 snapshot.lines={{id=100,name='A',mode='TRAIN'},
   {id=200,name='电车北线',mode='TRAM'},{id=300,name='杭州地铁1号线',mode='TRAIN'}}
 snapshot.route={lineId=100,name='A',mode='TRAIN',color='#a13bcb',stops={
@@ -862,7 +862,7 @@ assert(aliases['400'].displayMode=='TRAIN','opening settings preserves legacy sa
 -- enable, apply, confirm/reload, then close the direct native Window.
 do
   local previousAliases=aliases
-  aliases={}
+  aliases={__options={language='zh'},}
   local lines={{id=910,name='市内公交',mode='BUS',busScope='local',towns={{id=100,name='杭州'}}},
     {id=920,name='跨城公交',mode='BUS',busScope='express',towns={{id=100,name='杭州'},{id=200,name='旅顺'}}}}
   local towns={{id=100,name='杭州'},{id=200,name='旅顺'}}
@@ -928,7 +928,7 @@ end
 do
   assert(stationInventories==0,'opening normal settings must not enumerate all stations')
   local previousAliases=aliases
-  aliases={}
+  aliases={__options={language='zh'},}
   local calls,fail=0,false
   modules['aliases.lua'].saveStationLink=function(a,b,remove,callback)
     calls=calls+1
@@ -1202,7 +1202,7 @@ do
 end
 -- A BUS interchange is one group even when its line badges wrap.
 do
-  aliases={};snapshot.lines=nil;snapshot.next=2;snapshot.passed=1
+  aliases={__options={language='zh'},};snapshot.lines=nil;snapshot.next=2;snapshot.passed=1
   local transfers={}
   for i=1,4 do transfers[i]={id=1000+i,name=tostring(1000+i),mode='BUS',color='#ffcc00'}end
   transfers[5]={id=2100,name='F1',mode='BOAT',color='#00a077'}
@@ -1241,7 +1241,7 @@ do
 end
 -- Flashing is opt-in. No animation recipe/timer exists while disabled.
 do
-  aliases={};snapshot.lines=nil;snapshot.next=2;snapshot.passed=1
+  aliases={__options={language='zh'},};snapshot.lines=nil;snapshot.next=2;snapshot.passed=1
   snapshot.route={lineId=900,name='开关测试',mode='TRAM',color='#006db8',stops={
     {name='起点',transfers={}},{name='终点',transfers={}}}}
   tick();local drawn=render('LinnanBulbCockpitHudNative',{aliases=aliasState,viewport={x=1280,y=720}})

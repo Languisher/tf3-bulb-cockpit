@@ -132,7 +132,7 @@ I.english={
 }
 function I.language(aliases)
   local options=aliases and aliases.__options
-  return options and options.language=='en' and 'en' or 'zh'
+  return options and options.language=='zh' and 'zh' or 'en'
 end
 function I.bind(aliases)
   local english=I.language(aliases)=='en'

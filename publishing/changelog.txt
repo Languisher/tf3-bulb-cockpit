@@ -1,9 +1,9 @@
-In-Game Route Display / 游戏线路显示 · 0.1.70dev
+In-Game Route Display / 游戏线路显示 · 0.1.71dev
 
-Removed the floating route-map entry's inherited native window surface, contour and shadow textures. This fixes the elongated shadow below the button while retaining its themed toggle and native dragging. The settings window keeps its native appearance. No new timers or background queries.
+Enlarged Metro badge numbers and reduced inner horizontal padding across the line directory, first-person identity and transfer badges. Badge bounds stay unchanged; long labels still fit or truncate. English is now the default when no language preference is saved. Existing explicit English/Chinese choices are preserved.
 
-清除浮动线路图入口继承的原生窗口背景、边框及阴影贴图，修复按钮下方长条阴影残留；保留按钮主体、拖动功能及设置窗口的原生外观。不增加计时器或后台查询。
+放大地铁编号数字并缩小内部左右留白，目录、第一人称标识和换乘图标统一生效；圆形外框大小不变，长编号继续缩放或省略。未保存语言选择时默认使用英文，已有中文／英文选择保持不变。
 
-49 Lua tests and 68 syntax checks passed, including actual game Window styles and selector matching. In-game appearance requires a full restart and visual check. / 49 项 Lua 回归及 68 项语法检查通过，包含游戏原版窗口样式与选择器检查；实际画面需完整重启后核对。
+49 Lua tests and 68 syntax checks passed; in-game appearance requires a restart and visual check. / 49 项 Lua 回归及 68 项语法检查通过，实际观感需重启后核对。
 
 Target: macOS Build 40420. Windows/Linux/console are untested. Long-session FPS degradation remains under investigation. / 针对 macOS Build 40420；其他平台未实测，长时间 FPS 下降仍在排查中。
