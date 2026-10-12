@@ -510,6 +510,54 @@ local Settings=settingsUI.create(react,builtin,style,P,modeMarks,collect,aliasSt
   stationUI.create(react,builtin,style,aliasStore,windows,P,collect,I),
   {badge=lineBadge,draw=staticDiagram,mark=modeMark},I)
 
+-- The ordinary-map entry uses the game's additive mod toolbar. It must not
+-- depend on the replaceable FreeCamOptions constructor or its native ID.
+local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
+  local aliases=react.useState({})
+  local viewport=react.useState({x=800,y=600})
+  local work=react.useRef({alive=true})
+  local control=work:get()
+  local function refreshAliases()
+    if not control.alive or aliases:hasExpired()then return end
+    local ok,stored=pcall(aliasStore.read)
+    if ok and stored then aliases:set(stored)
+    elseif not ok then log.warning('[Route Display 0.1.67dev] toolbar settings: '..tostring(stored))end
+  end
+  react.onMount(function()
+    control.alive=true
+    log.verbose('[Route Display 0.1.67dev] toolbar mounted; extension=::MainModButtonAreaExtension')
+    react.enqueueJoin(refreshAliases,'LinnanBulbMainButtonNative:mount')
+  end)
+  react.onUnmount(function()control.alive=false end)
+  return builtin.FloatingLayout{children={
+    builtin.FloatingLayoutChild{h=0,v=0,item=Settings{
+      meta={id='linnan.bulb.settings',styleSheet=styleutil.makeStyle{anchorPoint={0,0}}},
+      aliases=aliases,viewport=viewport:old(),color=color,
+      prepareOpen=function(open)
+        react.enqueueJoin(function()
+          if not control.alive or viewport:hasExpired()then return end
+          refreshAliases()
+          -- mainView fills the GUI viewport. A small hidden gauge fits inside
+          -- the toolbar and cancels normalized-coordinate/Retina scaling.
+          local ok,size=pcall(function()
+            return P.viewport(api.gui.byId.getSize('mainView'),
+              api.gui.byId.getSize('linnan.bulb.entry-gauge'),16)
+          end)
+          size=ok and size or viewport:old()
+          if size~=viewport:old()then viewport:set(size)end
+          open(size)
+        end,'LinnanBulbMainButtonNative:openSettings')
+      end}},
+    builtin.FloatingLayoutChild{h=0,v=0,item=builtin.Component{
+      mouseTransparent=true,meta={id='linnan.bulb.entry-gauge',class='bulb-entry-gauge',
+        styleSheet=styleutil.makeStyle{size={16,16},anchorPoint={0,0}}}}},
+  }}
+end)
+
+local function mainButton()
+  return MainButton()
+end
+
 -- Layout may not be ready on the first join. This child retries only until
 -- calibration succeeds; removing the child also removes its native timer.
 local Calibration=react.RegisterRecipe('LinnanBulbCalibrationNative',function(param)
@@ -612,18 +660,6 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
       styleSheet=styleutil.makeStyle{anchorPoint={0,0},size={viewport:old().x,viewport:old().y}}},
       aliases=aliases,viewport=viewport:old(),refreshAliases=refreshAliases,measureHost=measureHost}}
   end
-  children[#children+1]=builtin.FloatingLayoutChild{h=112/viewport:old().x,v=12/viewport:old().y,
-    localKey='settings',overflowMode=builtin.type.FloatingLayoutOverflowMode.KeepInside,
-    item=Settings{meta={id='linnan.bulb.settings',
-        class=cameraState.getEntity() and 'bulb-settings-cockpit-hidden' or nil,
-        styleSheet=styleutil.makeStyle{anchorPoint={0,0}}},
-      aliases=aliases,viewport=viewport:old(),color=color,
-      prepareOpen=function(open)
-        react.enqueueJoin(function()
-          if not control.alive or viewport:hasExpired()then return end
-          measureHost();open(viewport:old())
-        end,'LinnanBulbFreeCamNative:openSettings')
-      end}}
   children[#children+1]=builtin.FloatingLayoutChild{h=0,v=0,localKey='gauge',item=builtin.Component{
       mouseTransparent=true,
       meta={id='linnan.bulb.gauge',styleSheet=styleutil.makeStyle{size={100,100}}}}}
@@ -637,14 +673,14 @@ end)
 -- The C++ game controls react.game-free-cam's visibility. That ID and its
 -- caller reference must stay on the original controls, not our host. A
 -- constructor adapter preserves all original arguments before adding the
--- independent host; the diagram/settings are siblings of native controls.
+-- independent HUD host; settings live in the separate mod toolbar plugin.
 local function mount(...)
   local nativeControls=react.CallOriginalRecipe(free.FreeCamOptions,...)
   return Replacement{meta={id='linnan.bulb.host'},nativeControls=nativeControls}
 end
 
 function data()
-  return {replace=function(replacementApi)
+  return {mainButton=mainButton,replace=function(replacementApi)
     cameraState.install(free.FreeCamTool,function()setHudVisible(false)end)
     diagnostic.setCameraReader(cameraState.getEntity)
     replacementApi.ReplaceRecipe(free.FreeCamOptions,mount)

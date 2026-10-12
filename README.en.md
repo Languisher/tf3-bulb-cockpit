@@ -1,4 +1,4 @@
-# In-Game Route Display · 0.1.66dev
+# In-Game Route Display · 0.1.67dev
 
 English · [中文说明](README.md)
 
@@ -42,7 +42,7 @@ Typical macOS Steam installation location:
 
 ## Use
 
-- Enter a vehicle’s first-person view to show its identity at the upper left and its route map at the bottom center. The settings button is hidden in first-person view and in the pause menu.
+- The settings entry uses the game's official upper-left mod toolbar and follows its layout. Enter a vehicle’s first-person view to show its identity at the upper left and its route map at the bottom center. The settings button is hidden in first-person view and in the pause menu.
 - The directory lists RER, Metro and Tramway badges. Bus lines appear only after a search. Click a badge to view the full static map; click a transfer badge to navigate to that line. Returning releases the current map’s data.
 - The pin beside **Back to routes** locates the selected real line on the game map and closes the window.
 - **Line settings** edits each badge as prefix + number/letters + suffix. Search by name or complete badge, such as `T1` or `T3b`. **Apply all** includes edits hidden by a search filter. These edits never rename real game lines.
@@ -63,7 +63,7 @@ python3 tools/run_tests.py
 python3 tools/package.py
 ```
 
-Four integration tests require GUI sources extracted from your own Build 40420 installation:
+Five integration tests require GUI sources extracted from your own Build 40420 installation:
 
 ```sh
 python3 tools/run_tests.py --game-gui /path/to/extracted/gui/main
@@ -71,6 +71,14 @@ python3 tools/run_tests.py --game-gui /path/to/extracted/gui/main
 
 The directory must contain `react.lua`, `stylesheetutil.lua` and the relative `../../scripts/mat4.tl`. Game sources are not redistributed. Without this argument, those tests are explicitly skipped.
 
-Version 0.1.66dev passed 48 Lua tests and 66 syntax checks locally, including bilingual persistence, failure rollback, native React wrappers, layout bounds and resource-lifetime budgets. These checks mock the game’s C++ GUI and cannot replace in-game visual and performance checks.
+Version 0.1.67dev passed 49 Lua tests and 68 syntax checks locally, including a competing camera-replacement scenario, bilingual persistence, failure rollback, native React wrappers, layout bounds and resource-lifetime budgets. These checks mock the game’s C++ GUI and cannot replace in-game visual and performance checks.
+
+## Missing toolbar button
+
+The button appears after loading a save in normal map view. It is hidden in first-person view, the pause menu and the game's main menu. Enable the mod for that save and fully restart the game after updating.
+
+Version 0.1.67dev mounts the entry through the official mod toolbar extension. Earlier versions attached it to `FreeCamOptions`; another UI mod replacing that component could remove the entry. The new entry also follows toolbar layout instead of fixed screen coordinates. The first-person HUD still adapts the camera component, so this does not establish compatibility with every UI mod.
+
+If it remains missing, report your OS, game Build, mod version, other UI mods and startup errors mentioning `linnan_bulb_cockpit`. When verbose logging is retained, `[Route Display 0.1.67dev] toolbar mounted` confirms that the entry component mounted; an installed message alone does not.
 
 The mod includes no commercial Parisine font or game fonts. It uses the game’s native fonts and approximates BULB’s visual style. Asset attribution is in [notice.md](mod/content/gui/bulb_cockpit/symbols/notice.md). This project is not affiliated with BULB, RATP, Île-de-France Mobilités or the game developer.

@@ -28,7 +28,7 @@ do
     for _,v in pairs(node)do local found=findSettings(v);if found then return found end end
   end
   contexts.LinnanBulbSettingsNative={}
-  local settingsParam=findSettings(root)
+  local settingsParam=findSettings(render('LinnanBulbMainButtonNative',{}))
   assert(settingsParam and not settingsParam.meta.class,'settings entry is visible outside first person')
   local function gear()
     local result
@@ -67,7 +67,7 @@ do
     free.FreeCamTool.push({}, {cockpitCameraForEntity=200})
     local tree=render('LinnanBulbFreeCamNative',mounted.param);hudParam=nil;findHud(tree)
     assert(hudParam and hudParam.meta.localKey)
-    assert(findSettings(tree).meta.class=='bulb-settings-cockpit-hidden','hide entry on every cockpit arrival')
+    assert(not findSettings(tree),'camera tree never owns a duplicate toolbar entry')
     contexts.LinnanBulbCockpitHudNative={}
     render('LinnanBulbCockpitHudNative',hudParam)
     mounts.LinnanBulbCockpitHudNative()
@@ -85,7 +85,7 @@ do
     free.FreeCamTool.pop()
     local empty=render('LinnanBulbFreeCamNative',mounted.param)
     assert(not containsHud(empty),'exit must remove HUD even if the child never rerenders')
-    assert(not findSettings(empty).meta.class,'restore entry as soon as cockpit exits')
+    assert(findSettings(render('LinnanBulbMainButtonNative',{})),'independent toolbar entry survives cockpit exit')
     dropHud();join();staleTimer();join()
     assert(collections==before and not hudVisible,'old joins/timers must be inert after disposal')
     hudParam=nil

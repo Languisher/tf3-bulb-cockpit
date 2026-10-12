@@ -6,6 +6,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 GAME_TESTS = {
+    "test_real_react_entry.lua",
     "test_real_react_settings.lua",
     "test_real_react_flash.lua",
     "test_real_react_lifecycle.lua",

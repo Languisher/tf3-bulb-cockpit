@@ -66,6 +66,11 @@ function data()
   })
   -- Match layers.css.lua's head button, including its hover scale. Keep
   -- settings layout spacing out of the icon's measured bounds.
+  add('R::LinnanBulbMainButtonNative', {
+    size={44,44},padding={0,0,0,0},margin={0,0,0,0},anchorPoint={0,0},
+  })
+  add('R::LinnanBulbMainButtonNative > FloatingLayout', {gravity={-1,-1},padding={0,0,0,0},margin={0,0,0,0}})
+  add('#linnan.bulb.entry-gauge', {visibility='hidden',padding={0,0,0,0},margin={0,0,0,0}})
   add('R::LinnanBulbSettingsNative, R::LinnanBulbSettingsNative > BoxLayout', {
     padding={0,0,0,0},margin={0,0,0,0},outerSpacing={0,0},innerSpacing={0,0},gravity={0,0},
   })
@@ -86,7 +91,7 @@ function data()
   add('!action-follow Window!bulb-settings-window, !action-camera Window!bulb-settings-window', {visibility='visible'})
   -- Match game.css.lua's pause tool state, independently of simulation speed.
   add('#mainView!tool-pause #linnan.bulb.settings, #mainView!tool-pause Window!bulb-settings-window', {visibility='none'})
-  add('#linnan.bulb.settings!bulb-settings-cockpit-hidden', {visibility='none'})
+  add('!action-follow #linnan.bulb.settings, !action-camera #linnan.bulb.settings', {visibility='none'})
   add('Window!bulb-settings-window Window::Content', {padding={12,12,12,12}})
   add('Window!bulb-settings-window TextView', {color=colors.NeutralLightest})
   add('R::Component!bulb-settings-body > BoxLayout', {outerSpacing={0,0},innerSpacing={8,8},gravity={-1,0}})

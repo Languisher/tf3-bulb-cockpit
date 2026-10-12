@@ -141,13 +141,14 @@ function P.pendingDefaults(lines,aliases)
   end
   return result
 end
-function P.viewport(host,gauge)
+function P.viewport(host,gauge,units)
+  units=units or 100
   local function positive(v)return type(v)=='number' and v>0 and v<math.huge end
   if not host or not gauge or not positive(host.x) or not positive(host.y)
-    or not positive(gauge.x) or not positive(gauge.y) then return nil end
+    or not positive(gauge.x) or not positive(gauge.y) or not positive(units)then return nil end
   -- Ratios cancel the API's screen-coordinate units. The gauge is exactly
-  -- 100 GUI units, so Retina/render scaling never enters this calculation.
-  local width,height=100*host.x/gauge.x,100*host.y/gauge.y
+  -- a known number of GUI units, independent of Retina/render scaling.
+  local width,height=units*host.x/gauge.x,units*host.y/gauge.y
   if not positive(width) or not positive(height) then return nil end
   return {x=math.floor(width+0.5),y=math.floor(height+0.5)}
 end

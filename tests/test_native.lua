@@ -167,10 +167,13 @@ app={loadUserdata=function()error('custom app userdata directories are rejected'
   saveUserdata=function()error('custom app userdata directories are rejected')end}
 local guiWidth,guiHeight=1280,720
 local knownIds={['linnan.bulb.host']=true,['linnan.bulb.gauge']=true,
-  ['linnan.bulb.hud']=true,['linnan.bulb.settings']=true}
+  ['linnan.bulb.hud']=true,['linnan.bulb.settings']=true,
+  ['mainView']=true,['linnan.bulb.entry-gauge']=true}
 api={gui={genericRep={find=function(path)return path end,get=function()return {data={NeutralLightest={1,1,1,1},BaseMedium={.15,.18,.21,1}}}end},byId={getSize=function(id)
   assert(phase=='join' and knownIds[id]);
   if id=='linnan.bulb.host' then return {x=1,y=1} end
+  if id=='mainView' then return {x=1,y=1} end
+  if id=='linnan.bulb.entry-gauge'then return {x=16/guiWidth,y=16/guiHeight}end
   if id=='linnan.bulb.gauge' then return {x=100/guiWidth,y=100/guiHeight} end
   return {x=0.1,y=0.1}
 end,setVisible=function(id,visible)
@@ -431,7 +434,7 @@ walk(tree,function(kind,param)
     keptInside=keptInside+1
   end
 end)
-assert(keptInside==2,'keep both diagram and settings within the GUI viewport')
+assert(keptInside==1,'keep the HUD within the viewport; the settings entry belongs to the native toolbar')
 local hostLogged=false
 for _,message in ipairs(diagnostics) do
   if message:find('GUI bounds: gui=1280x720',1,true) then hostLogged=true end
@@ -453,15 +456,23 @@ original(tree);assert(originalFound,'retain original back/screenshot handlers')
 assert(tree.param.children[1].param.item==nativeControls,'native controls retain their own component')
 assert(tree.param.children[2].param.item.recipe=='LinnanBulbCockpitHudNative',
   'HUD must be a sibling of native controls, never a descendant of their hidden ID')
-assert(tree.param.children[3].param.item.recipe=='LinnanBulbSettingsNative',
-  'settings must also be outside the game-controlled native component')
-assert(tree.param.children[3].param.item.param.meta.class=='bulb-settings-cockpit-hidden',
-  'first-person camera hides the settings entry using the existing camera lifecycle')
+local function findSettings(node)
+  if type(node)~='table'then return end
+  if node.recipe=='LinnanBulbSettingsNative'then return node.param end
+  for _,v in pairs(node)do local found=findSettings(v);if found then return found end end
+end
+assert(not findSettings(tree),'camera replacement must not own or duplicate the toolbar entry')
+local entryNode=installed.mainButton()
+local entryTree=render(entryNode.recipe,entryNode.param)
+local entrySettings=assert(findSettings(entryTree),'official toolbar owns the settings entry')
+assert(entrySettings.meta.id=='linnan.bulb.settings' and not entrySettings.meta.class)
+mounts.LinnanBulbMainButtonNative();join()
+assert(not timers.LinnanBulbMainButtonNative,'entry must not add background polling')
 local hiddenSettingsRule
 for _,rule in ipairs(css)do
-  if rule.selector=='#linnan.bulb.settings!bulb-settings-cockpit-hidden'then hiddenSettingsRule=rule.style end
+  if rule.selector=='!action-follow #linnan.bulb.settings, !action-camera #linnan.bulb.settings'then hiddenSettingsRule=rule.style end
 end
-assert(hiddenSettingsRule and hiddenSettingsRule.visibility=='none','hidden settings must neither draw nor accept clicks')
+assert(hiddenSettingsRule and hiddenSettingsRule.visibility=='none','camera actions hide the independent toolbar entry')
 local gauge
 walk(tree,function(kind,param)
   if kind=='Component' and param.meta and param.meta.id=='linnan.bulb.gauge' then gauge=param end
