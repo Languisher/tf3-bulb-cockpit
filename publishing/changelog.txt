@@ -1,13 +1,13 @@
-In-Game Route Display / 游戏线路显示 · 0.1.77dev
+In-Game Route Display / 游戏线路显示 · 0.1.78dev
 
-Native road, tram, rail, ship and air multi-select filters in Line settings, combined with search. No selection shows all lines. Hidden edits remain available to Apply all.
-线路设置新增游戏原生公路、电车、铁路、船舶、航空多选筛选，可叠加搜索；空选显示全部，全部应用保留隐藏编辑。
+Fixed zoomed branch lengths and station spacing by applying one native coordinate scale to tracks, markers, endpoints, connectors and transfers. Removed whole-canvas scaling.
+修复缩放后分支长度与站点间距不一致：轨道、站点、端点、连接线与换乘使用同一原生坐标比例，取消整图缩放变换。
 
-Bottom first-person route-map scale: 10%–400%, 1% steps, 100% default, Reset and saved preference. Mouse drags save once on release; no added timer, images or map queries. The upper-left identity keeps its size.
-底部第一人称线路图支持 10%–400% 缩放，每步 1%，默认 100%，支持恢复默认及保存偏好。拖动松开后提交一次，不新增计时器、图片或地图查询；左上角标识大小不变。
+Station names and transfer labels render at the final font size, avoiding magnification of smaller glyphs. Flashing station layers keep the same size in both phases. The upper-left identity keeps its original size.
+站名及换乘文字按最终字号重新渲染，避免放大小字形导致模糊；闪灯两相尺寸保持一致，左上角线路标识大小不变。
 
-Fixed French Back to routes captions overflowing their button, with measured widths and full tooltips in narrow layouts.
-修复法语返回线路目录文字溢出，按钮按内容调整宽度，窄窗口可悬停查看完整文本。
+Moved Route-map scale above the native transport filter icons. Preserved 10%–400%, 1% steps, 100% default, Reset and saved preferences. Removed 399 canvas-scale rules; no added images, timers or map queries.
+缩放滑杆移到载具类型筛选图标上方，保留 10%–400%、每步 1%、默认 100%、恢复默认与保存偏好。移除 399 条整图缩放样式，不新增图片、计时器或地图查询。
 
-55 Lua tests and 87 syntax checks passed, including installed-game React and the native carrier factory. In-game C++ rendering and interaction require a restart check.
-55 项 Lua 回归及 87 项语法检查通过，包含本机原版 React 与筛选工厂；实际 C++ 绘制和交互需重启游戏后核对。
+56 Lua tests and 88 syntax checks passed. Includes native geometry and final glyph sizes, branches, directions, zoom levels and installed-game React animation. Actual C++ rendering requires an in-game restart check.
+56 项 Lua 回归及 88 项语法检查通过，覆盖原生尺寸与最终字号、分支、方向、缩放比例及原版 React 闪灯；实际 C++ 绘制需重启游戏后核对。
