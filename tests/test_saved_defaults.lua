@@ -28,7 +28,7 @@ local revision=value.revision
 S.handleEvent({},state,'',A.id,A.defaultsEvent,{defaults=aliases.__defaults})
 assert(value.revision==revision,'no-op merge cannot invalidate UI configuration')
 -- Resolve commands composed against the same older revision without duplicate labels.
-S.handleEvent({},state,'',A.id,A.defaultsEvent,{defaults={['15']={name='race',mode='RER',index=2,shortName='B'}}})
+S.handleEvent({},state,'',A.id,A.defaultsEvent,{defaults={['15']={name='race',mode='TRAIN',index=2,shortName='B'}}})
 assert(value.defaults['15'].shortName=='C','simulation state resolves conflicting reserved indices')
 A.saveOptions({flashNextStop=true},function(_,ok)assert(ok)end)
 assert(A.read().__options.flashNextStop and value.defaults['40'].shortName=='A')

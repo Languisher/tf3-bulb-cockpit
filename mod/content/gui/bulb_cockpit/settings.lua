@@ -22,8 +22,8 @@ local function dropSessionOwner(session,key,token)
   local owner=session.owners[key]
   if owner and owner.token==token then session.owners[key]=nil end
 end
-local modeNames={'RER','地铁','电车','公交','轮渡','航空','货运'}
-local modeChoices={'RER','METRO','TRAM','BUS','BOAT','AIR','TRUCK'}
+local modeNames={'Train','RER','地铁','电车','公交','轮渡','航空','货运'}
+local modeChoices={'TRAIN','RER','METRO','TRAM','BUS','BOAT','AIR','TRUCK'}
 local function numberKey(value)
   value=tostring(value):lower()
   if value:match('^%d+$')then
@@ -62,7 +62,7 @@ end
 -- just to show its badge. The selected route is validated on navigation.
 function S.directory(lines,aliases,busQuery,P)
   local groups,byMode={},{}
-  for _,entry in ipairs({{'RER','RER'},{'METRO','Metro'},{'TRAM','Tramway'},{'BUS','公交'}})do
+  for _,entry in ipairs({{'TRAIN','Train'},{'RER','RER'},{'METRO','地铁'},{'TRAM','电车'},{'BUS','公交'}})do
     local group={mode=entry[1],title=entry[2],items={},byBadge={}}
     groups[#groups+1]=group;byMode[group.mode]=group
   end
@@ -125,7 +125,6 @@ local function prepareChanges(lines,aliases,drafts,P,tr)
       end
       local initial=P.parts(line,aliases,originalDefaults)
       local current=aliases[key];local mode=current and current.name==line.name and current.displayMode or ''
-      if mode=='TRAIN'then mode='RER'end
       if parts.prefix~=initial.prefix or parts.identifier~=initial.identifier or parts.suffix~=initial.suffix
         or draft.displayMode~=mode then
         candidate[key]={name=line.name,prefix=parts.prefix,identifier=parts.identifier,suffix=parts.suffix,
@@ -183,7 +182,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local identifier=react.useState(initial.identifier)
     local suffix=react.useState(initial.suffix)
     local selectedMode=current and current.name==line.name and current.displayMode or ''
-    local displayMode=react.useState(draft and draft.displayMode or (selectedMode=='TRAIN' and 'RER' or selectedMode))
+    local displayMode=react.useState(draft and draft.displayMode or selectedMode)
     local function remember(patch)
       if not param.drafts then return end
       local before=param.drafts:get()[key] or {prefix=prefix:old(),identifier=identifier:old(),suffix=suffix:old(),displayMode=displayMode:old()}
@@ -201,7 +200,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     -- Share the complete-roster defaults across rows. Only an unsaved
     -- display-mode change needs its own numbering calculation.
     local defaults=param.defaults
-    if not defaults or displayMode:old()~=(selectedMode=='TRAIN' and 'RER' or selectedMode)then
+    if not defaults or displayMode:old()~=selectedMode then
       defaults=P.defaults(param.lines or {line},candidate(initial))
     end
     local function field(key,state,width,placeholder,tooltip)
@@ -221,7 +220,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       field('suffix',suffix,g.suffix,'',tr('编号后的文字，例如 b、支线；可留空')),
     }
     local items,selected={},1
-    -- Empty/legacy TRAIN configurations resolve to their actual display
+    -- Empty configurations resolve to their actual display
     -- type; they do not need a second, identically named menu item.
     local actual=P.mode({mode=displayMode:old()~='' and displayMode:old() or line.mode},{})
     for i,mode in ipairs(modeChoices) do

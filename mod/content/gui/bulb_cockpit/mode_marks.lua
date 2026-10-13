@@ -82,8 +82,11 @@ function B.create(builtin,style,text,gameIcon,theme)
   end
   local function icon(mode,size)
     local children={}
-    if mode=='RER' or mode=='TRAIN' then
+    if mode=='TRAIN' then
       add(children,mask('transilien-mode',size,size,symbolInk,'bulb-rail-mode-icon'),0,0,size,size)
+    elseif mode=='RER' then
+      add(children,mask('rer-mode-ring',size,size,symbolInk,'bulb-rer-mode-icon'),0,0,size,size)
+      add(children,text('RER',math.floor(size*0.43),size,size,symbolInk,nil,'bulb-mode-letter'),0,0,size,size)
     elseif mode=='METRO' then
       add(children,mask('metro-ring',size,size,symbolInk),0,0,size,size)
       add(children,text('M',math.floor(size*0.75),size,size,symbolInk,nil,'bulb-mode-letter'),0,0,size,size)

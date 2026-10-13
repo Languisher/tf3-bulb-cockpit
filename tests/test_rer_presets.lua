@@ -23,14 +23,14 @@ for _,small in ipairs({false,true})do
         local class=param.meta and param.meta.class
         if kind=='ImageView' and param.path:match('/rer%-frame%.tga$')then frame=param end
         if kind=='ImageView' and param.path:match('/rer%-'..letter:lower()..'%.tga$')then glyph=param end
-        if kind=='ImageView' and param.path:match('/transilien%-mode%.tga$')then railIcon=param end
+        if kind=='ImageView' and param.path:match('/rer%-mode%-ring%.tga$')then railIcon=param end
         if kind=='TextView' and (class=='bulb-line-badge' or class=='bulb-transfer-label')then
           labelCount=labelCount+1
         end
       end)
       assert(frame and glyph,'RER '..letter..' must use the BULB Paris preset outline at both sizes')
       assert(railIcon and railIcon.meta.styleSheet.size[1]==(small and 18 or 26),
-        'RER uses the Transilien front-train mode icon at both fixed sizes')
+        'RER uses its own rounded-square wordmark ring at both fixed sizes')
       assert(labelCount==0,'preset letters must not depend on the substitute game font')
       assert(frame.meta.styleSheet.color==fill,'preset frame must retain the live game line color')
       local expected=fill[1]>.9 and {0,0,0,1} or {1,1,1,1}

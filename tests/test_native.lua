@@ -712,11 +712,11 @@ walk(tree,function(kind,param)
   elseif kind=='Button' and param.meta.id=='linnan.bulb.save.10' then save=param
   elseif kind=='ComboBox' and param.meta.id=='linnan.bulb.mode.10' then modeButton=param end
 end)
-assert(#modeButton.items==7 and modeButton.compact==true,'type dropdown shows each actual type exactly once')
-for i,name in ipairs({'RER','地铁','电车','公交','轮渡','航空','货运'})do
+assert(#modeButton.items==8 and modeButton.compact==true,'type dropdown shows each actual type exactly once')
+for i,name in ipairs({'Train','RER','地铁','电车','公交','轮渡','航空','货运'})do
   assert(modeButton.items[i].param.content.param.text==name,'one RER option with no duplicate automatic choice')
 end
-modeButton.onValueChange(2)
+modeButton.onValueChange(3)
 assert(input,'structured identifier input exists')
 input.onTyping('  9  ');save.onClick();join()
 assert(#saved==1 and saved[1].file=='savegame' and aliases['10'].shortName=='T9')
@@ -741,11 +741,11 @@ end)
 assert(fullWidth<=1600 and fullWidth>500,'dense routes retain useful context while fitting the viewport')
 assert(badge and badge.meta.styleSheet.size[1]<=38 and badge.meta.styleSheet.size[2]<=38
   and badge.text:find('…',1,true),'long aliases must not grow the route box')
-assert(P.mode({id=1,name='Metro 杭州 1',mode='TRAIN'}, {})=='RER')
-assert(P.mode({id=1,name='杭州地铁1号线',mode='TRAIN'}, {})=='RER')
-assert(P.mode({id=1,name='Metropolitan express',mode='TRAIN'}, {})=='RER')
-assert(P.mode({id=1,name='杭州地铁1号线',mode='TRAIN'}, {['1']={name='杭州地铁1号线',displayMode='TRAIN'}})=='RER')
-assert(P.mode({id=1,name='different save',mode='TRAIN'}, {['1']={name='杭州地铁1号线',displayMode='METRO'}})=='RER')
+assert(P.mode({id=1,name='Metro 杭州 1',mode='TRAIN'}, {})=='TRAIN')
+assert(P.mode({id=1,name='杭州地铁1号线',mode='TRAIN'}, {})=='TRAIN')
+assert(P.mode({id=1,name='Metropolitan express',mode='TRAIN'}, {})=='TRAIN')
+assert(P.mode({id=1,name='杭州地铁1号线',mode='TRAIN'}, {['1']={name='杭州地铁1号线',displayMode='TRAIN'}})=='TRAIN')
+assert(P.mode({id=1,name='different save',mode='TRAIN'}, {['1']={name='杭州地铁1号线',displayMode='METRO'}})=='TRAIN')
 local originalRoute=snapshot.route
 local shapes={METRO='circle',RER='rounded-square',TRAM='tram-bars',BUS='bus-frame'}
 local labels={METRO='1',RER='A',TRAM='T1',BUS='1001'}
@@ -844,23 +844,23 @@ for _,actual in ipairs({'TRAIN','TRAM'}) do
     end)
     local expected=index==1 and (rowParam.defaultBadge:match('^T(%d+)$') or rowParam.defaultBadge)
       or (index==2 and 'A' or '1')
-    local prior=index==1 and (actual=='TRAIN' and 'RER' or '电车') or (index==2 and 'RER' or '地铁')
+    local prior=index==1 and (actual=='TRAIN' and 'Train' or '电车') or (index==2 and 'RER' or '地铁')
     assert(combo.items[combo.value].param.content.param.text==prior,
       'default and saved types select the same unique menu item')
     assert(input.placeholderText==expected,'automatic center follows the current draft mode without extra placeholder words')
-    combo.onValueChange(index);apply.onClick();join()
+    combo.onValueChange(index+1);apply.onClick();join()
     assert(aliases[tostring(line.id)].displayMode==choice and aliases[tostring(line.id)].identifier=='',
       'native settings applies '..choice..' to an actual '..actual..' line without forcing a custom alias')
     assert(P.alias(line,aliases,P.defaults({line},aliases))==({'A','1','T1'})[index])
     row=render('LinnanBulbAliasRowNative',rowParam)
-    walk(row,function(kind,param)if kind=='ComboBox' then assert(param.value==index) end end)
+    walk(row,function(kind,param)if kind=='ComboBox' then assert(param.value==index+1) end end)
   end
 end
 contexts.LinnanBulbAliasRowNative={}
 aliases['400']={name='TRAIN 可配置线路',shortName='',displayMode='TRAIN'}
 tree=render('LinnanBulbAliasRowNative',{line={id=400,name='TRAIN 可配置线路',mode='TRAIN'},
   aliases=aliasState,message=message,geometry=S.geometry({x=1280,y=720}),lineColor={.1,.4,.8,1}})
-walk(tree,function(kind,param)if kind=='ComboBox' then assert(param.value==1,'old railway selections display as RER') end end)
+walk(tree,function(kind,param)if kind=='ComboBox' then assert(param.value==1,'saved Train selections display as Train') end end)
 assert(aliases['400'].displayMode=='TRAIN','opening settings preserves legacy saved configuration without a migration write')
 -- Open the batch window through its actual settings button, edit district,
 -- enable, apply, confirm/reload, then close the direct native Window.

@@ -57,7 +57,7 @@ local function rectangle(w,h,fill,class)
   meta.class=class
   return builtin.Component{meta=meta}
 end
-local modeNames={METRO='地铁',RER='RER',TRAIN='RER',TRAM='电车',BUS='公交',BOAT='轮渡',AIR='航空',TRUCK='货运'}
+local modeNames={METRO='地铁',RER='RER',TRAIN='Train',TRAM='电车',BUS='公交',BOAT='轮渡',AIR='航空',TRUCK='货运'}
 local modeIcons={TRAIN='::/gui/statistics/icons/vehicle_train_18.tga',
   TRAM='::/gui/statistics/icons/vehicle_tram_18.tga',BUS='::/gui/statistics/icons/vehicle_bus_18.tga',
   BOAT='::/gui/statistics/icons/vehicle_ship_18.tga',AIR='::/gui/statistics/icons/vehicle_airplane_18.tga',

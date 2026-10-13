@@ -13,7 +13,7 @@ function G.candidates(main,aliases,P)
     local id=tonumber(key)
     if not id or seen[id] or type(entry)~='table' or type(entry.name)~='string' then return end
     local fallback=saved[key]
-    local info={id=id,name=entry.name,mode=fallback and fallback.mode}
+    local info={id=id,name=entry.name,mode=P.defaultMode(fallback,aliases[key])}
     local configured=aliases[key]
     local known=info.mode or (configured and configured.displayMode~='' and configured.displayMode)
     if known and P.mode(info,aliases)~=mode then return end

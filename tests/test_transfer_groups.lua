@@ -8,7 +8,7 @@ local function line(id,mode,label,color)
 end
 local metro6=line(6,'METRO','6','#72c695')
 local metro1=line(1,'METRO','1','#ffcd02')
-local rer=line(20,'TRAIN','A','#ed1c2a')
+local rer=line(20,'RER','A','#ed1c2a')
 local route={lineId=99,name='main',mode='TRAM',stops={
   {name='Charles de Gaulle',transfers={rer,metro6,metro1}},
   {name='Next stop',transfers={metro1,metro6}}}}

@@ -6,18 +6,18 @@ local lines={
   {id=50,name='公交1001',mode='BUS'},
   {id=20,name='电车北线',mode='TRAM'},
 }
-assert(P.mode(lines[1],{})=='RER','all unconfigured railways default to RER, regardless of name')
+assert(P.mode(lines[1],{})=='TRAIN','all unconfigured railways default to Train, regardless of name')
 assert(P.mode(lines[2],{})=='TRAM','unconfigured trams stay TRAM')
 for _,actual in ipairs({'TRAIN','TRAM'}) do
   local line={id=1,name='可配置线路',mode=actual}
-  for _,choice in ipairs({'RER','METRO','TRAM'}) do
+  for _,choice in ipairs({'TRAIN','RER','METRO','TRAM'}) do
     assert(P.mode(line,{['1']={name=line.name,displayMode=choice}})==choice,
       actual..' can be manually displayed as '..choice)
   end
   assert(P.mode(line,{['1']={name='different save',displayMode='METRO'}})==P.mode(line,{}),
     'stale configuration cannot change another line with the same ID')
 end
-assert(P.mode({id=1,name='legacy',mode='TRAM'},{['1']={name='legacy',displayMode='TRAIN'}})=='RER',
+assert(P.mode({id=1,name='legacy',mode='TRAM'},{['1']={name='legacy',displayMode='TRAIN'}})=='TRAIN',
   'the previous railway selection remains a train/RER after upgrading')
 local defaults=P.defaults(lines,{})
 assert(defaults['10'].shortName=='A' and defaults['40'].shortName=='B')
@@ -46,7 +46,7 @@ assert(alphabet['1'].shortName=='A' and alphabet['26'].shortName=='Z'
 local aliases={['20']={name='电车北线',shortName='',displayMode='RER'},
   ['40']={name='杭州地铁1号线',shortName='',displayMode='METRO'}}
 local selected=P.defaults(lines,aliases)
-assert(selected['10'].shortName=='A' and selected['20'].shortName=='B')
+assert(selected['10'].shortName=='A' and selected['20'].shortName=='A')
 assert(selected['30'].shortName=='T1' and selected['40'].shortName=='1',
   'type overrides switch to the matching numbering scheme')
 local snapshot={lines=lines,next=2,passed=1,route={lineId=30,name='另一条电车',mode='TRAM',color='#123456',stops={
@@ -55,10 +55,10 @@ local snapshot={lines=lines,next=2,passed=1,route={lineId=30,name='另一条电�
   {name='终点',transfers={}}}}}
 local plan=P.plan(snapshot,aliases,true,1280)
 assert(plan.mode=='TRAM' and plan.badge=='T1')
-assert(plan.stops[1].transfers[1].mode=='RER' and plan.stops[1].transfers[1].text=='B')
+assert(plan.stops[1].transfers[1].mode=='RER' and plan.stops[1].transfers[1].text=='A')
 assert(plan.stops[1].transfers[2].mode=='METRO' and plan.stops[1].transfers[2].text=='1')
 assert(plan.stops[1].transfers[1].color=='#ab4567','type selection preserves the game line color')
 snapshot.route={lineId=20,name='电车北线',mode='TRAM',stops=snapshot.route.stops}
 plan=P.plan(snapshot,aliases,false,1280)
-assert(plan.mode=='RER' and plan.badge=='B','the same line keeps its badge in the main diagram and in transfers')
+assert(plan.mode=='RER' and plan.badge=='A','the same line keeps its badge in the main diagram and in transfers')
 print('PASS: railway/tram manual RER/metro/tram types; default A–Z/AA and T numbering; overrides and transfer consistency')

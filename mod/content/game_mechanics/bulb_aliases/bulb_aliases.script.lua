@@ -33,13 +33,14 @@ local function letter(index)
   repeat index=index-1;result=string.char(65+index%26)..result;index=math.floor(index/26)until index==0
   return result
 end
-local function mergeDefaults(old,input)
+local function mergeDefaults(old,input,configured)
   if type(input)~='table'then return nil end
   local rows={}
   for id,v in pairs(input)do
     if type(id)~='string' or not id:match('^%d+$') or type(v)~='table' or type(v.name)~='string'
-      or not({RER=true,TRAM=true,METRO=true,BUS=true})[v.mode] or type(v.index)~='number'
-      or v.index<1 or v.index%1~=0 or v.index>1000000 then return nil end
+      or not({TRAIN=true,RER=true,TRAM=true,METRO=true,BUS=true})[v.mode] or type(v.index)~='number'
+      or v.index<1 or v.index%1~=0 or v.index>1000000
+      or (v.railTypesVersion~=nil and v.railTypesVersion~=2)then return nil end
     if v.mode=='BUS'then
       if v.busAuto~=true or type(v.code)~='string' or not v.code:match('^%d+$')
         or type(v.busKey)~='string' or not(v.busKey=='express' or v.busKey:match('^town:%d+$'))
@@ -59,19 +60,27 @@ local function mergeDefaults(old,input)
     local key=category(v);used[key]=used[key] or {};used[key][v.index]=id
     counts[key]=math.max(counts[key] or 0,v.index)
   end
-  for id,v in pairs(old or {})do defaults[id]=v;reserve(v,id)end
+  for id,v in pairs(old or {})do
+    local choice=configured and configured[id]
+    if (v.mode=='TRAIN' or v.mode=='RER') and v.railTypesVersion~=2 then
+      local copy={};for key,value in pairs(v)do copy[key]=value end
+      if v.mode=='RER' and not(choice and choice.name==v.name and choice.displayMode=='RER')then copy.mode='TRAIN'end
+      copy.railTypesVersion=2;v=copy
+    end
+    defaults[id]=v;reserve(v,id)
+  end
   for _,row in ipairs(rows)do
     local id,v=row.id,row.value;local previous=defaults[id]
     local key=category(v);local index=v.index
     if previous and category(previous)==key then index=previous.index end
     if used[key] and used[key][index] and used[key][index]~=id then index=(counts[key] or 0)+1 end
-    local entry={name=v.name,mode=v.mode,index=index}
+    local entry={name=v.name,mode=v.mode,index=index,railTypesVersion=(v.mode=='TRAIN' or v.mode=='RER') and 2 or nil}
     if v.busAuto then
       entry.code=v.code;entry.busKey=v.busKey;entry.busAuto=true
       entry.prefix='';entry.suffix='';entry.identifier=v.code..string.format('%02d',index)
       entry.shortName=entry.identifier;entry.busScope=v.busScope;entry.routeKey=v.routeKey
       entry.towns={};for i,town in ipairs(v.towns)do entry.towns[i]={id=town.id,name=town.name}end
-    else entry.shortName=v.mode=='RER' and letter(index) or (v.mode=='TRAM' and 'T' or '')..index end
+    else entry.shortName=(v.mode=='TRAIN' or v.mode=='RER') and letter(index) or (v.mode=='TRAM' and 'T' or '')..index end
     defaults[id]=entry;reserve(entry,id)
   end
   return defaults,not equal(old or {},defaults)
@@ -119,7 +128,7 @@ function S.handleEvent(_,state,_,id,name,param)
   end
   if id=='linnan.bulb.aliases' and name==DEFAULTS_EVENT then
     local old=state:get() or {}
-    local defaults,changed=mergeDefaults(old.defaults,type(param)=='table' and param.defaults)
+    local defaults,changed=mergeDefaults(old.defaults,type(param)=='table' and param.defaults,old.lines)
     if defaults and changed then replace(state,{defaults=defaults})end
     return
   end
@@ -170,7 +179,7 @@ function S.handleEvent(_,state,_,id,name,param)
     for _,target in ipairs(param.targets)do
       if target.default then input[tostring(target.id)]=target.default end
     end
-    local defaults=mergeDefaults(old.defaults,input)
+    local defaults=mergeDefaults(old.defaults,input,old.lines)
     if not defaults then return end
     for k,v in pairs(old.lines or {})do lines[k]=v end
     if param.enabled then
@@ -198,7 +207,7 @@ function S.handleEvent(_,state,_,id,name,param)
     end
     local patch={lines=lines}
     if param.defaults~=nil then
-      patch.defaults=mergeDefaults(old.defaults,param.defaults)
+      patch.defaults=mergeDefaults(old.defaults,param.defaults,lines)
       if not patch.defaults then return end
     end
     replace(state,patch)

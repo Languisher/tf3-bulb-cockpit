@@ -3,8 +3,15 @@ local displayModes={RER=true,METRO=true,TRAIN=true,TRAM=true,BUS=true,BOAT=true,
 function P.mode(line,aliases)
   local entry=aliases and aliases[tostring(line.lineId or line.id)]
   local mode=entry and entry.name==line.name and displayModes[entry.displayMode] and entry.displayMode or line.mode or 'TRAIN'
-  -- TRAIN is the engine's rail mode and the previous version's saved choice.
-  return mode=='TRAIN' and 'RER' or mode
+  return mode
+end
+-- Older auto rail defaults were stored as RER. Only an explicit user RER
+-- choice belongs to the new category; preserve automatic letters as Train.
+function P.defaultMode(value,configured)
+  if value and value.mode=='RER' and value.railTypesVersion~=2 and not(configured and configured.name==value.name and configured.displayMode=='RER')then
+    return 'TRAIN'
+  end
+  return value and value.mode
 end
 local function letter(index)
   local value=''
@@ -65,9 +72,9 @@ function P.defaults(lines,aliases)
   -- must not renumber an existing badge or require reading the whole map.
   local saved=aliases and aliases.__defaults or {}
   local ordered,seen,result,counts={},{},{},{}
-  for _,value in pairs(saved)do
+  for id,value in pairs(saved)do
     if value.index and value.mode then
-      local key=value.busAuto and value.busKey or value.mode
+      local key=value.busAuto and value.busKey or P.defaultMode(value,aliases and aliases[id])
       if key then counts[key]=math.max(counts[key] or 0,value.index)end
     end
   end
@@ -78,12 +85,13 @@ function P.defaults(lines,aliases)
   table.sort(ordered,function(a,b)return (a.lineId or a.id)<(b.lineId or b.id)end)
   for _,line in ipairs(ordered)do
     local mode=P.mode(line,aliases);local key=tostring(line.lineId or line.id)
-    if mode=='RER' or mode=='TRAM' or mode=='METRO'then
+    if mode=='TRAIN' or mode=='RER' or mode=='TRAM' or mode=='METRO'then
       local old=saved[key]
-      local index=old and old.mode==mode and old.index
+      local index=old and P.defaultMode(old,aliases and aliases[key])==mode and old.index
       if not index then index=(counts[mode] or 0)+1;counts[mode]=index end
       result[key]={name=line.name,mode=mode,index=index,
-        shortName=mode=='RER' and letter(index) or (mode=='TRAM' and 'T' or '')..index}
+        shortName=(mode=='TRAIN' or mode=='RER') and letter(index) or (mode=='TRAM' and 'T' or '')..index,
+        railTypesVersion=(mode=='TRAIN' or mode=='RER') and 2 or nil}
     end
   end
   local naming=aliases and aliases.__busNaming
@@ -231,7 +239,7 @@ function P.ellipsize(value,columns,uniform)
   end
   return table.concat(result)..'…'
 end
-local modeOrder={METRO=1,RER=2,TRAM=3,BUS=4,BOAT=5,AIR=6,TRUCK=7}
+local modeOrder={METRO=1,TRAIN=2,RER=3,TRAM=4,BUS=5,BOAT=6,AIR=7,TRUCK=8}
 local function labelKey(value)
   return tostring(value):lower():gsub('%d+',function(digits)
     return string.format('%04d',#digits)..digits
