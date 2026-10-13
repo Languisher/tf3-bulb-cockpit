@@ -1,4 +1,4 @@
-# In-Game Route Display · 0.1.78dev
+# In-Game Route Display · 0.1.79dev
 
 English · [中文说明](README.md)
 
@@ -56,6 +56,8 @@ Typical macOS Steam installation location:
 
 **Route-map scale**, above the transport filters, defaults to **100%**, ranges from **10% to 400%** in **1% steps**, and has a Reset button. It changes only the bottom first-person diagram. Mouse dragging submits one save on release; save the game to retain the preference. Branch diagrams still fit the available screen height. Zoom changes native rail, station and transfer dimensions together and renders text at its final font size, avoiding magnified glyphs and inconsistent branch lengths. Long translated back captions size their button to fit; narrow layouts provide the full tooltip.
 
+GUI dimensions are calibrated once per loaded game and shared by both entries. Startup retries are bounded and their component is removed afterward; rides, re-entry and opening settings perform no further size queries. Reload the save after changing resolution, window size or UI scale. Duplicate notifications for the same camera vehicle do not reset the route session. Opening settings coalesces queued requests and reuses unchanged configuration revisions. Measurement probes never paint; the whole launcher is hidden in first-person view.
+
 Route metadata is initialized for the selected line and its relevant connections. While riding, the mod checks the current vehicle every half-second and updates the diagram when progress changes. Leaving first-person view unloads the HUD and releases session data. After changing stops or colors outside the mod, leave and re-enter first-person view to refresh.
 
 ## Development and validation
@@ -75,15 +77,15 @@ python3 tools/run_tests.py --game-gui /path/to/extracted/gui/main
 
 The directory must contain `react.lua`, `stylesheetutil.lua` and the relative `../../scripts/mat4.tl`. Game sources are not redistributed. Without this argument, those tests are explicitly skipped.
 
-Version 0.1.78dev passed 56 Lua tests and 88 syntax checks locally, including floating-entry placement parameters, a competing camera-replacement scenario, bilingual persistence, failure rollback, native React wrappers, layout bounds and resource-lifetime budgets. These checks mock the game’s C++ GUI and cannot replace in-game visual, dragging and performance checks.
+Version 0.1.79dev passed 57 Lua tests and 89 syntax checks locally, including floating-entry placement parameters, a competing camera-replacement scenario, bilingual persistence, failure rollback, native React wrappers, layout bounds and resource-lifetime budgets. These checks mock the game’s C++ GUI and cannot replace in-game visual, dragging and performance checks.
 
 ## Missing route-map button
 
 The button appears after loading a save in normal map view. It is hidden in first-person view, the pause menu and the game's main menu. Enable the mod for that save and fully restart the game after updating.
 
-Version 0.1.78dev mounts an independent native floating window through the official `ModEntryPointExtension`. It starts at the upper right and can be dragged, without occupying the layers/clock toolbar. Earlier versions attached the entry to `FreeCamOptions`; another UI mod replacing that component could remove it. The first-person HUD still adapts the camera component, so this does not establish compatibility with every UI mod.
+Version 0.1.79dev mounts an independent native floating window through the official `ModEntryPointExtension`. It starts at the upper right and can be dragged, without occupying the layers/clock toolbar. Earlier versions attached the entry to `FreeCamOptions`; another UI mod replacing that component could remove it. The first-person HUD still adapts the camera component, so this does not establish compatibility with every UI mod.
 
-If it remains missing, report your OS, game Build, mod version, other UI mods and startup errors mentioning `linnan_bulb_cockpit`. When verbose logging is retained, `[Route Display 0.1.78dev] floating entry mounted` confirms that the entry was submitted to the native window manager; an installed message alone does not.
+If it remains missing, report your OS, game Build, mod version, other UI mods and startup errors mentioning `linnan_bulb_cockpit`. When verbose logging is retained, `[Route Display 0.1.79dev] floating entry mounted` confirms that the entry was submitted to the native window manager; an installed message alone does not.
 
 The mod includes no commercial Parisine font or game fonts. It uses the game’s native fonts and approximates BULB’s visual style. Asset attribution is in [notice.md](mod/content/gui/bulb_cockpit/symbols/notice.md). This project is not affiliated with BULB, RATP, Île-de-France Mobilités or the game developer.
 

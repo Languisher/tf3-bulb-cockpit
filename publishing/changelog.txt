@@ -1,13 +1,13 @@
-In-Game Route Display / 游戏线路显示 · 0.1.78dev
+In-Game Route Display / 游戏线路显示 · 0.1.79dev
 
-Fixed zoomed branch lengths and station spacing by applying one native coordinate scale to tracks, markers, endpoints, connectors and transfers. Removed whole-canvas scaling.
-修复缩放后分支长度与站点间距不一致：轨道、站点、端点、连接线与换乘使用同一原生坐标比例，取消整图缩放变换。
+GUI dimensions calibrate once per loaded game, with bounded startup retries and no later measurement during rides, re-entry or settings opens. Reload the save after changing resolution, window size or UI scale.
+每次载入游戏仅校准一次界面尺寸，启动重试有上限；行驶、重新进入第一人称、打开设置都不再测量。更改分辨率、窗口大小或 UI 缩放后需重新载入存档。
 
-Station names and transfer labels render at the final font size, avoiding magnification of smaller glyphs. Flashing station layers keep the same size in both phases. The upper-left identity keeps its original size.
-站名及换乘文字按最终字号重新渲染，避免放大小字形导致模糊；闪灯两相尺寸保持一致，左上角线路标识大小不变。
+Retain only the followed vehicle's arrival/progress check while riding; unchanged progress does not redraw. Duplicate same-vehicle camera events no longer reset the HUD. Coalesce pending settings opens and reuse unchanged configuration revisions.
+行驶时只检查当前车辆到站进度，不变则不重绘；重复同车相机通知不再重置 HUD；合并待打开设置任务，配置版本不变则复用状态。
 
-Moved Route-map scale above the native transport filter icons. Preserved 10%–400%, 1% steps, 100% default, Reset and saved preferences. Removed 399 canvas-scale rules; no added images, timers or map queries.
-缩放滑杆移到载具类型筛选图标上方，保留 10%–400%、每步 1%、默认 100%、恢复默认与保存偏好。移除 399 条整图缩放样式，不新增图片、计时器或地图查询。
+Hide measurement probes and the complete launcher in first-person view. Replace empty texture references with the existing native surface tinted transparent. No texture assets added or changed.
+隐藏测量探针，第一人称隐藏整个入口窗口；空贴图引用改用透明着色的原生 surface，没有新增或修改贴图资源。
 
-56 Lua tests and 88 syntax checks passed. Includes native geometry and final glyph sizes, branches, directions, zoom levels and installed-game React animation. Actual C++ rendering requires an in-game restart check.
-56 项 Lua 回归及 88 项语法检查通过，覆盖原生尺寸与最终字号、分支、方向、缩放比例及原版 React 闪灯；实际 C++ 绘制需重启游戏后核对。
+57 Lua tests and 89 syntax checks passed. 120 arrival checks: extra GUI size queries reduced from 240 to 0. In-game white-line and FPS comparisons remain pending; the game was not running during this inspection.
+57 项 Lua 回归及 89 项语法检查通过；120 次到站检查附加尺寸查询由 240 次降为 0。排查时游戏已退出，白线和 FPS 改善仍需实机前后对照。

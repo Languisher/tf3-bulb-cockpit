@@ -574,7 +574,7 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
     if not control.alive or aliases:hasExpired()then return end
     local ok,stored,revision=pcall(aliasStore.read,aliasRevision:get())
     if ok and stored and revision~=aliasRevision:get()then aliases:set(stored);aliasRevision:set(revision)
-    elseif not ok then log.warning('[Route Display 0.1.78dev] launcher settings: '..tostring(stored))end
+    elseif not ok then log.warning('[Route Display 0.1.79dev] launcher settings: '..tostring(stored))end
   end
   local function prepareOpen(open)
     if not control.alive then return end
@@ -599,8 +599,8 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
         wc.addSingletonWindow(Launcher,{aliases=aliases,viewport=viewport:old(),prepareOpen=prepareOpen,
           initialX=1,initialY=0})
         requestMeasure()
-        log.verbose('[Route Display 0.1.78dev] floating entry mounted; extension=::ModEntryPointExtension')
-      else log.warning('[Route Display 0.1.78dev] launcher window manager unavailable')end
+        log.verbose('[Route Display 0.1.79dev] floating entry mounted; extension=::ModEntryPointExtension')
+      else log.warning('[Route Display 0.1.79dev] launcher window manager unavailable')end
     end,'LinnanBulbMainButtonNative:mount')
   end)
   react.onUnmount(function()
