@@ -1251,6 +1251,20 @@ do
     return count
   end
   assert(lit(drawn)==1,'only the next station is steady yellow when flashing is off')
+  local nextLayers={}
+  walk(drawn,function(kind,p)
+    if kind=='Component' and p.meta.class=='bulb-station-marker' and p.meta.tooltip=='终点'then
+      for _,child in ipairs(p.layout.param.children)do
+        local image=child.param.item.param
+        nextLayers[image.path:match('([^/]+)$')]=image.meta.styleSheet
+      end
+    end
+  end)
+  assert(nextLayers['station-interior.tga'].color[2]==.82
+    and nextLayers['circle.tga'].color[2]==.82,
+    'steady yellow must cover the normal terminus collar and core, not just its tiny center')
+  assert(nextLayers['station-outline.tga'].color[1]==0,
+    'steady yellow preserves the terminus black outline')
   for i=1,8 do tick()end
   assert(lit(render('LinnanBulbCockpitHudNative',{aliases=aliasState,viewport={x=1280,y=720}}))==1)
   local optionsWrites,requests=0,{}

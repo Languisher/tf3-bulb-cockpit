@@ -117,7 +117,8 @@ local function stationMarker(stop,track,lineColor)
     -- Transparent centers keep the rim and terminus ring from covering the
     -- lamp, independently of the order in which these layers are painted.
     disc(diameter,{0,0,0,1},'bulb-station-outline','outline','station-outline')
-    disc(diameter-2*border,(stop.markerKind=='interchange' or flashingTerminus) and lit and yellow or white,
+    -- Both steady and flashing ON fill the complete terminus interior.
+    disc(diameter-2*border,lit and yellow or white,
       stop.markerKind=='interchange' and stateClass or 'bulb-station-interior','interior',
       stop.markerKind=='terminus' and 'station-interior' or 'circle')
     if stop.markerKind=='terminus'then
@@ -544,7 +545,7 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
     if not control.alive or aliases:hasExpired()then return end
     local ok,stored=pcall(aliasStore.read)
     if ok and stored then aliases:set(stored)
-    elseif not ok then log.warning('[Route Display 0.1.72dev] launcher settings: '..tostring(stored))end
+    elseif not ok then log.warning('[Route Display 0.1.73dev] launcher settings: '..tostring(stored))end
   end
   local function prepareOpen(open)
     react.enqueueJoin(function()
@@ -569,8 +570,8 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
       if wc then
         wc.addSingletonWindow(Launcher,{aliases=aliases,viewport=viewport:old(),prepareOpen=prepareOpen,
           initialX=1,initialY=0})
-        log.verbose('[Route Display 0.1.72dev] floating entry mounted; extension=::ModEntryPointExtension')
-      else log.warning('[Route Display 0.1.72dev] launcher window manager unavailable')end
+        log.verbose('[Route Display 0.1.73dev] floating entry mounted; extension=::ModEntryPointExtension')
+      else log.warning('[Route Display 0.1.73dev] launcher window manager unavailable')end
     end,'LinnanBulbMainButtonNative:mount')
   end)
   react.onUnmount(function()
