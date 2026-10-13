@@ -10,7 +10,7 @@ api={gui={react={detail={makeRecipeId=function(name)
   nextRecipe=nextRecipe+1;names[nextRecipe]=name;return nextRecipe
 end,IAHandle={new=function()return {}end}},params={builtin={}},fireEvent=function()end}}}
 local builtinNames={'Window','BoxLayout','FloatingLayout','FloatingLayoutChild','ImageView','ToggleButton','Component','TextView','Button','ComboBox','ComboBoxItem','TextInputField',
-  'ScrollArea','ActionDescriptor','Selector','HudIconManagerConfig','UseDefaultHudIcon'}
+  'Slider','ScrollArea','ActionDescriptor','Selector','HudIconManagerConfig','UseDefaultHudIcon'}
 local userdataNames={'WithComponentParams'}
 for _,name in ipairs(builtinNames)do userdataNames[#userdataNames+1]=name end
 for _,name in ipairs(userdataNames) do
@@ -44,7 +44,7 @@ local function state(value,owner)
   return result
 end
 local function context()
-  local ctx={states={},actions={},index=0}
+  local ctx={states={},actions={},index=0,internals={}}
   function ctx:makeNodeWithProps(recipeId,key,props)
     nextNode=nextNode+1;nodes[nextNode]={recipeId=recipeId,props=props};return nextNode
   end
@@ -71,7 +71,8 @@ local function context()
   function ctx:onUnmount(fn)self.unmount=fn end
   function ctx:onMount(fn)self.mount=fn end
   function ctx:useComponentInternals()
-    return {setInputActionConfig=function(_,action,config)self.actions[action]=config end}
+    self.internals.setInputActionConfig=function(_,action,config)self.actions[action]=config end
+    return self.internals
   end
   function ctx:checkRecipeMatch(nodeId,expected)
     local actual=assert(nodes[nodeId]).recipeId
@@ -595,4 +596,40 @@ do
   buttons[3].onValueChange(1);assert(filters:old().category[1] and filters:old().category[3])
   buttons[1].onValueChange(0);assert(not filters:old().category[1] and filters:old().category[3])
   print('PASS: original carrier-filter factory, native ToggleButtons and multi-select callback contract')
+end
+
+-- Use the original React mouse-listener binding and native Slider recipe.
+do
+  local previousRequire=ug_require
+  ug_require=function(path)
+    local locale=path:match('/locales/([%w-]+)%.lua$')
+    if locale then return dofile('mod/content/gui/bulb_cockpit/locales/'..locale..'.lua')end
+    return previousRequire(path)
+  end
+  local scaleId
+  for id,name in pairs(names)do if name=='LinnanBulbMapScaleNative'then scaleId=id end end
+  api.gui.mouse={Event={Type={Pressed=1,Released=2}}}
+  local config=state({__options={language='fr',flashNextStop=true}})
+  local param={aliases=config,width=400,session={closed=false}}
+  local ctx=context()
+  local function draw()
+    lowerBound=nextNode;render(assert(scaleId),param,ctx)
+    return control('linnan.bulb.settings.scale')
+  end
+  local before=#optionRequests
+  local slider=draw()
+  assert(slider.params.min==10 and slider.params.max==400 and slider.params.step==1)
+  ctx.internals.mouseListener({button=0,type=1})
+  slider.params.onValueChange(173);slider.params.onValueChange(174)
+  assert(#optionRequests==before and draw().params.value==174)
+  ctx.internals.mouseListener({button=0,type=2})
+  assert(#optionRequests==before+1 and not draw().meta.enabled)
+  optionRequests[#optionRequests].callback(nil,true);_reactDoExecuteJoins()
+  assert(config:old().__options.routeMapScale==174 and draw().meta.enabled)
+  assert(config:old().__options.language=='fr' and config:old().__options.flashNextStop)
+  control('linnan.bulb.settings.scale-reset').params.onClick()
+  optionRequests[#optionRequests].callback(nil,true);_reactDoExecuteJoins()
+  assert(draw().params.value==100 and config:old().__options.routeMapScale==100)
+  ctx.unmount();ug_require=previousRequire
+  print('PASS: original React Slider, mouse drag coalescing, option acknowledgment and reset')
 end

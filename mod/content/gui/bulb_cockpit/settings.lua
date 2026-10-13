@@ -113,7 +113,7 @@ function S.geometry(viewport,language)
   local fixed=badge+field+number+field+mode+save+6*8
   local extraToolbar=content<376 and 80 or 40
   if english and content<376 then extraToolbar=extraToolbar+40 end
-  local listHeight=math.max(64,math.min(304,viewport.y-320-extraToolbar))
+  local listHeight=math.max(64,math.min(304,viewport.y-392-extraToolbar))
   return {width=width,content=content,compact=compact,rowWidth=rowWidth,inner=inner,badge=badge,
     line=compact and inner or inner-fixed,
     prefix=field,number=number,suffix=field,alias=number,
@@ -322,6 +322,78 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       orientation=g.compact and builtin.type.Orientation.Vertical or builtin.type.Orientation.Horizontal,
       children=cells},'bulb-settings-row'..(param.striped and ', bulb-settings-striped' or ''),g.inner,g.rowHeight-8)}}
   end)
+  local ScaleControl=react.RegisterRecipe('LinnanBulbMapScaleNative',function(param)
+    local tr=I.bind(param.aliases:old())
+    local label=localizedLabels(param.aliases:old())
+    local value=react.useState(P.mapScale(param.aliases:old()))
+    local saving=react.useState(false)
+    local message=react.useState('')
+    local pressed=react.useRef(false)
+    local dragged=react.useRef(nil)
+    local busy=react.useRef(false)
+    local queued=react.useRef(nil)
+    local save
+    save=function(wanted)
+      if value:hasExpired() or (param.session and param.session.closed)then return end
+      if busy:get()then queued:set(wanted);return end
+      if wanted==P.mapScale(param.aliases:old())then return end
+      busy:set(true);saving:set(true);message:set('')
+      local function complete(success)
+        if param.aliases:hasExpired()then return end
+        if success then
+          param.aliases:transform(function(latest)
+            local result,options={},{}
+            for key,item in pairs(latest)do result[key]=item end
+            for key,item in pairs(latest.__options or {})do options[key]=item end
+            options.routeMapScale=wanted;result.__options=options;return result
+          end)
+        end
+        if value:hasExpired() or (param.session and param.session.closed)then return end
+        busy:set(false);saving:set(false)
+        local nextValue=queued:get();queued:set(nil)
+        if not success then
+          if nextValue==nil then value:set(P.mapScale(param.aliases:old()))end
+          message:set(tr('缩放保存失败，请重试。'))
+        end
+        if nextValue~=nil then save(nextValue)end
+      end
+      local ok,err=pcall(aliasStore.saveOptions,{routeMapScale=wanted},function(_,success)
+        react.enqueueJoin(function()complete(success==true)end,'LinnanBulbMapScaleNative:confirm')
+      end)
+      if not ok then log.warning('[Route Display] scale: '..tostring(err));complete(false)end
+    end
+    -- Same coalescing pattern as the game's ScriptParamSliderAndText:
+    -- mouse motion changes the local preview; release submits one command.
+    react.onMouseEvent(function(evt)
+      if evt.button~=0 then return false end
+      if evt.type==api.gui.mouse.Event.Type.Pressed then pressed:set(true);dragged:set(nil)
+      elseif evt.type==api.gui.mouse.Event.Type.Released then
+        pressed:set(false);local wanted=dragged:get();dragged:set(nil)
+        if wanted~=nil then save(wanted)end
+      end
+      return false
+    end)
+    react.onUnmount(function()pressed:set(false);dragged:set(nil);queued:set(nil)end)
+    local resetWidth=math.min(param.width-88,math.max(88,math.ceil(B.textWidth(tr('恢复默认'),19))+24))
+    local resetCaption=B.fit(tr('恢复默认'),resetWidth-16,19,19)
+    local title=B.fit(tr('线路图缩放'),param.width-64,19,19)
+    local children={
+      horizontal({label(title,param.width-64,24,nil,tr('线路图缩放')),label(value:old()..'%',56,24)},
+        'bulb-settings-controls',param.width,24),
+      horizontal({builtin.Slider{min=10,max=400,step=1,pageStep=10,horizontal=true,drawGroove=true,
+        value=value:old(),meta={id='linnan.bulb.settings.scale',class='bulb-settings-scale-slider',enabled=not saving:old(),
+          styleSheet=style{size={param.width-resetWidth-8,32}}.styleSheet},onValueChange=function(wanted)
+          if type(wanted)~='number' or wanted<10 or wanted>400 or wanted%1~=0 then return end
+          value:set(wanted)
+          if pressed:get()then dragged:set(wanted)else save(wanted)end
+        end},builtin.Button{meta={id='linnan.bulb.settings.scale-reset',class='bulb-settings-save',
+          tooltip=tr('恢复默认')..' · 100%',enabled=not saving:old(),styleSheet=style{size=buttonSize(resetWidth)}.styleSheet},
+          content=label(resetCaption,nil,24),onClick=function()value:set(100);save(100)end}},
+        'bulb-settings-controls',param.width,32),
+    }
+    if message:old()~=''then children[#children+1]=label(message:old(),param.width,24,'font-scale-annotation')end
+    return builtin.BoxLayout{children={vertical(children,'bulb-settings-body',param.width)}}
+  end)
   local CarrierBar=react.RegisterRecipe('LinnanBulbCarrierFilterNative',function(param)
     local tr=I.bind(param.aliases:old())
     local state=react.useMirrorState(param.state)
@@ -515,6 +587,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       or {horizontal({search,filters[1],filters[2]},'bulb-settings-controls',g.content,32)}
     local body={
       CarrierBar{state=carrierChoice,aliases=param.aliases},
+      ScaleControl{aliases=param.aliases,width=g.content,session=param.session},
       horizontal({label('',g.content-applyWidth-8,32),applyButton},'bulb-settings-controls',g.content,32),
       horizontal(headings,'bulb-settings-heading',g.inner,24),
       builtin.ScrollArea{content=vertical(rows,'bulb-settings-list'),

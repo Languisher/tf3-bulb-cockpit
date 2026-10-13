@@ -1,5 +1,8 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["线路图缩放"]="Escala do mapa",
+  ["恢复默认"]="Redefinir",
+  ["缩放保存失败，请重试。"]="Não foi possível salvar a escala. Tente novamente.",
   ["显示公路线路"]="Mostrar linhas rodoviárias",
   ["显示电车线路"]="Mostrar bondes",
   ["显示铁路线路"]="Mostrar linhas ferroviárias",

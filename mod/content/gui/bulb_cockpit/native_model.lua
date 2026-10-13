@@ -1,4 +1,9 @@
 local P = {}
+function P.mapScale(aliases)
+  local value=aliases and aliases.__options and aliases.__options.routeMapScale
+  if type(value)=='number' and value>=10 and value<=400 and value%1==0 then return value end
+  return 100
+end
 local displayModes={RER=true,METRO=true,TRAIN=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true}
 function P.mode(line,aliases)
   local entry=aliases and aliases[tostring(line.lineId or line.id)]

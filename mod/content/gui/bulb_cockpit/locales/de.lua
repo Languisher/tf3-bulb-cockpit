@@ -1,5 +1,8 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["线路图缩放"]="Linienplan-Zoom",
+  ["恢复默认"]="Zurücksetzen",
+  ["缩放保存失败，请重试。"]="Skalierung nicht gespeichert. Erneut versuchen.",
   ["显示公路线路"]="Straßenlinien anzeigen",
   ["显示电车线路"]="Straßenbahnlinien anzeigen",
   ["显示铁路线路"]="Bahnlinien anzeigen",

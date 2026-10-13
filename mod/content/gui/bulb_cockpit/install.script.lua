@@ -462,7 +462,8 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
   end
   if not snapshot then return nil end
   local viewport=param.viewport
-  local maxWidth=math.max(240,math.min(viewport.x-48,1600))
+  local requestedScale=P.mapScale(param.aliases:old())
+  local maxWidth=math.max(240,math.min(1600,(viewport.x-48)/(requestedScale/100)))
   local aliases=param.aliases:old()
   local flashing=aliases.__options and aliases.__options.flashNextStop==true
   local plan=P.plan(snapshot,aliases,not flashing,maxWidth,tr)
@@ -490,12 +491,14 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
   positioned(identityChildren,text(title,14,titleWidth,rows*18,HUD_INK,nil,'bulb-route-title',nil,plan.name),
     inset+markWidth+12,inset+6+(markHeight-rows*18)/2,identityWidth,identityHeight)
   local identity=floatingPanel(identityWidth,identityHeight,identityChildren,'linnan.bulb.identity')
+  local percent=requestedScale
+  if plan.segments then
+    percent=math.min(percent,math.max(1,math.floor(math.max(120,viewport.y-200)/height*100)))
+  end
   local diagram
-  if plan.segments and height>math.max(120,viewport.y-200)then
-    -- A high branch count must not place labels above the viewport. Scale a
-    -- content component inside a correctly sized outer frame; KeepInside
-    -- then uses the displayed dimensions, not the unscaled diagram bounds.
-    local percent=math.max(1,math.floor(math.max(120,viewport.y-200)/height*100))
+  if percent~=100 then
+    -- Scale the entire native subtree, then reserve its displayed bounds so
+    -- the engine keeps it centered at the bottom and inside the viewport.
     local inner=floatingPanel(width,height,children,'linnan.bulb.canvas-content',nil,'bulb-canvas-scale'..percent,nil,ScaledCanvas)
     local scaledWidth,scaledHeight=width*percent/100,height*percent/100
     local items={}

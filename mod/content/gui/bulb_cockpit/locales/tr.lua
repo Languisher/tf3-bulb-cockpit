@@ -1,5 +1,8 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["线路图缩放"]="Şema ölçeği",
+  ["恢复默认"]="Sıfırla",
+  ["缩放保存失败，请重试。"]="Ölçek kaydedilemedi. Yeniden deneyin.",
   ["显示公路线路"]="Karayolu hatlarını göster",
   ["显示电车线路"]="Tramvay hatlarını göster",
   ["显示铁路线路"]="Demiryolu hatlarını göster",

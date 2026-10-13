@@ -39,11 +39,11 @@ function data()
       padding={0,0,0,0},margin={0,0,0,0},
     })
   end
-  for percent=1,99 do
-    add('R::LinnanBulbScaledCanvasNative!bulb-canvas-scale'..percent,{
+  for percent=1,400 do
+    if percent~=100 then add('R::LinnanBulbScaledCanvasNative!bulb-canvas-scale'..percent,{
       transformOrigin={0,0},transform=transf.scaleRotZTransl(percent/100,0,{x=0,y=0,z=0}),
       padding={0,0,0,0},margin={0,0,0,0},
-    })
+    })end
   end
   local stationNameStyle={
     fontWeight='Bold',
@@ -138,6 +138,7 @@ function data()
   add('ComboBox!bulb-settings-mode ComboBox::Entry, ComboBox!bulb-settings-mode ComboBox::DisplayEntry', {padding={4,8,4,8}})
   add('ComboBox!bulb-settings-mode, ComboBox!bulb-settings-mode ComboBox::Button', {padding={0,0,0,0},margin={0,0,0,0}})
   add('Button!bulb-settings-save', {padding={4,8,4,8},margin={0,0,0,0}})
+  add('Slider!bulb-settings-scale-slider',{padding={0,0,0,0},margin={0,0,0,0}})
   add('ToggleButton!bulb-settings-flash', {padding={4,8,4,8},margin={0,0,0,0},gravity={0.5,0.5}})
   add('R::Component!bulb-directory-sections > BoxLayout', {outerSpacing={0,0},innerSpacing={10,10},gravity={-1,0}})
   add('R::Component!bulb-directory-section', {padding={8,8,8,8},margin={0,0,0,0},backgroundColor=colors.BaseMedium})

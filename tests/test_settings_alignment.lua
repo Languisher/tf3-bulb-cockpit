@@ -54,6 +54,11 @@ do
     contexts.LinnanBulbSettingsContentNative={}
     local tree=render('LinnanBulbSettingsContentNative',{aliases=aliasState,lines=roster,geometry=g,
       color=function()return {1,.8,0,1}end})
+    contexts.LinnanBulbMapScaleNative={}
+    local scale=render('LinnanBulbMapScaleNative',{aliases=aliasState,width=g.content,session={closed=false}})
+    walk(scale,function(kind,p)
+      if kind=='Component' and has(p,'bulb-settings-controls')then positions({kind=kind,param=p})end
+    end)
     local header,rows
     rows={}
     walk(tree,function(kind,p)

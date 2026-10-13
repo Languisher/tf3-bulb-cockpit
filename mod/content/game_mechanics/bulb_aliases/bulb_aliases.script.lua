@@ -115,14 +115,17 @@ function S.handleEvent(_,state,_,id,name,param)
   if id=='linnan.bulb.aliases' and name==OPTIONS_EVENT then
     if type(param)~='table'
       or (param.flashNextStop~=nil and type(param.flashNextStop)~='boolean')
-      or (param.language~=nil and languages[param.language]~=true)then return end
-    if param.flashNextStop==nil and param.language==nil then return end
+      or (param.language~=nil and languages[param.language]~=true)
+      or (param.routeMapScale~=nil and (type(param.routeMapScale)~='number' or param.routeMapScale<10
+        or param.routeMapScale>400 or param.routeMapScale%1~=0))then return end
+    if param.flashNextStop==nil and param.language==nil and param.routeMapScale==nil then return end
     local old=state:get() or {}
     local options={};for k,v in pairs(old.options or {})do options[k]=v end
     -- Option commands are patches: language and blinking must never reset
     -- each other, including commands acknowledged after another UI edit.
     if param.flashNextStop~=nil then options.flashNextStop=param.flashNextStop end
     if param.language~=nil then options.language=param.language end
+    if param.routeMapScale~=nil then options.routeMapScale=param.routeMapScale end
     replace(state,{options=options})
     return
   end

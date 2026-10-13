@@ -1,5 +1,8 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["线路图缩放"]="Taille du plan",
+  ["恢复默认"]="Réinitialiser",
+  ["缩放保存失败，请重试。"]="Impossible d’enregistrer la taille. Réessayez.",
   ["显示公路线路"]="Afficher les lignes routières",
   ["显示电车线路"]="Afficher les tramways",
   ["显示铁路线路"]="Afficher les lignes ferroviaires",

@@ -30,7 +30,9 @@ function A.saveOptions(options,callback)
   assert(type(options)=='table','Invalid options.')
   assert(options.flashNextStop==nil or type(options.flashNextStop)=='boolean','Invalid blink option.')
   assert(options.language==nil or languages[options.language]==true,'Invalid language.')
-  local patch={flashNextStop=options.flashNextStop,language=options.language}
+  assert(options.routeMapScale==nil or (type(options.routeMapScale)=='number' and
+    options.routeMapScale>=10 and options.routeMapScale<=400 and options.routeMapScale%1==0),'Invalid route-map scale.')
+  local patch={flashNextStop=options.flashNextStop,language=options.language,routeMapScale=options.routeMapScale}
   assert(next(patch),'Empty options patch.')
   api.cmd.sendCommand(api.cmd.makeScriptingSendEventCmd('',A.id,A.optionsEvent,patch),callback)
 end

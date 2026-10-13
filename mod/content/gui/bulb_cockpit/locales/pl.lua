@@ -1,5 +1,8 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["线路图缩放"]="Skala schematu",
+  ["恢复默认"]="Przywróć",
+  ["缩放保存失败，请重试。"]="Nie udało się zapisać skali. Spróbuj ponownie.",
   ["显示公路线路"]="Pokaż linie drogowe",
   ["显示电车线路"]="Pokaż linie tramwajowe",
   ["显示铁路线路"]="Pokaż linie kolejowe",

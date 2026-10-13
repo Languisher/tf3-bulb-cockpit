@@ -53,6 +53,7 @@ assert(absolute.x==1280 and absolute.y==720)
 assert(P.viewport({x=1,y=1},{x=0,y=0})==nil,'wait until the gauge is laid out')
 
 local recipes,contexts,timers,joins,mounts,unmounts,wrappers={},{},{},{},{},{},{}
+local mouseEvents={}
 local phase='render'
 local actions={}
 local active,index
@@ -96,6 +97,7 @@ local react={
     assert(phase=='join','component geometry must be read on the main thread')
     return {x=0.2+x*0.6,y=0.8+y*0.2}
   end} end} end,
+  onMouseEvent=function(fn)mouseEvents[active]=fn end,
   setMouseTransparent=function()end,setDisableFocusable=function()end,
   onMount=function(fn)mounts[active]=fn end,
   onUnmount=function(fn)unmounts[active]=fn end,
@@ -109,7 +111,7 @@ local react={
 local builtin={type={Orientation={Horizontal='H',Vertical='V'},ImageViewScaling={Stretch='stretch',AutoFit='auto-fit'},ScrollBarPolicy={AlwaysOff='off',AsNeeded='needed'},FloatingLayoutOverflowMode={KeepInside='keep-inside'}}}
 -- Only constructors present in Build 40420's builtin.d.tl; do not fabricate
 -- arbitrary APIs via __index (that hid the bad enum namespace in r5).
-for _,name in ipairs({'BoxLayout','FloatingLayout','FloatingLayoutChild','Component','TextView','ImageView','TextInputField','Button','ToggleButton','ScrollArea','ComboBox','ComboBoxItem','Window','ActionDescriptor','Selector','HudIconManagerConfig','UseDefaultHudIcon'}) do
+for _,name in ipairs({'BoxLayout','FloatingLayout','FloatingLayoutChild','Component','TextView','ImageView','TextInputField','Button','ToggleButton','Slider','ScrollArea','ComboBox','ComboBoxItem','Window','ActionDescriptor','Selector','HudIconManagerConfig','UseDefaultHudIcon'}) do
   builtin[name]=function(param)
     if name=='ScrollArea' then
       assert(param.content and not param.content.kind:match('Layout$'),

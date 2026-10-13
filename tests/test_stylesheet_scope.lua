@@ -17,7 +17,7 @@ do
       scales=scales+1
     end
   end
-  assert(angles==181 and scales==99,'retain full curve/viewport precision')
+  assert(angles==181 and scales==399,'retain full curve/viewport precision')
   local stroke=render('LinnanBulbTrackStrokeNative',{})
   assert(stroke.kind=='FloatingLayout' and #stroke.param.children==0,
     'the dedicated recipe owns the painted component; no nested rail nodes')
