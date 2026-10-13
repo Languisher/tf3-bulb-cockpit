@@ -125,6 +125,27 @@ local function testText(value,font,width,height,ink,fill,class)
   return builtin.TextView{text=value,meta=meta}
 end
 local mark,group,badge=B.create(builtin,testStyle,testText,function()return builtin.Component{}end)
+local nativeFilterUtility=dofile('tests/carrier_filter_fixture.lua')(builtin)
+if arg[2]then
+  local previous=ug_require
+  local function copy(value)
+    if type(value)~='table'then return value end
+    local result={};for k,v in pairs(value)do result[k]=copy(v)end;return result
+  end
+  ug_require=function(path)
+    if path:match('/builtin.lua$')then return builtin end
+    if path:match('/react.lua$')then return react end
+    if path:match('/table_util.tl$')then return {copy=copy}end
+    return {}
+  end
+  nativeFilterUtility=assert(loadfile(arg[2]))()
+  ug_require=previous
+  -- Test the original carrier factory and callbacks with real React nodes;
+  -- native focus navigation is outside this test's C++ boundary.
+  nativeFilterUtility.createFocusBar=function(buttons)
+    return builtin.BoxLayout{orientation=builtin.type.Orientation.Horizontal,children=buttons}
+  end
+end
 local staticLoads=0
 local Entry=S.create(react,builtin,testStyle,P,B,
   {listLines=function()return {{id=10,name='Tram 乘客-杭州-LO-1',mode='TRAM'}}end,
@@ -136,7 +157,7 @@ local Entry=S.create(react,builtin,testStyle,P,B,
     getDefaultToolStackApi=function()return mapStack end},citySettings,stationSettings,
   {badge=badge,mark=mark,draw=function()
     return builtin.Component{meta=testStyle{size={1600,200}},layout=builtin.BoxLayout{children={testText('静态图',14,1600,200)}}}
-  end},I)
+  end},I,nativeFilterUtility)
 local entryId=react.GetRecipeId(Entry)
 local aliases=state({__options={language='zh'}})
 local function toggleFrom(root)
@@ -551,3 +572,27 @@ do
   assert(caption(control('linnan.bulb.settings.flash')).text=='Blinking: On')
 end
 print('PASS: actual game React bilingual switch, direct Window title and narrow English controls')
+
+-- Execute the same original factory used by the game's line manager.
+do
+  api.type={['enum']={Carrier={ROAD=1,TRAM=2,RAIL=3,WATER=4,AIR=5}}}
+  local id
+  for key,name in pairs(names)do if name=='LinnanBulbCarrierFilterNative'then id=key end end
+  local filters=state({category={}})
+  local param={state=filters,aliases=state({__options={language='en'}})}
+  local ctx=context()
+  local function toggles()
+    lowerBound=nextNode;render(assert(id),param,ctx)
+    local found={}
+    for key=lowerBound+1,nextNode do
+      if names[nodes[key].recipeId]=='ToggleButton'then found[#found+1]=nodes[key].props.props[1]end
+    end
+    return found
+  end
+  local buttons=toggles();assert(#buttons==5)
+  buttons[1].onValueChange(1);assert(filters:old().category[1])
+  buttons=toggles();assert(buttons[1].value==1 and buttons[2].value==0)
+  buttons[3].onValueChange(1);assert(filters:old().category[1] and filters:old().category[3])
+  buttons[1].onValueChange(0);assert(not filters:old().category[1] and filters:old().category[3])
+  print('PASS: original carrier-filter factory, native ToggleButtons and multi-select callback contract')
+end

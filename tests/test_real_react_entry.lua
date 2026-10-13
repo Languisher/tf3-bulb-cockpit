@@ -36,6 +36,7 @@ local modules={['react.lua']=react,['builtin.lua']=builtin,['free_cam_options.tl
 for _,name in ipairs({'localization.lua','native_model.lua','mode_marks.lua','diagnostics.lua','settings.lua','city_settings.lua','station_settings.lua','camera_state.lua'})do
   modules[name]=dofile(base..name)
 end
+modules['statistics_react_util.tl']=dofile('tests/carrier_filter_fixture.lua')(builtin)
 ug_require=function(path)return assert(modules[path:match('([^/]+)$')],path)end
 assert(loadfile(base..'install.script.lua'))()
 scriptExports=data()

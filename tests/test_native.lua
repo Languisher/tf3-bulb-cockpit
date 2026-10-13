@@ -64,6 +64,7 @@ local function hook(value,lazy)
     function item:old()return self.value end
     function item:get()return self.value end
     function item:set(v)self.value=v;self.writes=(self.writes or 0)+1 end
+    function item:transform(fn)self:set(fn(self.value))end
     function item:hasExpired()return self.expired==true end
     context[index]=item
   end
@@ -144,7 +145,8 @@ end}
 local windowRecipe,windowParam,windowCloses
 local windowApi={addSingletonWindow=function(recipe,param)windowRecipe,windowParam=recipe,param end,
   removeAllWindows=function()windowParam=nil;windowCloses=(windowCloses or 0)+1 end}
-local modules={['react.lua']=react,['builtin.lua']=builtin,['free_cam_options.tl']=free,
+local nativeFilters=dofile('tests/carrier_filter_fixture.lua')(builtin)
+local modules={['statistics_react_util.tl']=nativeFilters,['react.lua']=react,['builtin.lua']=builtin,['free_cam_options.tl']=free,
   ['styleutil.tl']={makeStyle=function(v)return v end},['collect.lua']=collect,['native_model.lua']=P,
   ['mode_marks.lua']=B,['settings.lua']=S,
   ['localization.lua']=dofile('mod/content/gui/bulb_cockpit/localization.lua'),

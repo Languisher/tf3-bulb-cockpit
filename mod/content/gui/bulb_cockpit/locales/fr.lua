@@ -1,5 +1,10 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["显示公路线路"]="Afficher les lignes routières",
+  ["显示电车线路"]="Afficher les tramways",
+  ["显示铁路线路"]="Afficher les lignes ferroviaires",
+  ["显示船舶线路"]="Afficher les lignes maritimes",
+  ["显示航空线路"]="Afficher les lignes aériennes",
   ["地铁"]="Métro",
   ["电车"]="Tramway",
   ["公交"]="Bus",

@@ -1,5 +1,10 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["显示公路线路"]="Karayolu hatlarını göster",
+  ["显示电车线路"]="Tramvay hatlarını göster",
+  ["显示铁路线路"]="Demiryolu hatlarını göster",
+  ["显示船舶线路"]="Gemi hatlarını göster",
+  ["显示航空线路"]="Havayolu hatlarını göster",
   ["地铁"]="Metro",
   ["电车"]="Tramvay",
   ["公交"]="Otobüs",

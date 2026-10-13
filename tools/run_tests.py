@@ -19,6 +19,7 @@ def main():
     parser.add_argument("--lua", default="lua")
     parser.add_argument("--luac", default=shutil.which("luac"))
     parser.add_argument("--game-gui", type=Path)
+    parser.add_argument("--game-filter-util", type=Path, help="Locally compiled original statistics_react_util.lua")
     args = parser.parse_args()
     if not shutil.which(args.lua):
         parser.error("Lua executable not found; install Lua 5.4 or specify --lua /path/to/lua")
@@ -38,6 +39,8 @@ def main():
         command = [args.lua, str(path.relative_to(ROOT))]
         if path.name in GAME_TESTS:
             command.append(str(gui if path.name == "test_branch_connections.lua" else gui / "react.lua"))
+        if path.name == "test_real_react_settings.lua" and args.game_filter_util:
+            command.append(str(args.game_filter_util.resolve()))
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
         if result.returncode:
             failed += 1

@@ -37,16 +37,26 @@ local function numberKey(value)
     return string.format('%04d',#digits)..digits
   end)
 end
-function S.list(lines,aliases,query,scope,order,P)
+local carrierIndex={BUS=1,TRUCK=1,TRAM=2,TRAIN=3,RER=3,METRO=3,BOAT=4,AIR=5}
+local carriers={
+  {key='ROAD',icon='bus',tooltip='显示公路线路'}, {key='TRAM',icon='tram',tooltip='显示电车线路'},
+  {key='RAIL',icon='train',tooltip='显示铁路线路'}, {key='WATER',icon='ship',tooltip='显示船舶线路'},
+  {key='AIR',icon='airplane',tooltip='显示航空线路'},
+}
+function S.backWidth(caption,limit,B)
+  return math.min(limit,math.max(120,math.ceil(B.textWidth(caption,19))+24))
+end
+function S.list(lines,aliases,query,scope,order,P,categories)
   local defaults=P.defaults(lines,aliases)
   local result,keys={},{}
   query=tostring(query or ''):lower()
+  local all=true;for _,enabled in pairs(categories or {})do if enabled then all=false;break end end
   for _,line in ipairs(lines)do
     local identifier=P.identifier(line,aliases,defaults)
     local badge=P.alias(line,aliases,defaults):lower()
     local name=tostring(line.name):lower()
     local haystack=scope=='number' and badge or (scope=='name' and name or name..'\n'..badge)
-    if haystack:find(query,1,true)then
+    if (all or categories[carrierIndex[line.mode]]) and haystack:find(query,1,true)then
       result[#result+1]=line;keys[line.id]=numberKey(identifier)
     end
   end
@@ -103,7 +113,7 @@ function S.geometry(viewport,language)
   local fixed=badge+field+number+field+mode+save+6*8
   local extraToolbar=content<376 and 80 or 40
   if english and content<376 then extraToolbar=extraToolbar+40 end
-  local listHeight=math.max(64,math.min(304,viewport.y-280-extraToolbar))
+  local listHeight=math.max(64,math.min(304,viewport.y-320-extraToolbar))
   return {width=width,content=content,compact=compact,rowWidth=rowWidth,inner=inner,badge=badge,
     line=compact and inner or inner-fixed,
     prefix=field,number=number,suffix=field,alias=number,
@@ -140,7 +150,7 @@ local function prepareChanges(lines,aliases,drafts,P,tr)
   end
   return changes,candidate,defaults
 end
-function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,citySettings,stationSettings,visuals,I)
+function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,citySettings,stationSettings,visuals,I,nativeFilters)
   -- Native size describes content, excluding the control's CSS padding.
   -- Keep official skins/insets while budgeting their complete outer bounds.
   local function inputSize(width)return {width-8,28}end
@@ -312,6 +322,18 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       orientation=g.compact and builtin.type.Orientation.Vertical or builtin.type.Orientation.Horizontal,
       children=cells},'bulb-settings-row'..(param.striped and ', bulb-settings-striped' or ''),g.inner,g.rowHeight-8)}}
   end)
+  local CarrierBar=react.RegisterRecipe('LinnanBulbCarrierFilterNative',function(param)
+    local tr=I.bind(param.aliases:old())
+    local state=react.useMirrorState(param.state)
+    local categories={}
+    for _,entry in ipairs(carriers)do
+      categories[#categories+1]={imageFile='::/gui/line_vehicle_mgmt/icons/vehicle_'..entry.icon..'_18.tga',
+        tooltip=tr(entry.tooltip),carrier=api.type['enum'].Carrier[entry.key]}
+    end
+    return builtin.BoxLayout{children={wrap(nativeFilters.createCarrierCategoryFilter(categories,nil,
+      function()return state:old()end,function(fn)param.state:transform(fn)end),
+      'bulb-carrier-filter',232,32)}}
+  end)
   local Content=react.RegisterRecipe('LinnanBulbSettingsContentNative',function(param)
     local tr=I.bind(param.aliases:old())
     local label=localizedLabels(param.aliases:old())
@@ -334,9 +356,10 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     end)
     local batchBusy=react.useRef(false)
     local batchPending=react.useState(false)
+    local carrierChoice=react.useState({category={}})
     local rows,g={},param.geometry
     local filtered,defaults=S.list(param.lines,param.aliases:old(),query:old(),
-      ({'number','name','all'})[scope:old()],({'number_asc','number_desc','name'})[order:old()],P)
+      ({'number','name','all'})[scope:old()],({'number_asc','number_desc','name'})[order:old()],P,carrierChoice:old().category)
     for _,line in ipairs(filtered) do
       rows[#rows+1]=AliasRow{meta={localKey=tostring(line.id)..line.name},line=line,geometry=g,
         lines=param.lines,defaults=defaults,
@@ -351,7 +374,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         onValueChange=function(value)if names[value]then state:set(value)end end}
     end
     local count=#rows
-    if count==0 then rows[1]=label(query:old()=='' and tr('当前存档没有线路。') or tr('没有找到匹配的线路。'),g.content-20,64) end
+    if count==0 then rows[1]=label(#param.lines==0 and tr('当前存档没有线路。') or tr('没有找到匹配的线路。'),g.content-20,64) end
     local headings=g.compact and {label(tr('标识'),g.badge,24,'font-scale-annotation'),
         label(tr('前缀'),g.prefix,24,'font-scale-annotation'),label(tr('编号'),g.number,24,'font-scale-annotation'),
         label(tr('后缀'),g.suffix,24,'font-scale-annotation')}
@@ -491,6 +514,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local searchRows=splitSearch and {search,horizontal(filters,'bulb-settings-controls',g.content,32)}
       or {horizontal({search,filters[1],filters[2]},'bulb-settings-controls',g.content,32)}
     local body={
+      CarrierBar{state=carrierChoice,aliases=param.aliases},
       horizontal({label('',g.content-applyWidth-8,32),applyButton},'bulb-settings-controls',g.content,32),
       horizontal(headings,'bulb-settings-heading',g.inner,24),
       builtin.ScrollArea{content=vertical(rows,'bulb-settings-list'),
@@ -508,8 +532,11 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     for _,item in ipairs(body) do children[#children+1]=item end
     return builtin.BoxLayout{children={vertical(children,'bulb-settings-body',g.content)}}
   end)
-  local function button(id,caption,callback,width)
-    return builtin.Button{meta={id=id,class='bulb-settings-save',styleSheet=style{size=buttonSize(width or 112)}.styleSheet},
+  local function button(id,caption,callback,width,fit)
+    local full=caption
+    if fit then caption=B.fit(caption,width-16,19,19)end
+    return builtin.Button{meta={id=id,class='bulb-settings-save',tooltip=caption~=full and full or nil,
+      styleSheet=style{size=buttonSize(width or 112)}.styleSheet},
       content=label(caption,nil,24,nil,nil,nil,true),onClick=callback}
   end
   local Static=react.RegisterRecipe('LinnanBulbStaticRouteNative',function(param)
@@ -566,7 +593,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         if not ok then log.warning('[BULB native 0.1.65dev] locate line: '..tostring(located))end
       end
     end
-    local children={horizontal({button('linnan.bulb.browser.back',tr('返回线路目录'),param.home,I.language(param.aliases:old())~='zh' and 144 or 120),
+    local children={horizontal({button('linnan.bulb.browser.back',tr('返回线路目录'),param.home,S.backWidth(tr('返回线路目录'),g.content-32,B),true),
       builtin.Button{meta={id='linnan.bulb.browser.locate',class='bulb-static-locate',tooltip=tr('在地图上定位此线路'),
           enabled=h.snapshot~=nil and not h.disposed,styleSheet=style{size={24,24}}.styleSheet},
         content=builtin.ImageView{path='::/gui/line_vehicle_mgmt/icons/symbol_locate_20.tga',
@@ -653,7 +680,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     if page:old()=='config' then
       local configParam={};for key,value in pairs(param)do configParam[key]=value end
       configParam.geometry=g
-      return builtin.BoxLayout{children={vertical({button('linnan.bulb.browser.back',tr('返回线路目录'),home,I.language(param.aliases:old())~='zh' and 144 or 120),
+      return builtin.BoxLayout{children={vertical({button('linnan.bulb.browser.back',tr('返回线路目录'),home,S.backWidth(tr('返回线路目录'),g.content,B),true),
         Content(configParam)},'bulb-settings-body',g.content)}}
     elseif type(page:old())=='number' then
       return builtin.BoxLayout{children={Static{meta={localKey='static:'..page:old()},lineId=page:old(),

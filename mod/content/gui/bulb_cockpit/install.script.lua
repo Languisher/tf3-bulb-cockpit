@@ -9,6 +9,7 @@ local modeMarks = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/mode_marks.
 local diagnostic = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/diagnostics.lua'
 local cameraState = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/camera_state.lua'
 local aliasStore = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/aliases.lua'
+local nativeFilters = ug_require '::/gui/statistics/statistics_react_util.tl'
 local settingsUI = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/settings.lua'
 local cityUI = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/city_settings.lua'
 local stationUI = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/station_settings.lua'
@@ -512,7 +513,7 @@ end)
 local Settings=settingsUI.create(react,builtin,style,P,modeMarks,collect,aliasStore,diagnostic,windows,
   cityUI.create(react,builtin,style,aliasStore,windows,P,I),
   stationUI.create(react,builtin,style,aliasStore,windows,P,collect,I),
-  {badge=lineBadge,draw=staticDiagram,mark=modeMark},I)
+  {badge=lineBadge,draw=staticDiagram,mark=modeMark},I,nativeFilters)
 
 -- The compact native window supplies dragging, bounds clamping and position
 -- retention. Its small title grip overlaps the button instead of adding a row.

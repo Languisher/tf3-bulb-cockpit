@@ -2,6 +2,11 @@
 -- Bound translators are immutable snapshots; no global language or polling.
 local I={}
 I.english={
+  ["显示公路线路"]="Show road lines",
+  ["显示电车线路"]="Show tram lines",
+  ["显示铁路线路"]="Show rail lines",
+  ["显示船舶线路"]="Show ship lines",
+  ["显示航空线路"]="Show air lines",
   ["地铁"]="Metro",
   ["电车"]="Tramway",
   ["公交"]="Bus",

@@ -133,6 +133,8 @@ function data()
   add('R::Component!bulb-settings-row > BoxLayout, R::Component!bulb-settings-name > BoxLayout, R::Component!bulb-settings-controls > BoxLayout, R::Component!bulb-settings-heading > BoxLayout, R::Component!bulb-settings-footer > BoxLayout', {
     outerSpacing={0,0},innerSpacing={8,8},gravity={0,0.5},
   })
+  add('R::Component!bulb-carrier-filter ToggleButton',{padding={0,0,0,0},margin={0,0,0,0}})
+  add('R::Component!bulb-carrier-filter ImageView!category',{size={28,18},padding={6,6,6,6}})
   add('ComboBox!bulb-settings-mode ComboBox::Entry, ComboBox!bulb-settings-mode ComboBox::DisplayEntry', {padding={4,8,4,8}})
   add('ComboBox!bulb-settings-mode, ComboBox!bulb-settings-mode ComboBox::Button', {padding={0,0,0,0},margin={0,0,0,0}})
   add('Button!bulb-settings-save', {padding={4,8,4,8},margin={0,0,0,0}})
