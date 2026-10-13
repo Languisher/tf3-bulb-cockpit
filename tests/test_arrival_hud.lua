@@ -35,9 +35,10 @@ do
   end
   local rootWrites,hudWrites=writes('LinnanBulbFreeCamNative'),writes('LinnanBulbCockpitHudNative')
   local old=contexts.LinnanBulbCockpitHudNative[1]:old()
-  local function onlyUpcoming()
+  local function futureLamps()
     local current=contexts.LinnanBulbCockpitHudNative[1]:old()
-    local expected=current.route.stops[current.next].name
+    local expected={}
+    for i=current.next,#current.route.stops do expected[current.route.stops[i].name]=true end
     local lamps=0
     walk(render('LinnanBulbCockpitHudNative',hudParam),function(kind,p)
       if kind=='Component' and p.meta.class=='bulb-station-marker'then
@@ -45,14 +46,13 @@ do
         walk(p,function(k,image)
           if k=='ImageView' and image.meta.class=='bulb-station-light'then lit=true end
         end)
-        if lit then
-          lamps=lamps+1;assert(p.meta.tooltip==expected,'arrived and skipped station lamps must be off')
-        end
+        assert(lit==(expected[p.meta.tooltip]==true),'future stations stay yellow; arrived and skipped lamps turn off')
+        if lit then lamps=lamps+1 end
       end
     end)
-    assert(lamps==1,'the steady-mode HUD lights only the upcoming stop')
+    assert(lamps>=1,'the steady-mode HUD lights the next and visible future stops')
   end
-  onlyUpcoming()
+  futureLamps()
   f.reset();configurationReads=0
   for i=1,100 do tick()end
   assert(f.calls.component==100 and f.calls.TRANSPORT_VEHICLE==100)
@@ -66,12 +66,12 @@ do
   local arrived=state:old()
   assert(arrived~=old and state.writes==before+1 and arrived.passed==old.passed+1)
   assert(f.calls.component==1 and not f.calls.transfers and configurationReads==0)
-  onlyUpcoming()
+  futureLamps()
   tv.stopIndex=tv.stopIndex+1;tv.state='EN_ROUTE';f.reset();tick()
   assert(state:old()==arrived and state.writes==before+1 and f.calls.component==1,
     'the real HUD updates once on arrival and not again on departure')
   assert(commands==1 and configurationReads==0)
-  tv.stopIndex=tv.stopIndex+2;f.reset();tick();onlyUpcoming()
+  tv.stopIndex=tv.stopIndex+2;f.reset();tick();futureLamps()
   assert(state:old().next==arrived.next+2,'skip intermediate targets without lighting them')
   assert(f.calls.component==1 and not f.calls.transfers and configurationReads==0,
     'skipped stops still need only the followed vehicle state')

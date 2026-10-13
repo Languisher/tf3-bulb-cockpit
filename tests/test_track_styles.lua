@@ -16,7 +16,7 @@ for _,mode in ipairs({'METRO','RER','TRAM','BUS'})do
   local plan=P.plan(snapshot,{},false,1280)
   assert(plan.stops[1].markerKind=='terminus' and plan.stops[5].markerKind=='terminus')
   assert(plan.stops[2].markerKind=='ordinary' and plan.stops[3].markerKind=='interchange')
-  assert(not plan.stops[1].lit and not plan.stops[2].lit and not plan.stops[3].lit and not plan.stops[4].lit)
+  assert(not plan.stops[1].lit and not plan.stops[2].lit and not plan.stops[3].lit and plan.stops[4].lit)
   assert(P.plan(snapshot,{},true,1280).stops[3].lit,'next-station blinking is independent of the structural marker')
   assert(plan.track.rail==P.trackStyle(mode).rail)
   assert(plan.geometry.left<40,'bottom diagram must not reserve the removed line-logo column')

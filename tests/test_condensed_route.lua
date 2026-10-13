@@ -11,7 +11,7 @@ local shown,hidden,nextVisible=0,0,false
 for _,stop in ipairs(plan.stops)do
   shown=shown+1
   nextVisible=nextVisible or stop.index==32
-  assert(stop.lit==(stop.index==32),'only the condensed next stop lights')
+  assert(stop.lit==(stop.index>=32),'next and future condensed stops light')
 end
 for _,gap in ipairs(plan.gaps)do
   assert(gap.count==gap.last-gap.first+1 and gap.count>0)
@@ -20,7 +20,7 @@ for _,gap in ipairs(plan.gaps)do
 end
 assert(nextVisible and shown+hidden==64,'each real station is either visible or counted exactly once')
 for _,stop in ipairs(P.plan(snapshot,{},false,640).stops)do
-  assert(not stop.lit,'the condensed next station still has a real OFF phase')
+  assert(stop.lit==(stop.index>32),'only the condensed next stop turns off during blinking')
 end
 local bus={}
 for i=1,8 do bus[i]={text=tostring(1000+i),fullName='公交 '..i,mode='BUS',color='#ffcc00'}end

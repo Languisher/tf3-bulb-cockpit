@@ -92,6 +92,27 @@ for _,mode in ipairs({'METRO','RER','TRAM'})do
     end
   end
 end
+-- Exact A-B-C-D case: only B blinks, future C/D stay yellow in both phases.
+raw={}
+for i,id in ipairs({100,200,300,400})do raw[i]={id=id,name='站 '..id,sourceIndex=i-1,transfers={}}end
+for _,mode in ipairs({'METRO','RER','TRAM'})do
+  setJourney(mode,0,false);tick();shown()
+  setJourney(mode,1,false);tick();local on=shown()
+  assert(not lamp(on,'站 100') and lamp(on,'站 200') and lamp(on,'站 300') and lamp(on,'站 400'),
+    'A is off; B, C and terminal D start yellow')
+  tick();local off=shown()
+  assert(not lamp(off,'站 100') and not lamp(off,'站 200') and lamp(off,'站 300') and lamp(off,'站 400'),
+    'only B turns off; C and terminal D remain steady yellow')
+  walk(off,function(kind,p)
+    if kind=='Component' and p.meta.class=='bulb-station-marker' and p.meta.tooltip=='站 400'then
+      walk(p,function(k,image)
+        if k=='ImageView' and image.path:match('/station%-interior.tga$')then
+          assert(image.meta.styleSheet.color[2]==.82,'future terminal yellow covers its complete interior too')
+        end
+      end)
+    end
+  end)
+end
 -- Optional offline pixel QA export; never runs in the game.
 if arg[1]then
   local function json(value)

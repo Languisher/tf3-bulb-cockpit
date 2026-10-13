@@ -1,4 +1,4 @@
-# In-Game Route Display · mod.io release materials · 0.1.73dev
+# In-Game Route Display · mod.io release materials · 0.1.74dev
 
 This directory documents the prepared development release. A staged folder or GitHub upload does not establish that a public mod.io listing exists.
 
@@ -12,7 +12,7 @@ This directory documents the prepared development release. A staged folder or Gi
 - `cover-prompt.txt`: final prompt used with the built-in imagegen tool.
 - `changelog.txt`: upload changelog text.
 
-The upload folder must contain `mod.json`, `_metadata/` and `content/` directly. Stage only `mod/`, not this repository, its backups, or a containing ZIP. Keep `modId` as `linnan_bulb_cockpit` for save compatibility; the prepared upload uses revision `73` and the human-facing version `0.1.73dev`. Its English title is **In-Game Route Display** and its Chinese title is **游戏线路显示**.
+The upload folder must contain `mod.json`, `_metadata/` and `content/` directly. Stage only `mod/`, not this repository, its backups, or a containing ZIP. Keep `modId` as `linnan_bulb_cockpit` for save compatibility; the prepared upload uses revision `74` and the human-facing version `0.1.74dev`. Its English title is **In-Game Route Display** and its Chinese title is **游戏线路显示**.
 
 ## Publish through the game
 

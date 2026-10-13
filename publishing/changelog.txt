@@ -1,8 +1,10 @@
-In-Game Route Display / 游戏线路显示 · 0.1.73dev
+In-Game Route Display / 游戏线路显示 · 0.1.74dev
 
-Fixed the steady-yellow indicator at a terminus. Its complete inner ring and center now turn yellow over the normal terminus appearance, preserving the black circular outline. Steady and flashing ON use the same full fill. Unlit and flashing OFF appearances are unchanged. No new layers, images or timers.
+Corrected remaining-stop lamps: for A-B-C-D with B next, A is off, B optionally blinks, and C/D stay yellow. With blinking disabled, all unreached served stops are steady yellow. Passed, skipped and unserved branch stops stay off. Only the next stop owns an optional animation; no new timers or queries.
 
-修复终点站常亮黄色：黄色覆盖整个内圈和中心，保留黑色圆形外圈；常亮与闪烁亮起时使用相同填充。未点亮及闪烁熄灭时的显示保持原样，不增加图层、图片或计时器。
+按 A-B-C-D 规则修正黄灯：A 已过熄灯，下一站 B 可选闪烁，未到的 C/D 常亮；关闭闪烁时所有未到站常亮。已过、跳过及不经过分支不亮。仍只对下一站使用可选动画，不新增计时器或查询。
+
+RER mode pictograms now use BULB's Transilien front-train symbol; A/B/C line-letter badges are retained. One shared 128×128 static mask, no runtime image generation. / RER 类型标识改用 BULB 的 Transilien 正面火车图标，保留 A/B/C 线路标号；共用静态遮罩，不在游戏内生成图片。
 
 50 Lua tests and 69 syntax checks passed. In-game appearance requires a restart and visual check. / 50 项 Lua 回归及 69 项语法检查通过，实际画面需重启后核对。
 

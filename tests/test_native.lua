@@ -9,13 +9,13 @@ local on=P.plan(snapshot,aliases,true,1280)
 assert(on.badge=='T1' and on.name==snapshot.route.name)
 assert(on.stops[1].transfers[1].text=='T2' and on.stops[1].transfers[1].mode=='TRAM',
   'separate the mode icon from the alias instead of duplicating TRAM in the text')
-assert(not on.stops[1].lit and not on.stops[2].lit and on.stops[3].lit and not on.stops[4].lit)
+assert(not on.stops[1].lit and not on.stops[2].lit and on.stops[3].lit and on.stops[4].lit)
 local off=P.plan(snapshot,aliases,false,1280)
-assert(not off.stops[1].lit and not off.stops[2].lit and not off.stops[3].lit)
+assert(not off.stops[1].lit and not off.stops[2].lit and not off.stops[3].lit and off.stops[4].lit)
 snapshot.next,snapshot.passed=17,16
 local page=P.plan(snapshot,aliases,true,1280)
 assert(page.first<=17 and page.last>=17 and page.stops[1].index==page.first)
-for _,stop in ipairs(page.stops) do assert(stop.lit==(stop.index==17)) end
+for _,stop in ipairs(page.stops) do assert(stop.lit==(stop.index>=17)) end
 assert(P.wrap('杭州火车站',6)=='杭州火\n车站')
 assert(P.alias({id=10,name='不同存档的线路'},aliases)=='不同存档的线路')
 local compactWidths={}
@@ -637,11 +637,15 @@ walk(tree,function(kind,param)
     end
   end
 end)
-assert(lamps==1 and title and boldLabelCount>=3,'a newly selected next station starts with a visible yellow light')
+local futureLamps=0
+for _,stop in ipairs(P.plan(snapshot,aliases,false,1280-48).stops)do
+  if stop.index>snapshot.next then futureLamps=futureLamps+1 end
+end
+assert(lamps==futureLamps+1 and title and boldLabelCount>=3,'next and future stations start yellow')
 tick()
 tree=render('LinnanBulbCockpitHudNative',{aliases=aliasState,viewport={x=1280,y=720}});lamps=0
 walk(tree,function(kind,param)if (kind=='ImageView' or kind=='Component') and param.meta.class=='bulb-station-light' then lamps=lamps+1 end end)
-assert(lamps==0,'the next station turns off on the next half-second tick; passed stations remain off')
+assert(lamps==futureLamps,'only the next station turns off; future stations stay yellow and passed stations stay off')
 local hudWrites=contexts.LinnanBulbCockpitHudNative[1].writes or 0
 local flashWrites=contexts.LinnanBulbFlashingStationNative[1].writes or 0
 local function allHudWrites()
@@ -821,11 +825,11 @@ walk(tree,function(kind,param)
   if kind=='ImageView' and param.meta.class=='bulb-rer-transfer-preset' then
     defaultTransfers[param.path:match('/rer%-(%a)%.tga$'):upper()]=true
   end
-  if kind=='TextView' and param.meta.class=='bulb-mode-letter' and param.text=='RER' then rerIcons=rerIcons+1 end
+  if kind=='ImageView' and param.path:match('/transilien%-mode.tga$') then rerIcons=rerIcons+1 end
 end)
 assert(defaultMain=='A' and defaultTransfers.T1 and defaultTransfers.B,
   'render the complete-save defaults, including names equal to their own badge')
-assert(rerIcons==2,'show the full RER symbol in both normal and small transfer icons')
+assert(rerIcons==2,'show the Transilien train symbol in both normal and small RER icons')
 for _,actual in ipairs({'TRAIN','TRAM'}) do
   local line={id=actual=='TRAIN' and 400 or 401,name=actual..' 可配置线路',mode=actual}
   contexts.LinnanBulbAliasRowNative={}

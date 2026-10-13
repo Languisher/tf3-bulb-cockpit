@@ -1,4 +1,4 @@
-# Paris RER A–E graphical marks
+# Paris rail graphical marks
 
 `rer-a.tga` through `rer-e.tga` and `rer-frame.tga` are white-alpha
 raster layers converted from the Paris RER A–E SVG marks publicly rendered
@@ -14,3 +14,15 @@ respective rights holders. These marks remain their property. This mod is not
 affiliated with or endorsed by BULB, RATP or Île-de-France Mobilités.
 No Parisine font file is included. The other primitive shape masks and tram
 side-view symbol in this folder were drawn for this mod.
+
+`transilien-mode.tga` is the white-alpha front-train pictogram inside a rounded
+square used for BULB's Transilien (`TRAIN`) mode. It was converted offline from
+the SVG mask displayed by the editor's `.picto .layer1[data-v-45c2d838]` style
+(v1.5.2-alpha, inspected 2026-10-13). The source outline is preserved in
+`tools/assets/transilien-mode.svg`; the website's duplicate identical path is
+included only once. This pictogram has the same third-party rights attribution
+above and is not covered by this repository's MIT license.
+
+The mod uses this pictogram for its RER mode identity and transfers; line-letter
+badges still use the Paris RER A–E outlines described above. A single shared
+128×128 mask is loaded by the game; no SVG processing runs during gameplay.

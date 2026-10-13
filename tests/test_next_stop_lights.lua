@@ -15,18 +15,19 @@ local function check(snapshot,width)
     local count=0
     local target=snapshot.route.stops[snapshot.next]
     for _,stop in ipairs(plan.stops)do
-      local nextStop=target and (snapshot.network and stop.id==target.id or not snapshot.network and stop.index==snapshot.next)
-      assert(stop.lit==(on and nextStop or false),
-        'only the upcoming stop may light; passed, skipped and other-branch stops stay off')
+      local index=stop.index
+      local expected=target~=nil and index~=nil and (index>snapshot.next or index==snapshot.next and on)
+      assert(stop.lit==expected,
+        'future served stops stay yellow; only next follows the phase; passed and other-branch stops stay off')
       if stop.lit then count=count+1 end
     end
-    assert(count==(on and target and 1 or 0),'one light in ON, no lights in OFF or after completion')
+    if not target then assert(count==0,'no lights after completion')end
   end
 end
 for _,mode in ipairs({'METRO','RER','TRAM','BUS'})do
   local line=service(10,{1,2,3,4,5,6,7,8},mode)
   for _,width in ipairs({320,1280})do
-    -- Jump directly past intermediate stops: they never become lit history.
+    -- Jump past intermediate stops: their future lights must turn off immediately.
     for _,nextStop in ipairs({1,2,6,8,0})do
       check({route=line,next=nextStop,passed=nextStop>0 and nextStop-1 or 8},width)
     end
@@ -53,4 +54,12 @@ end
 local one=service(10,{1},'RER')
 local arrived=M.journey(one.stops,0,true)
 check({route=one,next=arrived.next,passed=arrived.passed},1280)
-print('PASS: only next-stop lamps; skipped stops, completion, condensation, turnarounds and both fork members')
+print('PASS: future steady lamps and next-stop blinking; skips, completion, condensation, turnarounds and fork members')
+
+-- User's exact A-B-C-D example in both animation phases.
+local abcd=service(10,{1,2,3,4},'RER')
+for _,on in ipairs({false,true})do
+  local plan=P.plan({route=abcd,next=2,passed=1},{},on,1280)
+  assert(not plan.stops[1].lit and plan.stops[2].lit==on and plan.stops[3].lit and plan.stops[4].lit,
+    'A off; B blinks; C and terminus D are steady yellow')
+end
