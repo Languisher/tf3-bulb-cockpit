@@ -22,7 +22,9 @@ function C.install(tool,beforeExit)
   local push,pop=tool.push,tool.pop
   tool.push=function(ctx,param,...)
     local result=table.pack(push(ctx,param,...))
-    current=param and param.cockpitCameraForEntity or nil
+    local target=param and param.cockpitCameraForEntity or nil
+    if current==target then return table.unpack(result,1,result.n)end
+    current=target
     generation=generation+1
     log.verbose('[BULB native r43] cockpit entered: entity='..tostring(current))
     if current then for fn in pairs(enterListeners)do pcall(fn)end

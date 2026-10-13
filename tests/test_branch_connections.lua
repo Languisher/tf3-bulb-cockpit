@@ -87,14 +87,15 @@ do
   for _,rule in ipairs(parsed)do windowRules[#windowRules+1]=rule end
   local launcher=applied('Window',classes,windowRules)
   for _,property in ipairs({'backgroundImage1','borderImage','shadowNinePatch'})do
-    assert(launcher[property].fileName=='','launcher must suppress the inherited '..property)
+    assert(launcher[property].fileName=='::/gui/builtin/popup/surface.tga','launcher must use a valid already-loaded mask for '..property)
   end
-  assert(launcher.shadowColor[4]==0,'launcher shadow must be transparent')
+  assert(launcher.shadowColor[4]==0 and launcher.backgroundColor1[4]==0 and launcher.backgroundColor2[4]==0 and launcher.borderColor[4]==0,'launcher surface, border and shadow must be transparent')
   local settingsWindow=applied('Window',{class='bulb-settings-window'},windowRules)
   assert(settingsWindow.shadowNinePatch.fileName~='' and settingsWindow.backgroundImage1.fileName~='',
     'the settings window must retain the native surface and shadow')
   local hidden=applied('Component',{class='bulb-layout-extent'})
   assert(hidden.visibility=='hidden','measurement extent must match the real R::Component element')
+  assert(applied('Component',{class='bulb-measure-probe'}).visibility=='hidden','startup probes must never paint')
   for _,spec in ipairs({{'Component','bulb-glass'},{'Component','bulb-transfer-group'},
     {'TextView','bulb-omission-label'}})do
     local resolved=applied(spec[1],{class=spec[2]})

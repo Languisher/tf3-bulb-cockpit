@@ -20,8 +20,7 @@ do
   print('idle: retained HUD='..tostring(containsHud(root))..'; GUI size queries='..idleQueries)
   assert(not containsHud(root),'exit must unmount the entire HUD in the visible parent, not only hide its component')
   assert(idleQueries==0,'normal camera must perform zero viewport queries after initial calibration')
-  -- Opening settings still measures current GUI units on demand, even when
-  -- the window was resized during normal play. Closing cancels a queued open.
+  -- Settings reuse startup GUI units. Closing cancels a queued open.
   local function findSettings(node)
     if type(node)~='table'then return end
     if node.recipe=='LinnanBulbSettingsNative'then return node.param end
@@ -39,7 +38,7 @@ do
   assert(windowParam==nil,'closing before the sizing join must cancel a queued settings open')
   guiWidth,guiHeight=900,700
   gear().onValueChange(1);join()
-  assert(windowParam.viewport.x==900 and windowParam.viewport.y==700,'size settings from the actual current viewport')
+  assert(windowParam.viewport.x==1280 and windowParam.viewport.y==720,'settings reuse startup dimensions without measuring again')
   gear().onValueChange(0)
   -- A blocked main-thread join must coalesce timer ticks. Once the session
   -- exits, its queued work must not read a vehicle or reveal stale pixels.
@@ -73,7 +72,7 @@ do
     mounts.LinnanBulbCockpitHudNative()
     if i==1 then
       for j=1,500 do timers.LinnanBulbCockpitHudNative()end
-      assert(#joins==2,'500 delayed ticks must retain only one route join and one bounds join')
+      assert(#joins==1,'500 delayed ticks must retain only one route join and no bounds joins')
     end
     join()
     local states=contexts.LinnanBulbCockpitHudNative
@@ -106,7 +105,7 @@ do
   for i=1,2000 do join()end
   assert(queries==0 and #joins==0)
   api.gui.byId.getSize=oldSize
-  print(string.format('PASS: 1,001 sessions; retained routes=%d; heap delta=%.1f KiB; idle queries=%d; delayed 500 ticks -> 2 jobs',
+  print(string.format('PASS: 1,001 sessions; retained routes=%d; heap delta=%.1f KiB; idle queries=%d; delayed 500 ticks -> 1 job',
     retained,after-before,queries))
   unmounts.LinnanBulbFreeCamNative()
   for _,state in ipairs(contexts.LinnanBulbFreeCamNative)do state.expired=true end

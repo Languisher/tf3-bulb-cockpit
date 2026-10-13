@@ -25,6 +25,15 @@ local function setHudVisible(visible)
   local ok=pcall(function()api.gui.byId.setVisible('linnan.bulb.hud',visible)end)
   if ok then hudVisibility=visible end
 end
+-- One successful calibration per loaded game; later views reuse it.
+-- A bounded startup retry handles gauges not laid out on the first join.
+local startupViewport
+local function readStartupViewport(hostId,gaugeId,units)
+  if startupViewport then return startupViewport end
+  local size=P.viewport(api.gui.byId.getSize(hostId),api.gui.byId.getSize(gaugeId),units)
+  if size then size.calibrated=true;startupViewport=size end
+  return size
+end
 -- BULB declares Parisine Ptf 700 for station names and 600 for indices
 -- (resolved to its 700 face). TF3 exposes predefined font weights rather
 -- than a per-label fontFamily. Use its normal locale font and match the
@@ -337,7 +346,6 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
   local failure = react.useState('')
   local errorRef = react.useRef('')
   local routeRef = react.useRef('')
-  local geometryRef = react.useRef('')
   local scan=react.useRef({})
   local numberedLines=react.useRef(nil)
   local numberedConfig=react.useRef(nil)
@@ -362,26 +370,6 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
       if failure:old()~='' then failure:set('')end
       scan:set({});numberedLines:set(nil);numberedConfig:set(nil)
       return
-    end
-    -- Share the vehicle's existing join instead of keeping a second bounds
-    -- timer alive on the full-screen host.
-    if param.measureHost then param.measureHost()end
-    -- Read after the preceding state has been rendered, so these are the
-    -- actual component bounds, not the requested layout dimensions.
-    local old=state:old()
-    local drawn=old and tostring(old.route.lineId) or (failure:old()~='' and 'error' or nil)
-    if drawn and geometryRef:get()~=drawn then
-      geometryRef:set(drawn)
-      local ok,report=pcall(function()
-        local node=self:get()
-        if not node then return 'component not mounted' end
-        local size=api.gui.byId.getSize('linnan.bulb.hud')
-        local first,last=node:getPosition(0,0),node:getPosition(1,1)
-        return string.format('rawSize=%.6fx%.6f; visible=%s; topLeft=%.3f,%.3f; bottomRight=%.3f,%.3f',
-          size.x,size.y,tostring(api.gui.byId.isVisibleRecursive('linnan.bulb.hud')),first.x,first.y,last.x,last.y)
-      end)
-      if ok then log.verbose('[BULB native 0.1.65dev] HUD bounds: '..report)
-      else log.warning('[BULB native 0.1.65dev] HUD bounds failed: '..tostring(report)) end
     end
     local aliases=param.aliases:old()
     if configuredEntity:get()~=entity then
@@ -529,6 +517,13 @@ local Settings=settingsUI.create(react,builtin,style,P,modeMarks,collect,aliasSt
   stationUI.create(react,builtin,style,aliasStore,windows,P,collect,I),
   {badge=lineBadge,draw=staticDiagram,mark=modeMark},I,nativeFilters)
 
+-- Layout may not be ready on the first join. This child retries only until
+-- calibration succeeds; removing the child also removes its native timer.
+local Calibration=react.RegisterRecipe('LinnanBulbCalibrationNative',function(param)
+  react.onStepTimer(param.requestMeasure,0.5,false)
+  return builtin.FloatingLayout{children={}}
+end)
+
 -- The compact native window supplies dragging, bounds clamping and position
 -- retention. Its small title grip overlaps the button instead of adding a row.
 local Launcher=react.RegisterWrapperRecipe('LinnanBulbLauncherNative',builtin.Window,function(param)
@@ -547,7 +542,7 @@ local Launcher=react.RegisterWrapperRecipe('LinnanBulbLauncherNative',builtin.Wi
         meta={id='linnan.bulb.settings',styleSheet=styleutil.makeStyle{anchorPoint={0,0}}},
         aliases=param.aliases,viewport=param.viewport,color=color,prepareOpen=param.prepareOpen}},
       builtin.FloatingLayoutChild{h=0,v=0,item=builtin.Component{
-        mouseTransparent=true,meta={id='linnan.bulb.entry-gauge',
+        mouseTransparent=true,meta={id='linnan.bulb.entry-gauge',class='bulb-measure-probe',
           styleSheet=styleutil.makeStyle{size={16,16},anchorPoint={0,0}}}}},
     }}}}
 end)
@@ -556,27 +551,42 @@ end)
 -- both camera replacements and the clipped upper-left toolbar ScrollArea.
 local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
   local aliases=react.useState({})
-  local viewport=react.useState({x=800,y=600})
-  local work=react.useRef({alive=true})
+  local viewport=react.useState(startupViewport or {x=800,y=600})
+  local work=react.useRef({alive=true,pending=false,attempts=0})
   local control=work:get()
+  local aliasRevision=react.useRef(-1)
+  local function requestMeasure()
+    if not control.alive or control.pending or viewport:hasExpired() or viewport:old().calibrated then return end
+    control.pending=true
+    react.enqueueJoin(function()
+      control.pending=false
+      if not control.alive or viewport:hasExpired()then return end
+      control.attempts=control.attempts+1
+      local ok,size=pcall(readStartupViewport,'mainView','linnan.bulb.entry-gauge',16)
+      if ok and size then viewport:set(size)
+      elseif control.attempts>=20 then
+        local previous=viewport:old();viewport:set({x=previous.x,y=previous.y,calibrated=true})
+        log.warning('[Route Display] startup dimensions unavailable; using fallback without continued polling')
+      end
+    end,'LinnanBulbMainButtonNative:startupBounds')
+  end
   local function refreshAliases()
     if not control.alive or aliases:hasExpired()then return end
-    local ok,stored=pcall(aliasStore.read)
-    if ok and stored then aliases:set(stored)
+    local ok,stored,revision=pcall(aliasStore.read,aliasRevision:get())
+    if ok and stored and revision~=aliasRevision:get()then aliases:set(stored);aliasRevision:set(revision)
     elseif not ok then log.warning('[Route Display 0.1.78dev] launcher settings: '..tostring(stored))end
   end
   local function prepareOpen(open)
+    if not control.alive then return end
+    control.open=open
+    if control.openPending then return end
+    control.openPending=true
     react.enqueueJoin(function()
+      control.openPending=false
+      local show=control.open;control.open=nil
       if not control.alive or viewport:hasExpired()then return end
       refreshAliases()
-      -- A gauge inside the launcher cancels normalized/Retina scaling.
-      local ok,size=pcall(function()
-        return P.viewport(api.gui.byId.getSize('mainView'),
-          api.gui.byId.getSize('linnan.bulb.entry-gauge'),16)
-      end)
-      size=ok and size or viewport:old()
-      if size~=viewport:old()then viewport:set(size)end
-      open(size)
+      if show then show(startupViewport or viewport:old())end
     end,'LinnanBulbMainButtonNative:openSettings')
   end
   react.onMount(function()
@@ -588,28 +598,26 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
       if wc then
         wc.addSingletonWindow(Launcher,{aliases=aliases,viewport=viewport:old(),prepareOpen=prepareOpen,
           initialX=1,initialY=0})
+        requestMeasure()
         log.verbose('[Route Display 0.1.78dev] floating entry mounted; extension=::ModEntryPointExtension')
       else log.warning('[Route Display 0.1.78dev] launcher window manager unavailable')end
     end,'LinnanBulbMainButtonNative:mount')
   end)
   react.onUnmount(function()
-    control.alive=false
+    control.alive=false;control.open=nil;startupViewport=nil
     local wc=windows.getDefaultWindowApi()
     if wc then wc.removeAllWindows(Launcher)end
   end)
+  react.setMouseTransparent(true)
+  if not viewport:old().calibrated then
+    return builtin.FloatingLayout{children={Calibration{requestMeasure=requestMeasure}}}
+  end
   return builtin.FloatingLayout{children={}}
 end)
 
 local function mainButton()
   return MainButton()
 end
-
--- Layout may not be ready on the first join. This child retries only until
--- calibration succeeds; removing the child also removes its native timer.
-local Calibration=react.RegisterRecipe('LinnanBulbCalibrationNative',function(param)
-  react.onStepTimer(param.requestMeasure,0.5,false)
-  return builtin.FloatingLayout{children={}}
-end)
 
 local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
   react.setMouseTransparent(true)
@@ -618,13 +626,13 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
   local aliasRevision=react.useRef(-1)
   -- byId.getSize returned 1x1 for the full-screen host in r8. Calibrate
   -- against a 100x100 GUI component instead of treating that as pixels.
-  local viewport=react.useState({x=800,y=600})
+  local viewport=react.useState(startupViewport or {x=800,y=600})
   local self=react.useSelfRef()
   local lastGeometry=react.useRef('')
   local session=react.useState(nil)
   local enterSubscription=react.useRef(nil)
   local exitSubscription=react.useRef(nil)
-  local work=react.useRef({alive=true,pending=false,calibrated=false})
+  local work=react.useRef({alive=true,pending=false,calibrated=startupViewport~=nil,attempts=0})
   local control=work:get()
   diagnostic.note('root.render')
   diagnostic.watch('root',self,viewport)
@@ -641,35 +649,28 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
   end
   local function measureHost()
     diagnostic.note('root.measure')
-    if viewport:hasExpired() then diagnostic.note('root.expired');return end
-    local ok,report=pcall(function()
-      local raw=api.gui.byId.getSize('linnan.bulb.host')
-      local gauge=api.gui.byId.getSize('linnan.bulb.gauge')
-      local size=P.viewport(raw,gauge)
-      if size then control.calibrated=true end
-      local previous=viewport:old()
-      if size and (not previous.calibrated or previous.x~=size.x or previous.y~=size.y) then
-        viewport:set({x=size.x,y=size.y,calibrated=true})
-      end
-      size=size or previous
-      return string.format('gui=%.0fx%.0f; hostRaw=%.6fx%.6f; gaugeRaw=%.6fx%.6f',
-        size.x,size.y,raw.x,raw.y,gauge.x,gauge.y)
-    end)
-    report=(ok and 'GUI bounds: ' or 'GUI bounds failed: ')..tostring(report)
-    if report~=lastGeometry:get() then
-      lastGeometry:set(report)
-      log.verbose('[BULB native 0.1.65dev] '..report)
+    if viewport:hasExpired()then return end
+    control.attempts=control.attempts+1
+    local ok,size=pcall(readStartupViewport,'linnan.bulb.host','linnan.bulb.gauge',100)
+    if ok and size then
+      control.calibrated=true
+      if not viewport:old().calibrated then viewport:set(size)end
+      local report=string.format('GUI bounds: gui=%.0fx%.0f',size.x,size.y)
+      if report~=lastGeometry:get()then lastGeometry:set(report);log.verbose('[Route Display] '..report)end
+    elseif control.attempts>=20 then
+      control.calibrated=true
+      local previous=viewport:old();viewport:set({x=previous.x,y=previous.y,calibrated=true})
+      log.warning('[Route Display] startup dimensions unavailable; using fallback without continued polling')
     end
   end
-  local function requestMeasure(force)
+  local function requestMeasure()
     local job=control
-    if not job.alive or viewport:hasExpired() or job.pending then return end
-    if job.calibrated and force~=true then return end
+    if not job.alive or viewport:hasExpired() or job.pending or job.calibrated then return end
     job.pending=true
     react.enqueueJoin(function()
       job.pending=false
-      if job.alive and (not job.calibrated or force==true)then measureHost()end
-    end,'LinnanBulbFreeCamNative:bounds')
+      if job.alive and not job.calibrated then measureHost()end
+    end,'LinnanBulbFreeCamNative:startupBounds')
   end
   react.onMount(function()
     diagnostic.note('root.mount')
@@ -677,7 +678,6 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
     local function enter()
       if session:hasExpired()then return end
       session:set({vehicle=cameraState.getEntity(),generation=cameraState.getGeneration()})
-      requestMeasure(true)
     end
     enterSubscription:set(cameraState.onEnter(enter))
     exitSubscription:set(cameraState.onExit(function()
@@ -704,11 +704,11 @@ local Replacement=react.RegisterRecipe('LinnanBulbFreeCamNative',function(param)
       overflowMode=builtin.type.FloatingLayoutOverflowMode.KeepInside,
       item=Hud{meta={id='linnan.bulb.hud',localKey='cockpit:'..active.generation,
       styleSheet=styleutil.makeStyle{anchorPoint={0,0},size={viewport:old().x,viewport:old().y}}},
-      aliases=aliases,viewport=viewport:old(),refreshAliases=refreshAliases,measureHost=measureHost}}
+      aliases=aliases,viewport=viewport:old(),refreshAliases=refreshAliases}}
   end
   children[#children+1]=builtin.FloatingLayoutChild{h=0,v=0,localKey='gauge',item=builtin.Component{
       mouseTransparent=true,
-      meta={id='linnan.bulb.gauge',styleSheet=styleutil.makeStyle{size={100,100}}}}}
+      meta={id='linnan.bulb.gauge',class='bulb-measure-probe',styleSheet=styleutil.makeStyle{size={100,100}}}}}
   if not viewport:old().calibrated then
     children[#children+1]=builtin.FloatingLayoutChild{h=0,v=0,localKey='calibration',
       item=Calibration{requestMeasure=requestMeasure}}

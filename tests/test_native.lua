@@ -336,8 +336,8 @@ do
   -- Zero shadowWidth only changes the outside extents. The inherited native
   -- nine-patch still needs clearing for a frameless, draggable button.
   for _,property in ipairs({'backgroundImage1','borderImage','shadowNinePatch'})do
-    assert(frame[property] and frame[property].fileName=='',
-      'floating entry must clear inherited window paint: '..property)
+    assert(frame[property] and frame[property].fileName=='::/gui/builtin/popup/surface.tga',
+      'floating entry must reuse a valid native mask: '..property)
   end
   assert(frame.shadowColor and frame.shadowColor[4]==0,
     'floating entry must not tint the inherited window shadow')
@@ -462,12 +462,12 @@ mounts.LinnanBulbCockpitHudNative();join()
 assert(hudVisible==false,'an idle HUD starts hidden')
 free.FreeCamTool.push({}, {cockpitCameraForEntity=200})
 assert(reads==0,'camera entry must defer collection to the main-thread join')
-assert(#joins==2,'entry requests at most one bounds and one route read')
+assert(#joins==1,'entry requests only the route read, never another bounds check')
 join()
 assert(reads==1,'main-thread join reads the camera')
 assert(#warnings==0,'main-thread refresh must not hit the restricted camera API')
 tree=render('LinnanBulbFreeCamNative',mounted.param);findHud(tree)
-assert(hudParam.viewport.x==640 and hudParam.viewport.y==360,'measure current GUI scale on entry')
+assert(hudParam.viewport.x==1280 and hudParam.viewport.y==720,'reuse startup dimensions on entry')
 local keptInside=0
 walk(tree,function(kind,param)
   if kind=='FloatingLayoutChild' and param.overflowMode==builtin.type.FloatingLayoutOverflowMode.KeepInside then
@@ -484,8 +484,8 @@ assert(hudParam.meta.id=='linnan.bulb.hud')
 assert(hudParam.meta.styleSheet.anchorPoint[1]==0 and hudParam.meta.styleSheet.anchorPoint[2]==0,
   'the split HUD owns the full viewport from its upper-left origin')
 local hudPosition=tree.param.children[2].param
-assert(hudPosition.h==0 and hudPosition.v==0 and hudParam.meta.styleSheet.size[1]==guiWidth
-  and hudParam.meta.styleSheet.size[2]==guiHeight,'split identity/diagram layout must own explicit viewport bounds')
+assert(hudPosition.h==0 and hudPosition.v==0 and hudParam.meta.styleSheet.size[1]==measured.x
+  and hudParam.meta.styleSheet.size[2]==measured.y,'split identity/diagram layout must own explicit viewport bounds')
 local originalFound=false
 local function original(node)
   if type(node)~='table' then return end
@@ -668,7 +668,7 @@ local geometryLogged=false
 for _,message in ipairs(diagnostics) do
   if message:find('HUD bounds:',1,true) then geometryLogged=true end
 end
-assert(geometryLogged,'log actual component bounds after rendering, on the main thread')
+assert(not geometryLogged,'normal HUD refresh must not query component geometry for logging')
 assert(#saved==0,'live route rendering must never export requests or images')
 local readSnapshot=collect.read
 collect.read=function()
@@ -1206,7 +1206,7 @@ do
     'entry must reveal freshly collected data without a visible HUD timer')
   unmounts.LinnanBulbCockpitHudNative()
   free.FreeCamTool.pop();free.FreeCamTool.push({}, {cockpitCameraForEntity=200})
-  assert(#joins==1,'only the visible parent may queue bounds work after the HUD is unmounted')
+  assert(#joins==0,'a calibrated parent must not queue bounds work after the HUD is unmounted')
   local priorState=contexts.LinnanBulbCockpitHudNative[1]:old()
   join()
   assert(contexts.LinnanBulbCockpitHudNative[1]:old()==priorState,'unmounted HUD cannot retain a camera-entry callback')

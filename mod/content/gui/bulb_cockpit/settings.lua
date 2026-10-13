@@ -896,6 +896,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         scaling=builtin.type.ImageViewScaling.AutoFit,meta={class='bulb-settings-toggle-icon'}},
       onValueChange=function(value)
         if value~=1 then close();return end
+        if open:old()then return end
         local request=control.request+1;control.request=request
         local function show(viewport)
           if open:hasExpired() or control.request~=request then return end

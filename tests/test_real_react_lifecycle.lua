@@ -103,3 +103,34 @@ free.FreeCamTool.push({}, {cockpitCameraForEntity=200})
 _reactDoExecuteDeferredSteps();_reactDoExecuteJoins()
 assert(ctx.writes==writes,'disposed root cannot receive camera events or queued updates')
 print('PASS: actual React adapter; 50 keyed HUD lifetimes, removal without child rendering, stable active identities, idle budget and unsubscription')
+
+-- An unavailable gauge cannot leave a timer retrying for the whole game.
+do
+  modules['game_react_globals.tl'].getDefaultWindowApi=function()return nil end
+  local mainId
+  for id,name in pairs(names)do if name=='LinnanBulbMainButtonNative'then mainId=id end end
+  local plugin=context();_react.recipes[assert(mainId)](plugin,{props={{}}});plugin.unmount()
+  laidOut=false
+  local root=context()
+  local function drawCalibration()
+    root.index=0;_react.recipes[host.recipeId](root,host.props)
+    local function visit(id)
+      local node=nodes[id];local p=node.props.props[1]
+      if names[node.recipeId]=='LinnanBulbCalibrationNative'then return node end
+      for _,key in ipairs({'item','layout'})do if p[key]then local found=visit(p[key]);if found then return found end end end
+      for _,child in ipairs(p.children or {})do local found=visit(child);if found then return found end end
+    end
+    return visit(root.result[1])
+  end
+  local warnings={};local oldWarning=log.warning;log.warning=function(m)warnings[#warnings+1]=m end
+  assert(drawCalibration());root.mount();_reactDoExecuteJoins()
+  local child=assert(drawCalibration());local retry=context()
+  _react.recipes[child.recipeId](retry,child.props)
+  for i=1,20 do retry.timer();_reactDoExecuteDeferredSteps();_reactDoExecuteJoins()end
+  assert(not drawCalibration() and #warnings==1,'startup failure stops retrying and falls back once')
+  local count=queries
+  for i=1,2000 do retry.timer();_reactDoExecuteDeferredSteps();_reactDoExecuteJoins()end
+  assert(queries==count,'even stale startup callbacks must perform zero later queries')
+  root.unmount();log.warning=oldWarning
+  print('PASS: bounded startup calibration; failed gauge stops its timer and later GUI queries')
+end

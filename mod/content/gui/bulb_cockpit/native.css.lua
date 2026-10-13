@@ -66,9 +66,12 @@ function data()
     size={44,44},minSize={44,44},maxSize={44,44},anchorPoint={1,0},
     padding={0,0,0,0},margin={12,12,0,0},gravity={0,0},
     -- A zero shadowWidth leaves the native Window nine-patch installed.
-    -- Clear its paint explicitly; only the child toggle supplies a surface.
-    backgroundImage1={fileName=''},borderImage={fileName=''},shadowNinePatch={fileName=''},
-    backgroundColor1={0,0,0,0},borderColor={0,0,0,0},shadowColor={0,0,0,0},shadowWidth={0,0,0,0},
+    -- Use the already-loaded native surface with zero tint; empty texture
+    -- paths can trigger missing-texture fallback. Only the toggle is painted.
+    backgroundImage1={fileName='::/gui/builtin/popup/surface.tga',horizontal={0,6,8,14},vertical={0,6,8,14}},
+    borderImage={fileName='::/gui/builtin/popup/surface.tga',horizontal={0,6,8,14},vertical={0,6,8,14}},
+    shadowNinePatch={fileName='::/gui/builtin/popup/surface.tga',horizontal={0,6,8,14},vertical={0,6,8,14}},
+    backgroundColor1={0,0,0,0},backgroundColor2={0,0,0,0},borderColor={0,0,0,0},shadowColor={0,0,0,0},shadowWidth={0,0,0,0},
   })
   add('Window!bulb-entry-window Window::Content, Window!bulb-entry-window Window::Layout', {
     padding={0,0,0,0},margin={0,0,0,0},outerSpacing={0,0},innerSpacing={0,0},gravity={0,0},
@@ -82,7 +85,7 @@ function data()
   add('R::Component!bulb-entry-grip', {size={44,8},padding={0,0,0,0},margin={0,0,0,0}})
   add('R::Component!bulb-entry-grip > FloatingLayout', {gravity={-1,-1},padding={0,0,0,0},margin={0,0,0,0}})
   add('R::Component!bulb-entry-grip-line', {size={12,2},anchorPoint={.5,.5},backgroundColor=colors.NeutralLightest})
-  add('#linnan.bulb.entry-gauge', {visibility='hidden',padding={0,0,0,0},margin={0,0,0,0}})
+  add('R::Component!bulb-measure-probe', {visibility='hidden',padding={0,0,0,0},margin={0,0,0,0}})
   add('R::LinnanBulbSettingsNative, R::LinnanBulbSettingsNative > BoxLayout', {
     padding={0,0,0,0},margin={0,0,0,0},outerSpacing={0,0},innerSpacing={0,0},gravity={0,0},
   })
@@ -97,6 +100,7 @@ function data()
   add('#mainView!tool-pause #linnan.bulb.settings, #mainView!tool-pause Window!bulb-settings-window', {visibility='none'})
   add('#mainView!tool-pause Window!bulb-entry-window', {visibility='none'})
   add('!action-follow #linnan.bulb.settings, !action-camera #linnan.bulb.settings', {visibility='none'})
+  add('!action-follow Window!bulb-entry-window, !action-camera Window!bulb-entry-window', {visibility='none'})
   add('Window!bulb-settings-window Window::Layout', {padding={0,0,0,0},margin={0,0,0,0},innerSpacing={0,0},gravity={0,0}})
   add('Window!bulb-settings-window Window::Content', {padding={4,12,12,12},gravity={0,0}})
   add('R::LinnanBulbBrowserNative > BoxLayout', {padding={0,0,0,0},margin={0,0,0,0},outerSpacing={0,0},innerSpacing={0,0},gravity={0,0}})

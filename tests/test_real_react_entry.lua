@@ -164,6 +164,12 @@ params.prepareOpen(function(v)opened=v end)
 assert(not opened,'GUI measurements must be deferred to the main thread')
 _reactDoExecuteJoins()
 assert(opened.x==1280 and opened.y==720,'size settings without any free-camera host')
+local measuredQueries=queries
+local openedCount=0
+params.prepareOpen(function()error('a later open must replace the earlier queued request')end)
+params.prepareOpen(function(v)openedCount=openedCount+1;assert(v.x==1280)end)
+_reactDoExecuteJoins()
+assert(openedCount==1 and queries==measuredQueries,'coalesce open joins and reuse startup dimensions')
 params.prepareOpen(function()error('disposed toolbar must cancel queued opens')end)
 ctx.unmount();_reactDoExecuteJoins()
 assert(removed==1 and not launcherParams,'disposing the plugin removes its native launcher')
