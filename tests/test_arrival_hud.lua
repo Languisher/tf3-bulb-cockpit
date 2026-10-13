@@ -44,7 +44,14 @@ do
       if kind=='Component' and p.meta.class=='bulb-station-marker'then
         local lit=false
         walk(p,function(k,image)
-          if k=='ImageView' and image.meta.class=='bulb-station-light'then lit=true end
+          if k=='ImageView'then
+            if image.meta.class=='bulb-station-light'then lit=true end
+            if not expected[p.meta.tooltip] and image.meta.class~='bulb-station-outline'then
+              local ink=image.meta.styleSheet.color
+              assert(ink[1]==1 and ink[2]==1 and ink[3]==1 and ink[4]==1,
+                'collector arrival / skipped targets must actually paint white')
+            end
+          end
         end)
         assert(lit==(expected[p.meta.tooltip]==true),'future stations stay yellow; arrived and skipped lamps turn off')
         if lit then lamps=lamps+1 end

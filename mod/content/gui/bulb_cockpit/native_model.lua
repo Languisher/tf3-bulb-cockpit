@@ -361,7 +361,7 @@ function P.plan(snapshot, aliases, blink, width,tr)
       stops[#stops+1]={index=i,key=occurrenceKey(route,stop,i),name=value,fullName=stop.name,nameRows=rows,
         nameWidth=math.min(labelWidth,textWidth(value,14,true)),rowWidth=data.rowWidth,
         transfers=data.transfers,transferGroups=data.groups,transferRows=data.rows,transferHeight=data.height,markerKind=kind,
-        markerSize=result.track[kind..'Size'],
+        markerSize=result.track[kind..'Size'],showProgress=not snapshot.static,
         lit=snapshot.next>0 and (i>snapshot.next or i==snapshot.next and blink),endpoint=i==1 or i==n}
     end
     local geometry,gaps=arrange(stops,tr)
@@ -643,7 +643,7 @@ function P.branchPlan(snapshot,aliases,blink,width,tr)
     node.stop={id=node.id,index=index,key='network:'..node.id,name=name,fullName=source.name,nameRows=nameRows,
       nameWidth=nameWidth,rowWidth=rowWidth,transfers=transfers,transferGroups=groups,transferRows=rows,transferHeight=transferHeight,
       endpoint=endpoint,markerKind=kind,markerSize=result.track[kind..'Size'],isNext=node.id==target,
-      offRoute=not snapshot.static and index==nil,
+      showProgress=not snapshot.static,offRoute=not snapshot.static and index==nil,
       lit=target~=nil and index~=nil and (index>snapshot.next or node.id==target and blink) or false}
     local col=node.rank+1
     columns[col]=math.max(columns[col] or 0,52,nameWidth*math.cos(math.pi/6)+28,rowWidth+18)

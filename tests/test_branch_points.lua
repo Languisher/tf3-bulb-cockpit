@@ -10,7 +10,7 @@ do
         stops[i].transfers={{id=99,name='公交 99',mode='BUS',color='#ff8800'}}
       end
     end
-    return {id=id,name='线路 '..id,mode=mode,color='#006db8',stops=stops}
+    return {id=id,name='线路 '..id,mode=mode,color='#ffe077',stops=stops}
   end
   local function markers(tree)
     local result={}
@@ -34,7 +34,7 @@ do
         stops[i]=main.stops[reverse and #main.stops-i+1 or i];active[stops[i].id]=i
       end
       snapshot={route={lineId=main.id,name=main.name,mode=mode,color=main.color,stops=stops},
-        network=graph,lines=lines,next=2,passed=1,vehicle=200}
+        network=graph,lines=lines,next=3,passed=2,vehicle=200}
       for _,flashing in ipairs({false,true})do
         aliases={__options={flashNextStop=flashing}}
         local plan=P.plan(snapshot,aliases,not flashing,1600)
@@ -61,7 +61,12 @@ do
           elseif stop.index<snapshot.next then
             assert(not stop.lit,'passed stations on the followed branch stay off')
             walk(assert(drawn[stop.fullName]),function(kind,p)
-              if kind=='ImageView' and p.meta.class=='bulb-station-light'then lamps=lamps+1 end
+              if kind=='ImageView'then
+                if p.meta.class=='bulb-station-light'then lamps=lamps+1 end
+                if p.meta.class~='bulb-station-outline'then
+                  assert(isWhite(p.meta.styleSheet.color),'passed branch stops and origin cores paint white on a yellow line')
+                end
+              end
             end)
           end
           if stop.index and stop.index>snapshot.next then
@@ -92,7 +97,7 @@ do
       snapshot.static=true;snapshot.next=0;snapshot.passed=0
       local plan=P.plan(snapshot,{},false,1600)
       for _,stop in ipairs(plan.stops)do
-        assert(not stop.offRoute and not stop.lit and not stop.isNext)
+        assert(not stop.showProgress and not stop.offRoute and not stop.lit and not stop.isNext)
       end
     end end
   end

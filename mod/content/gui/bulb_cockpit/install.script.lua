@@ -105,13 +105,15 @@ local function stationMarker(stop,track,lineColor)
     positioned(children,image,diameter/2,diameter/2,diameter,diameter,stop.key..':'..role..':position')
   end
   local white,yellow={1,1,1,1},{1,.82,0,1}
-  -- Alternative branches remain visible but are not stops on this vehicle's
-  -- service. Their interior stays white, including colored terminus cores.
+  -- Vehicle progress needs an explicit white OFF fill: restoring the line
+  -- color makes passed stops appear lit on yellow routes. Static directory
+  -- maps retain the normal BULB palette; unserved branches stay white too.
   local lit=stop.lit and not stop.offRoute
   local flashingTerminus=stop.markerKind=='terminus' and stop.flashing==true and not stop.offRoute
+  local whiteOff=stop.showProgress or stop.offRoute
   local stateClass=lit and 'bulb-station-light' or 'bulb-station-fill'
   if stop.markerKind=='ordinary'then
-    disc(diameter,lit and yellow or ((stop.offRoute or track.ordinaryFill=='white') and white or lineColor),stateClass,'core')
+    disc(diameter,lit and yellow or ((whiteOff or track.ordinaryFill=='white') and white or lineColor),stateClass,'core')
   else
     local border=diameter*.10
     -- Transparent centers keep the rim and terminus ring from covering the
@@ -122,8 +124,8 @@ local function stationMarker(stop,track,lineColor)
       stop.markerKind=='interchange' and stateClass or 'bulb-station-interior','interior',
       stop.markerKind=='terminus' and 'station-interior' or 'circle')
     if stop.markerKind=='terminus'then
-      disc(diameter*.42,lit and yellow or (stop.offRoute and white or
-        (flashingTerminus and {0.035,0.055,0.08,1} or lineColor)),stateClass,'core')
+      disc(diameter*.42,lit and yellow or (flashingTerminus and {0.035,0.055,0.08,1} or
+        (whiteOff and white or lineColor)),stateClass,'core')
     end
   end
   local meta=style{size={diameter,diameter},anchorPoint={.5,.5},backgroundColor={0,0,0,0},
@@ -545,7 +547,7 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
     if not control.alive or aliases:hasExpired()then return end
     local ok,stored=pcall(aliasStore.read)
     if ok and stored then aliases:set(stored)
-    elseif not ok then log.warning('[Route Display 0.1.74dev] launcher settings: '..tostring(stored))end
+    elseif not ok then log.warning('[Route Display 0.1.75dev] launcher settings: '..tostring(stored))end
   end
   local function prepareOpen(open)
     react.enqueueJoin(function()
@@ -570,8 +572,8 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
       if wc then
         wc.addSingletonWindow(Launcher,{aliases=aliases,viewport=viewport:old(),prepareOpen=prepareOpen,
           initialX=1,initialY=0})
-        log.verbose('[Route Display 0.1.74dev] floating entry mounted; extension=::ModEntryPointExtension')
-      else log.warning('[Route Display 0.1.74dev] launcher window manager unavailable')end
+        log.verbose('[Route Display 0.1.75dev] floating entry mounted; extension=::ModEntryPointExtension')
+      else log.warning('[Route Display 0.1.75dev] launcher window manager unavailable')end
     end,'LinnanBulbMainButtonNative:mount')
   end)
   react.onUnmount(function()

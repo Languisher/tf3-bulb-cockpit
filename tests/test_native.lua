@@ -1137,7 +1137,8 @@ for _,mode in ipairs({'METRO','RER','TRAM'})do
   local ordinary=layers(markers[2])
   assert(not ordinary['bulb-station-outline'],'ordinary stops have no interchange outline')
   local fill=ordinary['bulb-station-fill'].color
-  assert(mode=='RER' and fill[1]==1 and fill[2]==1 or mode~='RER' and fill[1]==0)
+  assert(fill[1]==1 and fill[2]==1 and fill[3]==1 and fill[4]==1,
+    'passed ordinary stations must paint white, independent of the line color')
   local interchange=layers(markers[3])
   assert(interchange['bulb-station-outline'] and interchange['bulb-station-fill']
     and not interchange['bulb-station-light'] and interchange['bulb-station-fill'].color[1]==1)
@@ -1145,7 +1146,10 @@ for _,mode in ipairs({'METRO','RER','TRAM'})do
     and interchange['bulb-station-fill'].path:match('/circle.tga$'),'interchanges retain their original circular rings')
   local terminus=layers(markers[1])
   assert(terminus['bulb-station-outline'] and terminus['bulb-station-interior'] and terminus['bulb-station-fill'],
-    'terminus retains a colored center inside its original black/white circular rings')
+    'terminus retains its center and original circular rings')
+  local core=terminus['bulb-station-fill'].color
+  assert(core[1]==1 and core[2]==1 and core[3]==1 and core[4]==1,
+    'the passed origin core must paint white rather than the line color')
   assert(terminus['bulb-station-outline'].kind=='ImageView'
     and terminus['bulb-station-outline'].path:match('/station%-outline.tga$')
     and terminus['bulb-station-interior'].path:match('/station%-interior.tga$')

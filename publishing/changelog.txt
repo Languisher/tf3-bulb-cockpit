@@ -1,11 +1,9 @@
-In-Game Route Display / 游戏线路显示 · 0.1.74dev
+In-Game Route Display / 游戏线路显示 · 0.1.75dev
 
-Corrected remaining-stop lamps: for A-B-C-D with B next, A is off, B optionally blinks, and C/D stay yellow. With blinking disabled, all unreached served stops are steady yellow. Passed, skipped and unserved branch stops stay off. Only the next stop owns an optional animation; no new timers or queries.
+Passed, skipped and unserved stations now explicitly paint white in the vehicle map, including origin/terminus centers. Previously the OFF fill restored the line color, making passed stops look illuminated on yellow routes. Remaining served stops stay yellow; only the next stop optionally blinks. Static directory diagrams keep their normal BULB palette. No added drawing layers, timers or queries.
 
-按 A-B-C-D 规则修正黄灯：A 已过熄灯，下一站 B 可选闪烁，未到的 C/D 常亮；关闭闪烁时所有未到站常亮。已过、跳过及不经过分支不亮。仍只对下一站使用可选动画，不新增计时器或查询。
+动态线路图中已过、跳过及本车不经过的站明确显示白色，包含起终点中心；修复黄色线路熄灯后仍沿用线路底色的问题。未到且会经过的站保持常黄，仅下一站可选闪烁。静态目录图保留正常 BULB 配色；不新增图层、计时器或查询。
 
-RER mode pictograms now use BULB's Transilien front-train symbol; A/B/C line-letter badges are retained. One shared 128×128 static mask, no runtime image generation. / RER 类型标识改用 BULB 的 Transilien 正面火车图标，保留 A/B/C 线路标号；共用静态遮罩，不在游戏内生成图片。
-
-50 Lua tests and 69 syntax checks passed. In-game appearance requires a restart and visual check. / 50 项 Lua 回归及 69 项语法检查通过，实际画面需重启后核对。
+51 Lua tests and 70 syntax checks passed, including actual native marker fills, arrival/skipping, merged branches and reversal. In-game appearance requires a restart and visual check. / 51 项 Lua 回归及 70 项语法检查通过，包含实际填色、到站／跳站、合并分支及反向行程；实际画面需重启后核对。
 
 Target: macOS Build 40420. Windows/Linux/console are untested. Long-session FPS degradation remains under investigation. / 针对 macOS Build 40420；其他平台未实测，长时间 FPS 下降仍在排查中。
