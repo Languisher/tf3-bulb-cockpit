@@ -60,7 +60,7 @@ do
   requests[3].callback(nil,true);join()
   assert(aliases.__options.routeMapScale==138,'an accepted command remains saved after closing')
   assert(not timers.LinnanBulbMapScaleNative,'scale setting adds no timer')
-  -- The real HUD scales the diagram subtree, retaining the upper identity.
+  -- The real HUD changes native drawing dimensions, retaining the upper identity.
   aliases={__options={flashNextStop=false,language='en'}}
   snapshot={vehicle=200,next=2,passed=1,route={lineId=800,name='Scale route',mode='TRAM',color='#ffe077',stops={}}}
   for i=1,4 do snapshot.route.stops[i]={id=i,name='Stop '..i,sourceIndex=i-1,transfers={}}end
@@ -80,7 +80,7 @@ do
     if not identitySize then identitySize=size end
     assert(size[1]==identitySize[1] and size[2]==identitySize[2],'upper-left identity does not scale')
     assert(canvas.meta.styleSheet.anchorPoint[1]==.5 and canvas.meta.styleSheet.anchorPoint[2]==1)
-    assert(percent==100 and transform==nil or transform=='bulb-canvas-scale'..percent,'requested integer scale reaches the native transform')
+    assert(transform==nil,'native drawing must not magnify a pre-rendered canvas')
   end
   print('PASS: native Slider contract, one save per drag, reset/rollback/close, all-option preservation and HUD-only scaling')
 end

@@ -17,13 +17,10 @@ do
       scales=scales+1
     end
   end
-  assert(angles==181 and scales==399,'retain full curve/viewport precision')
+  assert(angles==181 and scales==0,'retain curve precision without a canvas scaling bank')
   local stroke=render('LinnanBulbTrackStrokeNative',{})
   assert(stroke.kind=='FloatingLayout' and #stroke.param.children==0,
     'the dedicated recipe owns the painted component; no nested rail nodes')
-  local children={{kind='probe'}}
-  local canvas=render('LinnanBulbScaledCanvasNative',{children=children})
-  assert(canvas.kind=='FloatingLayout' and canvas.param.children==children)
-  print('PASS: bulk transforms target only dedicated BULB native types, with no extra rail children')
+  print('PASS: rotation transforms target only the dedicated BULB native type, with no extra rail children')
 end
 ]=],'@stylesheet_scope'))()

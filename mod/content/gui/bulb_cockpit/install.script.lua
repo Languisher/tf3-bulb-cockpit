@@ -71,15 +71,12 @@ end
 local modeMark,transferGroup,lineBadge=modeMarks.create(builtin,style,text,modeIcon,
   {symbolInk=HUD_INK,openBadgeInk=HUD_INK})
 -- Custom recipes own native components just like builtin.Component. Give
--- the transform banks exclusive element types so the engine need not match
--- 280 BULB rules against every generic component in the game's interface.
+-- the rotation bank an exclusive element type so the engine need not match
+-- the rotation bank against every generic component in the game's interface.
 local TrackStroke=react.RegisterRecipe('LinnanBulbTrackStrokeNative',function()
   return builtin.FloatingLayout{children={}}
 end)
-local ScaledCanvas=react.RegisterRecipe('LinnanBulbScaledCanvasNative',function(param)
-  return builtin.FloatingLayout{meta={class='bulb-fixed-layout'},children=param.children}
-end)
-local function floatingPanel(width,height,children,id,anchor,class,mouseTransparent,recipe)
+local function floatingPanel(width,height,children,id,anchor,class,mouseTransparent)
   local meta=style{size={width,height},backgroundColor={0,0,0,0},anchorPoint=anchor or {0,0},
     padding={0,0,0,0},margin={0,0,0,0}}
   meta.id=id
@@ -91,12 +88,11 @@ local function floatingPanel(width,height,children,id,anchor,class,mouseTranspar
   extent.class='bulb-layout-extent'
   table.insert(children,1,builtin.FloatingLayoutChild{h=0,v=0,
     item=builtin.Component{meta=extent,mouseTransparent=true}})
-  if recipe then return recipe{meta=meta,children=children}end
   return builtin.Component{meta=meta,mouseTransparent=mouseTransparent,
     layout=builtin.FloatingLayout{meta={class='bulb-fixed-layout'},children=children}}
 end
-local function stationMarker(stop,track,lineColor)
-  local diameter=stop.markerSize
+local function stationMarker(stop,track,lineColor,scale)
+  local diameter=stop.markerSize*(scale or 1)
   local children={}
   local function disc(size,ink,class,role,mask)
     local meta=style{size={size,size},color=ink,anchorPoint={.5,.5},padding={0,0,0,0},margin={0,0,0,0}}
@@ -147,7 +143,7 @@ local FlashingStation=react.RegisterRecipe('LinnanBulbFlashingStationNative',fun
   local stop={};for k,v in pairs(param.stop)do stop[k]=v end
   stop.lit=on:old();stop.flashing=true
   return builtin.FloatingLayout{children={builtin.FloatingLayoutChild{h=.5,v=.5,
-    item=stationMarker(stop,param.track,param.lineColor)}}}
+    item=stationMarker(stop,param.track,param.lineColor,param.scale)}}}
 end)
 local function panel(width,height,layout,id,transparent)
   local meta=style{size={width,height},backgroundColor={1,1,1,transparent and 0 or 1}}
@@ -160,10 +156,8 @@ end
 -- HUD and static browser share the exact station/track/transfer renderer.
 -- The static caller owns its component tree; no canvas or generated image is
 -- cached by this function. Interactive badges carry IDs, never old snapshots.
-local function diagramChildren(snapshot,plan,onTransfer,renderMarker,tr)
+local function diagramMetrics(snapshot,plan)
   local g=plan.geometry
-  local width=g.width
-  local lineColor=color(snapshot.route.color)
   -- A -30 degree label reaches upward by half its width plus the rotated
   -- text height. Reserve that space before positioning the station rail.
   local nameArea=0
@@ -174,6 +168,33 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker,tr)
   local railY=math.max(58,nameArea+6)
   local transferY=railY+math.max(20,plan.track.rail/2+12)
   local height=transferY+plan.transferHeight+(plan.laneHeight or 0)+(snapshot.mergeWarning and 24 or 0)+8
+  return g.width,height,railY,transferY
+end
+local function diagramChildren(snapshot,plan,onTransfer,renderMarker,tr,scale)
+  scale=scale or 1
+  local g=plan.geometry
+  local width,height,railY,transferY=diagramMetrics(snapshot,plan)
+  local lineColor=color(snapshot.route.color)
+  local style,text,rectangle,floatingPanel,transferGroup=style,text,rectangle,floatingPanel,transferGroup
+  if scale~=1 then
+    local baseStyle,baseText,baseRectangle,basePanel=style,text,rectangle,floatingPanel
+    -- Scale physical component dimensions before layout and glyph rendering.
+    -- FloatingLayout fractions and rotation angles remain in logical space,
+    -- so stations, rail endpoints and transfer anchors use the same mapping.
+    style=function(value)
+      local result={};for k,v in pairs(value)do result[k]=v end
+      if value.size then result.size={value.size[1]*scale,value.size[2]*scale}end
+      return baseStyle(result)
+    end
+    text=function(value,font,w,h,...)
+      return baseText(value,math.max(1,math.floor(font*scale+.5)),w and w*scale,h and h*scale,...)
+    end
+    rectangle=function(w,h,...)return baseRectangle(w*scale,h*scale,...)end
+    floatingPanel=function(w,h,...)return basePanel(w*scale,h*scale,...)end
+    local _,scaledGroup=modeMarks.create(builtin,style,text,
+      function(mode,size)return modeIcon(mode,size*scale)end,{symbolInk=HUD_INK,openBadgeInk=HUD_INK})
+    transferGroup=scaledGroup
+  end
   local children={}
   local count=#plan.stops
   local left,right=g.left,g.right
@@ -260,8 +281,8 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker,tr)
       HUD_INK,stop.endpoint and BLUE or SMOKE,
       stop.endpoint and 'bulb-station-terminus-name' or 'bulb-station-name',{0,1},stop.fullName),x,stopRailY-math.max(12,stop.markerSize/2+4),width,height)
     local marker
-    if renderMarker then marker=renderMarker(stop,stopColor)end
-    marker=marker or stationMarker(stop,plan.track,stopColor)
+    if renderMarker then marker=renderMarker(stop,stopColor,scale)end
+    marker=marker or stationMarker(stop,plan.track,stopColor,scale)
     positioned(children,marker,x,stopRailY,width,height,stop.key..':marker-position')
     if #stop.transferGroups>0 then
       local start=stopRailY+math.max(plan.track.rail,stop.markerSize)/2+2
@@ -297,7 +318,7 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker,tr)
     positioned(children,text(tr('同号线路未合并 · 端点不连通或为环线'),12,width-24,20,HUD_INK,nil,
       'bulb-omission-label',nil,tr(snapshot.mergeWarning)),12,height-22,width,height,'linnan.bulb.merge-warning')
   end
-  return children,width,height
+  return children,width*scale,height*scale
 end
 local function staticDiagram(snapshot,aliases,onTransfer)
   local tr=I.bind(aliases)
@@ -467,14 +488,17 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
   local aliases=param.aliases:old()
   local flashing=aliases.__options and aliases.__options.flashNextStop==true
   local plan=P.plan(snapshot,aliases,not flashing,maxWidth,tr)
-  local children,width,height=diagramChildren(snapshot,plan,nil,function(stop,stopColor)
+  local _,logicalHeight=diagramMetrics(snapshot,plan)
+  local drawingScale=requestedScale/100
+  if plan.segments then drawingScale=math.min(drawingScale,math.max(.01,math.max(120,viewport.y-200)/logicalHeight))end
+  local children,width,height=diagramChildren(snapshot,plan,nil,function(stop,stopColor,scale)
     if flashing and (stop.isNext or (not snapshot.network and stop.index==snapshot.next)) then
-      return FlashingStation{stop=stop,track=plan.track,lineColor=stopColor,vehicle=snapshot.vehicle or cameraState.getEntity(),
+      return FlashingStation{stop=stop,track=plan.track,lineColor=stopColor,scale=scale,vehicle=snapshot.vehicle or cameraState.getEntity(),
         meta={localKey='flash:'..cameraEntry:get()..':'..P.nextKey(snapshot),class='bulb-flashing-station',
-          styleSheet=style{size={stop.markerSize,stop.markerSize},anchorPoint={.5,.5},
+          styleSheet=style{size={stop.markerSize*scale,stop.markerSize*scale},anchorPoint={.5,.5},
             padding={0,0,0,0},margin={0,0,0,0}}.styleSheet}}
     end
-  end,tr)
+  end,tr,drawingScale)
   local lineColor=color(snapshot.route.color)
   local badge=plan.hasBadge and plan.badge or tr(modeNames[plan.mode] or plan.mode)
   local mark,markWidth,markHeight=modeMark(plan.mode,badge,lineColor,false,plan.name)
@@ -491,20 +515,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
   positioned(identityChildren,text(title,14,titleWidth,rows*18,HUD_INK,nil,'bulb-route-title',nil,plan.name),
     inset+markWidth+12,inset+6+(markHeight-rows*18)/2,identityWidth,identityHeight)
   local identity=floatingPanel(identityWidth,identityHeight,identityChildren,'linnan.bulb.identity')
-  local percent=requestedScale
-  if plan.segments then
-    percent=math.min(percent,math.max(1,math.floor(math.max(120,viewport.y-200)/height*100)))
-  end
-  local diagram
-  if percent~=100 then
-    -- Scale the entire native subtree, then reserve its displayed bounds so
-    -- the engine keeps it centered at the bottom and inside the viewport.
-    local inner=floatingPanel(width,height,children,'linnan.bulb.canvas-content',nil,'bulb-canvas-scale'..percent,nil,ScaledCanvas)
-    local scaledWidth,scaledHeight=width*percent/100,height*percent/100
-    local items={}
-    positioned(items,inner,0,0,scaledWidth,scaledHeight,'linnan.bulb.scaled-content')
-    diagram=floatingPanel(scaledWidth,scaledHeight,items,'linnan.bulb.canvas',{.5,1})
-  else diagram=floatingPanel(width,height,children,'linnan.bulb.canvas',{.5,1})end
+  local diagram=floatingPanel(width,height,children,'linnan.bulb.canvas',{.5,1})
   return builtin.FloatingLayout{children={
     builtin.FloatingLayoutChild{h=24/viewport.x,v=72/viewport.y,
       overflowMode=builtin.type.FloatingLayoutOverflowMode.KeepInside,item=identity},

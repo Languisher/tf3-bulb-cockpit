@@ -51,13 +51,16 @@ do
   for id=11,20 do services[#services+1]=service(id,{1,id+100,id+200},'#ff0066')end
   snapshot.network=assert(G.build(services));snapshot.lines=services
   tick();drawn=render('LinnanBulbCockpitHudNative',hud)
-  local scaled,frame
+  local frame
   walk(drawn,function(k,p)
-    if p.meta and p.meta.id=='linnan.bulb.canvas-content'then scaled=p end
     if p.meta and p.meta.id=='linnan.bulb.canvas'then frame=p end
   end)
-  assert(scaled and frame and frame.meta.styleSheet.size[2]<=520, 'many branches fit below the top-left identity')
-  assert(scaled.meta.class:match('^bulb%-canvas%-scale%d+$'), 'scale the content inside a physically smaller frame')
+  assert(frame and frame.meta.styleSheet.size[2]<=520.00001, 'many branches fit below the top-left identity')
+  walk(drawn,function(_,p)
+    if p.meta and p.meta.class=='bulb-station-name'then
+      assert(p.meta.styleSheet.fontSize<14,'height fitting changes native font size with the geometry')
+    end
+  end)
   snapshot.mergeWarning='同号组端点不连通'
   snapshot.network=nil;tick()
   local warning=false

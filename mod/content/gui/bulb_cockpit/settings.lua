@@ -586,8 +586,8 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local searchRows=splitSearch and {search,horizontal(filters,'bulb-settings-controls',g.content,32)}
       or {horizontal({search,filters[1],filters[2]},'bulb-settings-controls',g.content,32)}
     local body={
-      CarrierBar{state=carrierChoice,aliases=param.aliases},
       ScaleControl{aliases=param.aliases,width=g.content,session=param.session},
+      CarrierBar{state=carrierChoice,aliases=param.aliases},
       horizontal({label('',g.content-applyWidth-8,32),applyButton},'bulb-settings-controls',g.content,32),
       horizontal(headings,'bulb-settings-heading',g.inner,24),
       builtin.ScrollArea{content=vertical(rows,'bulb-settings-list'),
@@ -595,7 +595,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         meta={class='bulb-settings-scroll',styleSheet=style{size={g.content,g.listHeight}}.styleSheet}},
       horizontal(footer,'bulb-settings-footer',g.content,40),
     }
-    for i=#searchRows,1,-1 do table.insert(body,2,searchRows[i])end
+    for i=#searchRows,1,-1 do table.insert(body,4,searchRows[i])end
     if #controls==2 and g.content<376 then
       table.insert(body,1,horizontal({controls[2]},'bulb-settings-controls',g.content,32))
       table.insert(body,1,horizontal({controls[1]},'bulb-settings-controls',g.content,32))

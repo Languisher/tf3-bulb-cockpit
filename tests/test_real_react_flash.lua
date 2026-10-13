@@ -121,6 +121,17 @@ do
     'preserve the endpoint black circular outline in both phases')
   assert(not param.stop.flashing,'animation must not mutate the cached marker plan')
 end
+-- Native marker layers retain the same scale through both animation phases.
+for _,scale in ipairs({.1,.37,1,1.75,4})do
+  local param={stop={key='scaled:0>1',fullName='Terminus',markerKind='terminus',markerSize=18,lit=false},
+    track={ordinaryFill='white'},lineColor={1,.82,0,1},vehicle=200,scale=scale}
+  local ctx=context()
+  local on=markerLayers(render(param,ctx));tick(ctx);local off=markerLayers(render(param,ctx))
+  for _,layers in ipairs({on,off})do
+    assert(math.abs(layers['station-outline.tga'].size[1]-18*scale)<.00001)
+    assert(math.abs(layers['station-interior.tga'].size[1]-14.4*scale)<.00001)
+  end
+end
 local parent=react.RegisterRecipe('FlashMetadataTest',function()
   return _react.originalRecipeFn[flashId]({meta={localKey='flash:200:line:0>1',
     styleSheet={size={18,18},anchorPoint={.5,.5}}}})

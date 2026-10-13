@@ -54,6 +54,12 @@ do
     contexts.LinnanBulbSettingsContentNative={}
     local tree=render('LinnanBulbSettingsContentNative',{aliases=aliasState,lines=roster,geometry=g,
       color=function()return {1,.8,0,1}end})
+    local scaleIndex,carrierIndex
+    for i,node in ipairs(tree.param.children[1].param.layout.param.children)do
+      if node.recipe=='LinnanBulbMapScaleNative'then scaleIndex=i end
+      if node.recipe=='LinnanBulbCarrierFilterNative'then carrierIndex=i end
+    end
+    assert(scaleIndex and carrierIndex and scaleIndex<carrierIndex,'scale control must precede carrier icons')
     contexts.LinnanBulbMapScaleNative={}
     local scale=render('LinnanBulbMapScaleNative',{aliases=aliasState,width=g.content,session={closed=false}})
     walk(scale,function(kind,p)

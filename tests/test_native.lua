@@ -289,7 +289,7 @@ end
 local function walk(node,fn)
   if type(node)~='table' then return end
   if node.kind then fn(node.kind,node.param) end
-  if node.recipe=='LinnanBulbTrackStrokeNative' or node.recipe=='LinnanBulbScaledCanvasNative'then
+  if node.recipe=='LinnanBulbTrackStrokeNative'then
     fn(node.recipe,node.param)
   end
   for _,v in pairs(node) do if type(v)=='table' then walk(v,fn) end end

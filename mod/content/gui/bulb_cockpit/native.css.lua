@@ -39,12 +39,6 @@ function data()
       padding={0,0,0,0},margin={0,0,0,0},
     })
   end
-  for percent=1,400 do
-    if percent~=100 then add('R::LinnanBulbScaledCanvasNative!bulb-canvas-scale'..percent,{
-      transformOrigin={0,0},transform=transf.scaleRotZTransl(percent/100,0,{x=0,y=0,z=0}),
-      padding={0,0,0,0},margin={0,0,0,0},
-    })end
-  end
   local stationNameStyle={
     fontWeight='Bold',
     transformOrigin={0,1},transform=transf.rotZ(-math.pi/6),
