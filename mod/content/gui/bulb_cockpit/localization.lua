@@ -128,16 +128,48 @@ I.english={
   ["线路图暂时无法读取车辆数据，请查看游戏日志。"]="Could not read vehicle data. Please check the game log.",
   ["… %d站"]="… %d stops",
   ["切换界面语言"]="Switch interface language",
+  ["语言"]="Language",
   ["语言保存失败，请重试。"]="Could not save the language. Please retry.",
 }
+-- This ordered registry also supplies native names for the language picker.
+I.locales={
+  {code='en',name='English'}, {code='zh',name='简体中文'}, {code='zh-tw',name='繁體中文'},
+  {code='fr',name='Français'}, {code='de',name='Deutsch'}, {code='es',name='Español'},
+  {code='it',name='Italiano'}, {code='pt-br',name='Português (Brasil)'}, {code='ru',name='Русский'},
+  {code='pl',name='Polski'}, {code='tr',name='Türkçe'}, {code='uk',name='Українська'},
+  {code='ja',name='日本語'}, {code='ko',name='한국어'},
+}
+local indices,catalogs={},{en=I.english}
+for index,locale in ipairs(I.locales)do indices[locale.code]=index end
+local function normalize(value)
+  if type(value)~='string'then return 'en'end
+  value=value:lower():gsub('_','-')
+  if value=='zh-cn' or value=='zh-hans' or value=='zh-sg'then return 'zh'end
+  if value=='zh-hant' or value=='zh-hk'then return 'zh-tw'end
+  if indices[value]then return value end
+  local base=value:match('^([a-z]+)%-')
+  return indices[base] and base or 'en'
+end
+function I.index(code)return indices[normalize(code)]end
 function I.language(aliases)
   local options=aliases and aliases.__options
-  return options and options.language=='zh' and 'zh' or 'en'
+  return normalize(options and options.language)
+end
+function I.catalog(code)
+  code=normalize(code)
+  if code=='zh'then return nil end
+  if not catalogs[code]then
+    -- Load only languages actually selected; the game loader and this bounded
+    -- registry reuse each small dictionary. No filesystem reads or polling.
+    catalogs[code]=ug_require('linnan_bulb_cockpit::/gui/bulb_cockpit/locales/'..code..'.lua')
+  end
+  return catalogs[code]
 end
 function I.bind(aliases)
-  local english=I.language(aliases)=='en'
+  local language=I.language(aliases)
+  local messages=I.catalog(language)
   return function(source,...)
-    local value=english and I.english[source] or source
+    local value=language=='zh' and source or (messages[source] or I.english[source] or source)
     if select('#',...)>0 then return string.format(value,...)end
     return value
   end

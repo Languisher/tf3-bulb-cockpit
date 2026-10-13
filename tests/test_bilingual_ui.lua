@@ -15,24 +15,26 @@ do
     local found={};walk(tree,function(kind,p)if p.meta and p.meta.id then found[p.meta.id]=p end end);return found
   end
   local function draw()return controls(render(browser,param))end
+  local function selected(control)return control.items[control.value].param.content.param end
+  local nativeNames={};for _,locale in ipairs(I.locales)do nativeNames[locale.name]=true end
   local function english(tree,allow)
     walk(tree,function(kind,p)
       for _,s in ipairs({p.text or '',p.placeholderText or '',p.title or '',p.meta and p.meta.tooltip or ''})do
-        assert(not s:find('[\228-\233][\128-\191][\128-\191]') or s=='中文' or (allow and allow[s]),
+        assert(not s:find('[\228-\233][\128-\191][\128-\191]') or nativeNames[s] or (allow and allow[s]),
           'untranslated UI in '..kind..': '..s)
       end
     end)
   end
   local button=draw()['linnan.bulb.browser.language']
-  assert(button.content.param.text=='English' and button.content.param.useUnicodeCompatibilityFont,
+  assert(#button.items==14 and selected(button).text=='简体中文' and selected(button).useUnicodeCompatibilityFont,
     'both languages remain discoverable with the native Unicode font')
   local initialReads=reads
-  button.onClick()
+  button.onValueChange(I.index('en'))
   assert(I.language(aliases)=='en' and #requests==1 and requests[1].value.language=='en')
-  button.onClick();assert(#requests==1,'ignore repeated click before callback')
+  button.onValueChange(I.index('en'));assert(#requests==1,'ignore repeated click before callback')
   local pending=draw()
   assert(pending['linnan.bulb.browser.configure'].content.param.text=='Line settings'
-    and pending['linnan.bulb.browser.language'].content.param.text=='中文'
+    and selected(pending['linnan.bulb.browser.language']).text=='English'
     and not pending['linnan.bulb.browser.language'].meta.enabled,'first click updates the whole page immediately')
   assert(aliases.__options.flashNextStop and aliases.__options.other)
   aliases.__options.flashNextStop=false;aliases.concurrent={name='Concurrent edit'}
@@ -80,7 +82,7 @@ do
   -- Return home, fail a switch, then retry and close before acknowledgment.
   controls(render(browser,param))['linnan.bulb.browser.back'].onClick()
   local switching=draw()['linnan.bulb.browser.language']
-  switching.onClick();assert(I.language(aliases)=='zh')
+  switching.onValueChange(I.index('zh'));assert(I.language(aliases)=='zh')
   aliases.__options.flashNextStop=true
   requests[2].callback(nil,false);join()
   assert(I.language(aliases)=='en' and aliases.__options.flashNextStop)
@@ -88,12 +90,44 @@ do
   local errorFound=false
   walk(render(browser,param),function(kind,p)if p.text=='Could not save the language. Please retry.'then errorFound=true end end)
   assert(errorFound,'failed saves show an error in the restored language')
-  draw()['linnan.bulb.browser.language'].onClick();assert(I.language(aliases)=='zh')
+  draw()['linnan.bulb.browser.language'].onValueChange(I.index('zh'));assert(I.language(aliases)=='zh')
   param.session.closed=true
   requests[3].callback(nil,true);join()
   assert(I.language(aliases)=='zh','closing does not discard the saved language')
+  -- Each new choice flows through the actual native selector and callbacks.
+  param.session.closed=false;contexts[browser]={}
+  local originalRequire=ug_require
+  local loads={}
+  ug_require=function(path)
+    local locale=path:match('/locales/([%w-]+)%.lua$')
+    if locale then
+      loads[locale]=(loads[locale] or 0)+1
+      return dofile('mod/content/gui/bulb_cockpit/locales/'..locale..'.lua')
+    end
+    return originalRequire(path)
+  end
+  for index,locale in ipairs(I.locales)do
+    local ctrl=draw()['linnan.bulb.browser.language']
+    local previous=I.language(aliases);local count=#requests
+    ctrl.onValueChange(index)
+    assert(I.language(aliases)==locale.code)
+    local selectedControl=draw()['linnan.bulb.browser.language']
+    assert(selected(selectedControl).text==locale.name)
+    if locale.code~=previous then
+      assert(#requests==count+1 and not selectedControl.meta.enabled)
+      requests[#requests].callback(nil,true);join()
+    else assert(#requests==count,'selecting the current language is a no-op')end
+    local tree=render(browser,param)
+    local page=controls(tree)
+    assert(page['linnan.bulb.browser.configure'].content.param.text==I.bind(aliases)('线路设置'))
+    assert(render('LinnanBulbSettingsWindowNative',param).param.title==I.bind(aliases)('线路图设置'))
+  end
+  for _,count in pairs(loads)do assert(count==1,'reuse each selected catalog')end
+  assert(reads==initialReads and not timers[browser],'all-language switching adds no scans or timers')
+  ug_require=originalRequire
+
   contexts[browser]={};param.session={closed=false,lines=roster,owners={}}
-  assert(draw()['linnan.bulb.browser.configure'].content.param.text=='线路设置','reopened windows read the saved preference')
+  assert(draw()['linnan.bulb.browser.configure'].content.param.text==I.bind(aliases)('线路设置'),'reopened windows read the saved preference')
 end
 print('PASS: bilingual native controls, optimistic switch, rollback, saved preference, literal game data and no extra timers')
 ]=],'@test_bilingual_ui.lua'))()

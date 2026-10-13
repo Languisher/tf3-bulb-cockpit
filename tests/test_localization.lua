@@ -44,7 +44,7 @@ assert(dofile('mod/content/gui/bulb_cockpit/aliases.lua').read().__options.langu
 A.saveOptions({language='en'},function()end)
 assert(writes==2,'unchanged language performs no state write')
 local before=value
-for _,patch in ipairs({{language='fr'},{language=false},{flashNextStop='false'},
+for _,patch in ipairs({{language='xx'},{language=false},{flashNextStop='false'},
   {language='zh',flashNextStop='bad'},{unknown=true}})do
   assert(not pcall(A.saveOptions,patch,function()end),'GUI rejects invalid patch')
   S.handleEvent({},state,'',A.id,A.optionsEvent,patch)

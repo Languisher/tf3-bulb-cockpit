@@ -1,6 +1,7 @@
 -- Custom app.saveUserdata directories are rejected by Build 40420.
 -- Use the game's saved GAME_SCRIPT state, scoped to the current save.
 local A={}
+local languages={en=true,zh=true,['zh-tw']=true,fr=true,de=true,es=true,it=true,['pt-br']=true,ru=true,pl=true,tr=true,uk=true,ja=true,ko=true}
 A.script='linnan_bulb_cockpit::/game_mechanics/bulb_aliases/bulb_aliases.gs'
 A.id='linnan.bulb.aliases'
 A.event='linnan.bulb.setAlias'
@@ -28,7 +29,7 @@ function A.saveOptions(options,callback)
   assert(A.read(),'线路配置尚未初始化，请稍后重试。')
   assert(type(options)=='table','Invalid options.')
   assert(options.flashNextStop==nil or type(options.flashNextStop)=='boolean','Invalid blink option.')
-  assert(options.language==nil or options.language=='zh' or options.language=='en','Invalid language.')
+  assert(options.language==nil or languages[options.language]==true,'Invalid language.')
   local patch={flashNextStop=options.flashNextStop,language=options.language}
   assert(next(patch),'Empty options patch.')
   api.cmd.sendCommand(api.cmd.makeScriptingSendEventCmd('',A.id,A.optionsEvent,patch),callback)

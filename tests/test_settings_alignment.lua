@@ -34,7 +34,14 @@ do
     {id=20,name='TP 乘客-杭州-南充-RE-1',mode='TRAIN'},
     {id=30,name='城市公交',mode='BUS'},
     {id=40,name=string.rep('很长的地铁线路名称',12),mode='METRO'}}
-  for _,language in ipairs({'zh','en'})do
+  local originalRequire=ug_require
+  ug_require=function(path)
+    local locale=path:match('/locales/([%w-]+)%.lua$')
+    if locale then return dofile('mod/content/gui/bulb_cockpit/locales/'..locale..'.lua')end
+    return originalRequire(path)
+  end
+  local languages={};for _,locale in ipairs(modules['localization.lua'].locales)do languages[#languages+1]=locale.code end
+  for _,language in ipairs(languages)do
   aliases.__options={language=language}
   for _,width in ipairs({320,400,640,800,1024,2560})do
     local g=S.geometry({x=width,y=900},language)
@@ -96,5 +103,5 @@ do
   end
   end
 end
-print('PASS: bilingual native content/padding bounds, aligned badge and field columns, empty affixes at six viewport widths')
+print('PASS: 14-language native content/padding bounds, aligned badge and field columns, empty affixes at six viewport widths')
 ]=],'@test_settings_alignment.lua'))()

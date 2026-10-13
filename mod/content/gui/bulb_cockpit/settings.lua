@@ -94,11 +94,12 @@ function S.geometry(viewport,language)
   -- same four-unit inset for both the heading and every data row.
   local rowWidth=content-12
   local inner=rowWidth-8
-  local english=language=='en'
+  local english=language~='zh'
   local badge=english and 48 or 40
   local field=compact and math.floor((inner-badge-24)/3) or 72
   local number=compact and field or 64
-  local mode,save=136,english and 72 or 56
+  local save=english and 128 or 56
+  local mode=compact and math.min(136,inner-save-8) or 136
   local fixed=badge+field+number+field+mode+save+6*8
   local extraToolbar=content<376 and 80 or 40
   if english and content<376 then extraToolbar=extraToolbar+40 end
@@ -150,6 +151,14 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     meta.class=class or 'font-scale-body';meta.tooltip=tooltip;meta.id=id
     return builtin.TextView{text=value,useUnicodeCompatibilityFont=unicode==true,meta=meta}
   end
+  local function localizedLabels(aliases)
+    local code=I.language(aliases)
+    local unicode=code~='en' and code~='zh'
+    return function(value,width,height,class,tooltip,id,override)
+      if override==nil then override=unicode end
+      return label(value,width,height,class,tooltip,id,override)
+    end
+  end
   local function wrap(layout,class,width,height)
     local meta=style{size={width or -1,height or -1}}
     meta.class=class
@@ -163,6 +172,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
   end
   local AliasRow=react.RegisterRecipe('LinnanBulbAliasRowNative',function(param)
     local tr=I.bind(param.aliases:old())
+    local label=localizedLabels(param.aliases:old())
     local line,g=param.line,param.geometry
     local key=tostring(line.id)
     local current=param.aliases:old()[tostring(line.id)]
@@ -305,6 +315,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
   end)
   local Content=react.RegisterRecipe('LinnanBulbSettingsContentNative',function(param)
     local tr=I.bind(param.aliases:old())
+    local label=localizedLabels(param.aliases:old())
     local initialOptions=param.aliases:old().__options
     local flashChoice=react.useState(initialOptions and initialOptions.flashNextStop==true or false)
     local flashPending=react.useState(false)
@@ -462,7 +473,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
           if not ok then log.warning('[BULB native 0.1.65dev] options: '..tostring(err));complete(false)end
         end}
 
-    local english=I.language(param.aliases:old())=='en'
+    local english=I.language(param.aliases:old())~='zh'
     local applyWidth=english and 104 or 88
     local scopeWidth=english and 96 or 72
     local splitSearch=english and g.content<376
@@ -500,10 +511,11 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
   end)
   local function button(id,caption,callback,width)
     return builtin.Button{meta={id=id,class='bulb-settings-save',styleSheet=style{size=buttonSize(width or 112)}.styleSheet},
-      content=label(caption,nil,24),onClick=callback}
+      content=label(caption,nil,24,nil,nil,nil,true),onClick=callback}
   end
   local Static=react.RegisterRecipe('LinnanBulbStaticRouteNative',function(param)
     local tr=I.bind(param.aliases:old())
+    local label=localizedLabels(param.aliases:old())
     -- Only this keyed child owns the visited graph. Parent navigation stores
     -- an ID and a release function; neither a diagram history nor a cache.
     local holder=react.useRef({disposed=false})
@@ -555,7 +567,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         if not ok then log.warning('[BULB native 0.1.65dev] locate line: '..tostring(located))end
       end
     end
-    local children={horizontal({button('linnan.bulb.browser.back',tr('返回线路目录'),param.home,I.language(param.aliases:old())=='en' and 144 or 120),
+    local children={horizontal({button('linnan.bulb.browser.back',tr('返回线路目录'),param.home,I.language(param.aliases:old())~='zh' and 144 or 120),
       builtin.Button{meta={id='linnan.bulb.browser.locate',class='bulb-static-locate',tooltip=tr('在地图上定位此线路'),
           enabled=h.snapshot~=nil and not h.disposed,styleSheet=style{size={24,24}}.styleSheet},
         content=builtin.ImageView{path='::/gui/line_vehicle_mgmt/icons/symbol_locate_20.tga',
@@ -613,6 +625,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
   end)
   local Browser=react.RegisterRecipe('LinnanBulbBrowserNative',function(param)
     local tr=I.bind(param.aliases:old())
+    local label=localizedLabels(param.aliases:old())
     local page=react.useState(nil)
     local busQuery=react.useState('')
     local owner=react.useRef({})
@@ -641,7 +654,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     if page:old()=='config' then
       local configParam={};for key,value in pairs(param)do configParam[key]=value end
       configParam.geometry=g
-      return builtin.BoxLayout{children={vertical({button('linnan.bulb.browser.back',tr('返回线路目录'),home,I.language(param.aliases:old())=='en' and 144 or 120),
+      return builtin.BoxLayout{children={vertical({button('linnan.bulb.browser.back',tr('返回线路目录'),home,I.language(param.aliases:old())~='zh' and 144 or 120),
         Content(configParam)},'bulb-settings-body',g.content)}}
     elseif type(page:old())=='number' then
       return builtin.BoxLayout{children={Static{meta={localKey='static:'..page:old()},lineId=page:old(),
@@ -681,10 +694,13 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       end
       sections[#sections+1]=vertical(section,'bulb-directory-section',g.content-16)
     end
-    local function switchLanguage()
+    local function switchLanguage(index)
       if languageBusy:get() or (param.session and param.session.closed)then return end
+      local locale=I.locales[index]
+      if not locale then return end
       local previous=I.language(param.aliases:old())
-      local wanted=previous=='zh' and 'en' or 'zh'
+      local wanted=locale.code
+      if wanted==previous then return end
       languageBusy:set(true);languagePending:set(true);languageError:set('')
       -- Re-render only subscribed UI. No new timers, engine scans or caches.
       local function updateLanguage(value,onlyIf)
@@ -712,19 +728,34 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       end)
       if not ok then log.warning('[BULB] language: '..tostring(err));complete(false)end
     end
-    local configure=button('linnan.bulb.browser.configure',tr('线路设置'),function()navigate('config')end,
-      I.language(param.aliases:old())=='en' and 136 or 112)
-    local language=builtin.Button{meta={id='linnan.bulb.browser.language',class='bulb-settings-save',
-        tooltip=tr('切换界面语言'),enabled=not languagePending:old(),styleSheet=style{size=buttonSize(88)}.styleSheet},
-      content=label(I.language(param.aliases:old())=='zh' and 'English' or '中文',nil,24,nil,nil,nil,true),onClick=switchLanguage}
-    local narrow=g.content<448
+    local configureWidth=math.min(g.content,math.max(I.language(param.aliases:old())=='zh' and 112 or 136,
+      math.ceil(B.textWidth(tr('线路设置'),16))+24))
+    local configure=button('linnan.bulb.browser.configure',tr('线路设置'),function()navigate('config')end,configureWidth)
+    local languageWidth=192
+    local languageItems={}
+    for index,locale in ipairs(I.locales)do
+      languageItems[#languageItems+1]=builtin.ComboBoxItem{value=index,
+        content=label(locale.name,nil,24,nil,nil,nil,true)}
+    end
+    local language=builtin.ComboBox{value=I.index(I.language(param.aliases:old())),items=languageItems,compact=true,
+      meta={id='linnan.bulb.browser.language',class='bulb-settings-mode',
+        tooltip=tr('语言'),enabled=not languagePending:old(),styleSheet=style{size={languageWidth,32}}.styleSheet},
+      onValueChange=switchLanguage}
+    local narrow=g.content<configureWidth+languageWidth+144
     local homeControls={horizontal(narrow and {label(tr('线路目录'),g.content,32)}
-      or {label(tr('线路目录'),g.content-240,32),configure,language},'bulb-settings-controls',g.content,32)}
-    if narrow then homeControls[#homeControls+1]=horizontal({configure,language},'bulb-settings-controls',g.content,32)end
+      or {label(tr('线路目录'),g.content-configureWidth-languageWidth-16,32),configure,language},'bulb-settings-controls',g.content,32)}
+    if narrow then
+      if g.content<configureWidth+languageWidth+8 then
+        homeControls[#homeControls+1]=horizontal({configure},'bulb-settings-controls',g.content,32)
+        homeControls[#homeControls+1]=horizontal({language},'bulb-settings-controls',g.content,32)
+      else
+        homeControls[#homeControls+1]=horizontal({configure,language},'bulb-settings-controls',g.content,32)
+      end
+    end
     if languageError:old()~=''then homeControls[#homeControls+1]=label(languageError:old(),g.content,32,'font-scale-annotation')end
     homeControls[#homeControls+1]=builtin.ScrollArea{content=vertical(sections,'bulb-directory-sections'),
         horizontalPolicy=builtin.type.ScrollBarPolicy.AlwaysOff,verticalPolicy=builtin.type.ScrollBarPolicy.AsNeeded,
-        meta={class='bulb-settings-scroll',styleSheet=style{size={g.content,math.max(128,math.min(620,param.viewport.y-220-(narrow and 40 or 0)))}}.styleSheet}}
+        meta={class='bulb-settings-scroll',styleSheet=style{size={g.content,math.max(128,math.min(620,param.viewport.y-220-(#homeControls-1)*40))}}.styleSheet}}
     return builtin.BoxLayout{children={vertical(homeControls,'bulb-settings-body',g.content)}}
   end)
   local Window=react.RegisterWrapperRecipe('LinnanBulbSettingsWindowNative',builtin.Window,function(param)

@@ -1,4 +1,5 @@
 local S={}
+local languages={en=true,zh=true,['zh-tw']=true,fr=true,de=true,es=true,it=true,['pt-br']=true,ru=true,pl=true,tr=true,uk=true,ja=true,ko=true}
 local EVENT='linnan.bulb.setAlias'
 local BUS_EVENT='linnan.bulb.setBusNaming'
 local STATION_EVENT='linnan.bulb.setStationLink'
@@ -105,7 +106,7 @@ function S.handleEvent(_,state,_,id,name,param)
   if id=='linnan.bulb.aliases' and name==OPTIONS_EVENT then
     if type(param)~='table'
       or (param.flashNextStop~=nil and type(param.flashNextStop)~='boolean')
-      or (param.language~=nil and param.language~='zh' and param.language~='en')then return end
+      or (param.language~=nil and languages[param.language]~=true)then return end
     if param.flashNextStop==nil and param.language==nil then return end
     local old=state:get() or {}
     local options={};for k,v in pairs(old.options or {})do options[k]=v end

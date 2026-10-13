@@ -480,7 +480,14 @@ do
     onClose=function()end,session={closed=false,lines={},owners={}}}
   local ctx=context()
   local function caption(ctrl)
-    local node=nodes[ctrl.params.content]
+    local content=ctrl.params.content
+    if ctrl.params.items then
+      for _,id in ipairs(ctrl.params.items)do
+        local item=nodes[id].props.props[1]
+        if item.value==ctrl.params.value then content=item.content end
+      end
+    end
+    local node=nodes[content]
     if node.recipeId==1 then node=nodes[node.props.props[1].item]end
     return node.props.props[1]
   end
@@ -499,7 +506,7 @@ do
     and nodes[freshEntry.props.props[1].children[1]].props.props[1].tooltip=='Route maps',
     'first mount defaults to English for the existing window and entry')
   lowerBound=nextNode;render(browserId,freshParam)
-  assert(caption(control('linnan.bulb.browser.language')).text=='中文'
+  assert(caption(control('linnan.bulb.browser.language')).text=='English'
     and caption(control('linnan.bulb.browser.configure')).text=='Line settings'
     and fresh:old().__options==nil,'fresh directory is English without writing a preference')
   local window,windowCtx=render(assert(windowId),param)
@@ -516,22 +523,22 @@ do
     return nodes[entry.props.props[1].children[1]].props.props[1].tooltip
   end
   assert(windowTitle()=='线路图设置' and entryTooltip()=='线路图设置')
-  local first=draw();assert(caption(first).text=='English' and caption(first).useUnicodeCompatibilityFont)
+  local first=draw();assert(caption(first).text=='简体中文' and caption(first).useUnicodeCompatibilityFont)
   local before=#optionRequests
-  first.params.onClick()
+  first.params.onValueChange(1)
   local switched=draw()
-  assert(caption(switched).text=='中文' and switched.meta.enabled==false)
+  assert(caption(switched).text=='English' and switched.meta.enabled==false)
   assert(caption(control('linnan.bulb.browser.configure')).text=='Line settings')
-  first.params.onClick();assert(#optionRequests==before+1)
+  first.params.onValueChange(1);assert(#optionRequests==before+1)
   assert(optionRequests[#optionRequests].value.language=='en' and config:old().__options.flashNextStop)
   assert(windowTitle()=='Route maps','switching language must invalidate the existing window title')
   assert(entryTooltip()=='Route maps','the already-mounted entry tooltip must update without a click')
   optionRequests[#optionRequests].callback(nil,true);_reactDoExecuteJoins()
   local saved=draw();assert(saved.meta.enabled and config:old().__options.language=='en')
-  saved.params.onClick();assert(config:old().__options.language=='zh')
+  saved.params.onValueChange(2);assert(config:old().__options.language=='zh')
   assert(windowTitle()=='线路图设置' and entryTooltip()=='线路图设置','switching back updates mounted text')
   optionRequests[#optionRequests].callback(nil,false);_reactDoExecuteJoins()
-  assert(config:old().__options.language=='en' and caption(draw()).text=='中文')
+  assert(config:old().__options.language=='en' and caption(draw()).text=='English')
   assert(windowTitle()=='Route maps' and entryTooltip()=='Route maps','failed saves restore mounted text too')
   toggleFrom(entry).onValueChange(1)
   assert(entryTooltip()=='Close route maps','open entry uses the English close hint')
