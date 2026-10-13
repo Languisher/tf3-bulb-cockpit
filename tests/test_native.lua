@@ -9,13 +9,13 @@ local on=P.plan(snapshot,aliases,true,1280)
 assert(on.badge=='T1' and on.name==snapshot.route.name)
 assert(on.stops[1].transfers[1].text=='T2' and on.stops[1].transfers[1].mode=='TRAM',
   'separate the mode icon from the alias instead of duplicating TRAM in the text')
-assert(on.stops[1].lit and on.stops[2].lit and on.stops[3].lit and not on.stops[4].lit)
+assert(not on.stops[1].lit and not on.stops[2].lit and on.stops[3].lit and not on.stops[4].lit)
 local off=P.plan(snapshot,aliases,false,1280)
-assert(off.stops[1].lit and off.stops[2].lit and not off.stops[3].lit)
+assert(not off.stops[1].lit and not off.stops[2].lit and not off.stops[3].lit)
 snapshot.next,snapshot.passed=17,16
 local page=P.plan(snapshot,aliases,true,1280)
 assert(page.first<=17 and page.last>=17 and page.stops[1].index==page.first)
-for _,stop in ipairs(page.stops) do assert(stop.lit==(stop.index<=17)) end
+for _,stop in ipairs(page.stops) do assert(stop.lit==(stop.index==17)) end
 assert(P.wrap('杭州火车站',6)=='杭州火\n车站')
 assert(P.alias({id=10,name='不同存档的线路'},aliases)=='不同存档的线路')
 local compactWidths={}
@@ -637,11 +637,11 @@ walk(tree,function(kind,param)
     end
   end
 end)
-assert(lamps==3 and title and boldLabelCount>=3,'a newly selected next station starts with a visible yellow light')
+assert(lamps==1 and title and boldLabelCount>=3,'a newly selected next station starts with a visible yellow light')
 tick()
 tree=render('LinnanBulbCockpitHudNative',{aliases=aliasState,viewport={x=1280,y=720}});lamps=0
 walk(tree,function(kind,param)if (kind=='ImageView' or kind=='Component') and param.meta.class=='bulb-station-light' then lamps=lamps+1 end end)
-assert(lamps==2,'the next station turns off on the next half-second tick while passed stations stay on')
+assert(lamps==0,'the next station turns off on the next half-second tick; passed stations remain off')
 local hudWrites=contexts.LinnanBulbCockpitHudNative[1].writes or 0
 local flashWrites=contexts.LinnanBulbFlashingStationNative[1].writes or 0
 local function allHudWrites()
@@ -1250,9 +1250,9 @@ do
     local count=0;walk(tree,function(k,p)if p.meta and p.meta.class=='bulb-station-light'then count=count+1 end end)
     return count
   end
-  assert(lit(drawn)==2,'passed and next station are steady yellow when flashing is off')
+  assert(lit(drawn)==1,'only the next station is steady yellow when flashing is off')
   for i=1,8 do tick()end
-  assert(lit(render('LinnanBulbCockpitHudNative',{aliases=aliasState,viewport={x=1280,y=720}}))==2)
+  assert(lit(render('LinnanBulbCockpitHudNative',{aliases=aliasState,viewport={x=1280,y=720}}))==1)
   local optionsWrites,requests=0,{}
   local staleAliases=aliases
   local readOptions=modules['aliases.lua'].read

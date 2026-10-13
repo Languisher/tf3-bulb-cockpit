@@ -43,7 +43,7 @@ for _,mode in ipairs({'METRO','RER','TRAM'})do
     and snapshot.next==2 and snapshot.passed==1,'turn at D: D is passed; C is next')
   assert(lamp(on,'站 300'),'automatic turnaround must start the new next station in its yellow ON phase')
   setJourney(mode,4,false);tick();local off=shown()
-  assert(not lamp(off,'站 300') and lamp(off,'站 400'),'return departure: C flashes OFF; D stays lit')
+  assert(not lamp(off,'站 300') and not lamp(off,'站 400'),'return departure: C flashes OFF; the departed D stays off')
   tick();on=shown()
   assert(lamp(on,'站 300'),'return target must turn yellow again on the next tick')
   local markerKeys,layerKeys={},{}
@@ -81,10 +81,10 @@ for _,mode in ipairs({'METRO','RER','TRAM'})do
     setJourney(mode,endIndex,true);tick();local on=shown()
     local origin=endIndex==1 and '站 400' or '站 100'
     local target=endIndex==1 and '站 100' or '站 400'
-    assert(snapshot.next==2 and snapshot.passed==1 and lamp(on,origin) and lamp(on,target),
+    assert(snapshot.next==2 and snapshot.passed==1 and not lamp(on,origin) and lamp(on,target),
       'two-stop turnaround starts its new terminus target lit')
     setJourney(mode,(endIndex+1)%2,false);tick();local off=shown()
-    assert(lamp(off,origin) and not lamp(off,target),'two-stop departure continues flashing')
+    assert(not lamp(off,origin) and not lamp(off,target),'two-stop departure continues flashing with origin off')
     tick();assert(lamp(shown(),target),'two-stop terminus target lights again')
     if endIndex==1 then
       exported[#exported+1]={mode=mode,phase='on',scenario='two-stop',tree=on}

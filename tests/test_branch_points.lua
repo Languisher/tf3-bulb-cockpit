@@ -58,8 +58,8 @@ do
               end
             end)
             assert(fills>0)
-          elseif stop.index==1 then
-            assert(stop.lit,'passed stations on the followed branch still glow')
+          elseif not stop.isNext then
+            assert(not stop.lit,'passed and non-target stations on the followed branch stay off')
             walk(assert(drawn[stop.fullName]),function(kind,p)
               if kind=='ImageView' and p.meta.class=='bulb-station-light'then lamps=lamps+1 end
             end)
@@ -68,7 +68,7 @@ do
             targets=targets+1;assert(active[stop.id] and not stop.offRoute)
           end
         end
-        assert(lamps>0,'active branch keeps its yellow passed-station marker')
+        assert(lamps==0,'non-target active-branch stations have no yellow lamps')
         assert(targets==1 and (timers.LinnanBulbFlashingStationNative~=nil)==flashing,
           'only the current vehicle target owns the optional lamp timer')
         if flashing then

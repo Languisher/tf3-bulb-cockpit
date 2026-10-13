@@ -19,7 +19,7 @@ assert(#fork.stops==4, 'shared station is drawn once')
 local seen,ys={},{}
 for _,stop in ipairs(fork.stops)do
   assert(not seen[stop.id]);seen[stop.id]=true;ys[stop.id]=stop.y
-  assert(stop.lit==(stop.id==snap.route.stops[1].id or stop.id==snap.route.stops[2].id))
+  assert(stop.lit==(stop.id==snap.route.stops[2].id))
 end
 assert(ys[3]~=ys[4], 'fork termini occupy different levels')
 local colors={};for _,segment in ipairs(fork.segments)do colors[segment.color]=true end

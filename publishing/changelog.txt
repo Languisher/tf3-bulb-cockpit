@@ -1,9 +1,11 @@
-In-Game Route Display / 游戏线路显示 · 0.1.71dev
+In-Game Route Display / 游戏线路显示 · 0.1.72dev
 
-Enlarged Metro badge numbers and reduced inner horizontal padding across the line directory, first-person identity and transfer badges. Badge bounds stay unchanged; long labels still fit or truncate. English is now the default when no language preference is saved. Existing explicit English/Chinese choices are preserved.
+Only the upcoming stop lights yellow. Passed, skipped and other non-target stops no longer retain yellow lamps, including on merged branches and after automatic turnarounds. Blinking remains optional: off means the next stop is steady; on means only that stop flashes. No new timers or data queries.
 
-放大地铁编号数字并缩小内部左右留白，目录、第一人称标识和换乘图标统一生效；圆形外框大小不变，长编号继续缩放或省略。未保存语言选择时默认使用英文，已有中文／英文选择保持不变。
+仅下一站显示黄灯；已经过、跳过及其他非目标站点不再留黄灯，合并线路和自动折返同样适用。保留闪烁开关：关闭时仅下一站常亮，开启时仅下一站闪烁。不增加计时器或数据查询。
 
-49 Lua tests and 68 syntax checks passed; in-game appearance requires a restart and visual check. / 49 项 Lua 回归及 68 项语法检查通过，实际观感需重启后核对。
+Removed the duplicate English introduction from the Chinese README; English instructions remain in README.en.md. / 移除中文 README 中重复的英文简介，英文说明保留在 README.en.md。
+
+50 Lua tests and 69 syntax checks passed, including collector/HUD arrival and skipped-stop checks. In-game appearance requires a restart and visual check. / 50 项 Lua 回归及 69 项语法检查通过，包含采集器接入 HUD 的到站和跳站检查；实际画面需重启后核对。
 
 Target: macOS Build 40420. Windows/Linux/console are untested. Long-session FPS degradation remains under investigation. / 针对 macOS Build 40420；其他平台未实测，长时间 FPS 下降仍在排查中。

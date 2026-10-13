@@ -362,7 +362,7 @@ function P.plan(snapshot, aliases, blink, width,tr)
         nameWidth=math.min(labelWidth,textWidth(value,14,true)),rowWidth=data.rowWidth,
         transfers=data.transfers,transferGroups=data.groups,transferRows=data.rows,transferHeight=data.height,markerKind=kind,
         markerSize=result.track[kind..'Size'],
-        lit=i<=snapshot.passed or (i==snapshot.next and blink),endpoint=i==1 or i==n}
+        lit=i==snapshot.next and blink,endpoint=i==1 or i==n}
     end
     local geometry,gaps=arrange(stops,tr)
     return {stops=stops,geometry=geometry,gaps=gaps}
@@ -644,7 +644,7 @@ function P.branchPlan(snapshot,aliases,blink,width,tr)
       nameWidth=nameWidth,rowWidth=rowWidth,transfers=transfers,transferGroups=groups,transferRows=rows,transferHeight=transferHeight,
       endpoint=endpoint,markerKind=kind,markerSize=result.track[kind..'Size'],isNext=node.id==target,
       offRoute=not snapshot.static and index==nil,
-      lit=index~=nil and (index<=snapshot.passed or (node.id==target and blink)) or false}
+      lit=index~=nil and node.id==target and blink or false}
     local col=node.rank+1
     columns[col]=math.max(columns[col] or 0,52,nameWidth*math.cos(math.pi/6)+28,rowWidth+18)
     local lane=node.lane or 0

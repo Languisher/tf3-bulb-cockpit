@@ -1,4 +1,4 @@
-# 游戏线路显示 · 0.1.71dev
+# 游戏线路显示 · 0.1.72dev
 
 [English guide](README.en.md) · 中文
 
@@ -7,8 +7,6 @@
 AI 生成的宣传封面；实际游戏效果见下方截图。
 
 在《Transport Fever 3》游戏内显示车辆线路、站点进度和换乘信息，提供第一人称动态线路图与可点击的线路目录。
-
-In-Game Route Display shows vehicle routes, stop progress and transfers directly in Transport Fever 3. No browser, exported images or external rendering process is required while playing.
 
 **开发预发布版。** 当前实现针对 macOS 游戏 Build 40420；Windows／Linux 尚未实测。0.1.61dev 修复了隔离测试中确认的全局样式开销，用户已确认游戏内修改效果满意。长时间内存占用和 C++ 界面释放仍需定时对照，Lua 回归检查不能代替实机测量。
 
@@ -55,7 +53,7 @@ python3 install.py
 
 - 自动读取当前车辆线路、站序、起终点与相关换乘，沿用游戏设置的线路颜色。
 - Metro、RER、电车、公交等采用不同线宽、站点和编号样式；铁路与电车可以手动选择显示类型。
-- 已经过站点亮黄灯，下一站默认常亮；在「线路设置」子页面可开启黄灯闪烁，开启可能降低性能。
+- 仅下一站显示黄灯；已经过、跳过及其他非目标站点不亮。下一站默认常亮；在「线路设置」子页面可开启黄灯闪烁，开启可能降低性能。
 - 合并线路中，当前车辆不会经过的另一分支站点内部显示白色，不参与黄灯进度与闪烁。
 - 每条线路可配置「前缀＋数字／字母编号＋后缀」，支持按最终标号搜索、自然排序及全部应用。仅影响模组标号，不修改游戏真实线路名称。
 - 同显示类型、同完整标号的线路可按实际共同起终点合并，显示 fork／parallel branches；整组必须连通。
@@ -83,15 +81,15 @@ python3 tools/package.py
 
 第一条命令运行独立测试，明确跳过五项需要游戏原版 GUI 文件的集成检查。完整检查方式与手工验收场景见 [测试说明](docs/TESTING.md)。生成的安装包与 SHA-256 校验文件位于 `dist/`。
 
-发布版本以 [VERSION](VERSION) 为准，当前开发版本为 `0.1.71dev`，游戏数值 revision 为 `71`。开发后缀按本项目命名习惯保留为 `dev`。
+发布版本以 [VERSION](VERSION) 为准，当前开发版本为 `0.1.72dev`，游戏数值 revision 为 `72`。开发后缀按本项目命名习惯保留为 `dev`。
 
 ## 线路图按钮没有显示
 
 按钮只在载入存档后的普通地图视角显示；第一人称、暂停菜单和游戏主菜单中没有此入口。请确认当前存档已启用模组，更新后完整重启游戏。
 
-0.1.71dev 通过官方 `ModEntryPointExtension` 挂载独立的原生浮动窗口，默认位于右上角，可拖动；不再占用图层和时钟旁的工具栏。更早版本的入口依赖 `FreeCamOptions`，其他 UI 模组替换同一组件时可能让入口消失；新版入口保持独立挂载。第一人称 HUD 仍使用相机组件适配，不能据此保证所有 UI 模组都兼容。
+0.1.72dev 通过官方 `ModEntryPointExtension` 挂载独立的原生浮动窗口，默认位于右上角，可拖动；不再占用图层和时钟旁的工具栏。更早版本的入口依赖 `FreeCamOptions`，其他 UI 模组替换同一组件时可能让入口消失；新版入口保持独立挂载。第一人称 HUD 仍使用相机组件适配，不能据此保证所有 UI 模组都兼容。
 
-若新版在普通地图视角仍没有按钮，请反馈系统、游戏 Build、模组版本、其他 UI 模组，以及启动日志中 `linnan_bulb_cockpit` 附近的错误。日志保留详细消息时，`[Route Display 0.1.71dev] floating entry mounted` 表示入口已提交给原生窗口管理器；只有 installed 消息不能证明按钮挂载成功。
+若新版在普通地图视角仍没有按钮，请反馈系统、游戏 Build、模组版本、其他 UI 模组，以及启动日志中 `linnan_bulb_cockpit` 附近的错误。日志保留详细消息时，`[Route Display 0.1.72dev] floating entry mounted` 表示入口已提交给原生窗口管理器；只有 installed 消息不能证明按钮挂载成功。
 
 ## 素材与归属
 
