@@ -34,7 +34,7 @@ local function color(hex)
   if type(hex)~='string' or not hex:match('^#%x%x%x%x%x%x$') then return BLUE end
   return {tonumber(hex:sub(2,3),16)/255,tonumber(hex:sub(4,5),16)/255,tonumber(hex:sub(6,7),16)/255,1}
 end
-local function text(value,size,width,height,ink,fill,class,anchor,tooltip)
+local function text(value,size,width,height,ink,fill,class,anchor,tooltip,unicode)
   local rounded=class=='bulb-station-name' or class=='bulb-omission-label'
   local meta=style{fontSize=size,fontWeight=boldLabels[class] and 'Bold' or 'Regular',
     size={width,height},color=ink or BLUE,
@@ -43,8 +43,9 @@ local function text(value,size,width,height,ink,fill,class,anchor,tooltip)
   meta.class=class
   meta.tooltip=tooltip
   -- Match native UI font selection, including the locale's CJK Bold face.
-  -- The language selector's Unicode compatibility font bypasses this path.
-  return builtin.TextView{text=value,useUnicodeCompatibilityFont=false,
+  -- Translated annotations/errors use Unicode compatibility; keep native
+  -- bold station names and badge typography on their existing font path.
+  return builtin.TextView{text=value,useUnicodeCompatibilityFont=unicode==true or class=='bulb-omission-label',
     meta=meta}
 end
 local function positioned(children,item,x,y,w,h,key)
@@ -456,7 +457,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
   local snapshot=state:old()
   if failure:old()~='' then
     local message=P.wrap(tr(failure:old()),66,true)
-    return panel(480,40,builtin.BoxLayout{children={text(message,14,470,36)}},nil,true)
+    return panel(480,40,builtin.BoxLayout{children={text(message,14,470,36,nil,nil,nil,nil,nil,true)}},nil,true)
   end
   if not snapshot then return nil end
   local viewport=param.viewport
@@ -547,7 +548,7 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
     if not control.alive or aliases:hasExpired()then return end
     local ok,stored=pcall(aliasStore.read)
     if ok and stored then aliases:set(stored)
-    elseif not ok then log.warning('[Route Display 0.1.75dev] launcher settings: '..tostring(stored))end
+    elseif not ok then log.warning('[Route Display 0.1.76dev] launcher settings: '..tostring(stored))end
   end
   local function prepareOpen(open)
     react.enqueueJoin(function()
@@ -572,8 +573,8 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
       if wc then
         wc.addSingletonWindow(Launcher,{aliases=aliases,viewport=viewport:old(),prepareOpen=prepareOpen,
           initialX=1,initialY=0})
-        log.verbose('[Route Display 0.1.75dev] floating entry mounted; extension=::ModEntryPointExtension')
-      else log.warning('[Route Display 0.1.75dev] launcher window manager unavailable')end
+        log.verbose('[Route Display 0.1.76dev] floating entry mounted; extension=::ModEntryPointExtension')
+      else log.warning('[Route Display 0.1.76dev] launcher window manager unavailable')end
     end,'LinnanBulbMainButtonNative:mount')
   end)
   react.onUnmount(function()

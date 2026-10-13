@@ -1,9 +1,11 @@
-In-Game Route Display / 游戏线路显示 · 0.1.75dev
+In-Game Route Display / 游戏线路显示 · 0.1.76dev
 
-Passed, skipped and unserved stations now explicitly paint white in the vehicle map, including origin/terminus centers. Previously the OFF fill restored the line color, making passed stops look illuminated on yellow routes. Remaining served stops stay yellow; only the next stop optionally blinks. Static directory diagrams keep their normal BULB palette. No added drawing layers, timers or queries.
+14 interface languages with a native picker: English, Simplified/Traditional Chinese, French, German, Spanish, Italian, Brazilian Portuguese, Russian, Polish, Turkish, Ukrainian, Japanese and Korean. Immediate switching, saved preferences, English fallback, literal game names and responsive native controls. Dictionaries load only when selected; no extra polling or game-data queries.
 
-动态线路图中已过、跳过及本车不经过的站明确显示白色，包含起终点中心；修复黄色线路熄灯后仍沿用线路底色的问题。未到且会经过的站保持常黄，仅下一站可选闪烁。静态目录图保留正常 BULB 配色；不新增图层、计时器或查询。
+支持 14 种界面语言与原生语言选择器：中英、繁体、法德西意、巴西葡语、俄波土乌、日语和韩语。即时切换并保存偏好，缺词条回退英文，游戏名称保留原文；按需加载，不新增轮询或地图查询。
 
-51 Lua tests and 70 syntax checks passed, including actual native marker fills, arrival/skipping, merged branches and reversal. In-game appearance requires a restart and visual check. / 51 项 Lua 回归及 70 项语法检查通过，包含实际填色、到站／跳站、合并分支及反向行程；实际画面需重启后核对。
+Railways now default to Train with the front-train pictogram. RER is a separate opt-in category between Train and Metro, using its own RER wordmark. Existing auto rail letters and explicit RER selections are preserved; same badges across different types cannot merge.
 
-Target: macOS Build 40420. Windows/Linux/console are untested. Long-session FPS degradation remains under investigation. / 针对 macOS Build 40420；其他平台未实测，长时间 FPS 下降仍在排查中。
+铁路默认改为 Train，使用正面火车图标。RER 为独立手动类型，首页位于 Train 与 Metro 之间，使用 RER 字样图标。保留旧自动编号和手动 RER 设置，不跨类型合并。
+
+53 Lua tests and 84 syntax checks passed. Native fonts and appearance require an in-game check after restarting. / 53 项 Lua 回归及 84 项语法检查通过，实际字体及观感需重启游戏后核对。

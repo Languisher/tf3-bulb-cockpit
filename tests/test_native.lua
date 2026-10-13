@@ -568,6 +568,7 @@ for _,child in ipairs(canvas.layout.param.children) do
   local meta=item.param.meta
   assert(meta.class~='bulb-page-label','station pagination labels must be removed')
   if meta.class=='bulb-omission-label'then
+    assert(item.param.useUnicodeCompatibilityFont==true,'translated omissions must support all interface scripts')
     omissionCount=omissionCount+1
     assert(meta.tooltip:find('省略',1,true) and item.param.text:find('站',1,true))
     assert(not meta.styleSheet.backgroundColor and not meta.styleSheet.backgroundColor1,

@@ -23,6 +23,8 @@ the SVG mask displayed by the editor's `.picto .layer1[data-v-45c2d838]` style
 included only once. This pictogram has the same third-party rights attribution
 above and is not covered by this repository's MIT license.
 
-The mod uses this pictogram for its RER mode identity and transfers; line-letter
+The mod uses this pictogram for its Train mode identity and transfers; line-letter
 badges still use the Paris RER A–E outlines described above. A single shared
 128×128 mask is loaded by the game; no SVG processing runs during gameplay.
+
+`rer-mode-ring.tga` is a simple transparent rounded-square outline drawn for this mod. Its RER text is rendered with the game font. The outline is generated offline by `tools/make_rer_mode_ring.py`; it does not embed a font or reuse the Transilien pictogram.
