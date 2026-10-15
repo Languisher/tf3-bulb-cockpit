@@ -1,5 +1,15 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["线路预设"]="Preajustes de líneas",
+  ["默认"]="Predeterminado",
+  ["巴黎"]="París",
+  ["上海"]="Shanghái",
+  ["慕尼黑"]="Múnich",
+  ["分别设置"]="Por tipo",
+  ["全部类型"]="Todos los tipos",
+  ["返回线路设置"]="Volver a ajustes de líneas",
+  ["预设保存失败，请重试。"]="No se pudo guardar el preajuste. Inténtalo de nuevo.",
+
   ["线路图缩放"]="Escala del mapa",
   ["恢复默认"]="Restablecer",
   ["缩放保存失败，请重试。"]="No se pudo guardar la escala. Reinténtalo.",

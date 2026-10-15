@@ -2,6 +2,13 @@
 -- Use the game's saved GAME_SCRIPT state, scoped to the current save.
 local A={}
 local languages={en=true,zh=true,['zh-tw']=true,fr=true,de=true,es=true,it=true,['pt-br']=true,ru=true,pl=true,tr=true,uk=true,ja=true,ko=true}
+local presetModes={TRAIN=true,RER=true,METRO=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true}
+local presetNames={default=true,paris=true,shanghai=true,munich=true}
+local function validPresets(value)
+  if type(value)~='table' or not next(value)then return false end
+  for mode,name in pairs(value)do if not presetModes[mode] or not presetNames[name]then return false end end
+  return true
+end
 A.script='linnan_bulb_cockpit::/game_mechanics/bulb_aliases/bulb_aliases.gs'
 A.id='linnan.bulb.aliases'
 A.event='linnan.bulb.setAlias'
@@ -32,7 +39,8 @@ function A.saveOptions(options,callback)
   assert(options.language==nil or languages[options.language]==true,'Invalid language.')
   assert(options.routeMapScale==nil or (type(options.routeMapScale)=='number' and
     options.routeMapScale>=10 and options.routeMapScale<=400 and options.routeMapScale%1==0),'Invalid route-map scale.')
-  local patch={flashNextStop=options.flashNextStop,language=options.language,routeMapScale=options.routeMapScale}
+  assert(options.linePresets==nil or validPresets(options.linePresets),'Invalid line presets.')
+  local patch={linePresets=options.linePresets,flashNextStop=options.flashNextStop,language=options.language,routeMapScale=options.routeMapScale}
   assert(next(patch),'Empty options patch.')
   api.cmd.sendCommand(api.cmd.makeScriptingSendEventCmd('',A.id,A.optionsEvent,patch),callback)
 end

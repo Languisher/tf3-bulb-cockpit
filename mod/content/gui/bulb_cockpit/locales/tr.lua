@@ -1,5 +1,15 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["线路预设"]="Hat ön ayarları",
+  ["默认"]="Varsayılan",
+  ["巴黎"]="Paris",
+  ["上海"]="Şanghay",
+  ["慕尼黑"]="Münih",
+  ["分别设置"]="Türe göre",
+  ["全部类型"]="Tüm türler",
+  ["返回线路设置"]="Hat ayarlarına dön",
+  ["预设保存失败，请重试。"]="Ön ayar kaydedilemedi. Lütfen yeniden deneyin.",
+
   ["线路图缩放"]="Şema ölçeği",
   ["恢复默认"]="Sıfırla",
   ["缩放保存失败，请重试。"]="Ölçek kaydedilemedi. Yeniden deneyin.",

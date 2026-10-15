@@ -4,6 +4,8 @@ local free = ug_require '::/gui/main/free_cam_options.tl'
 local styleutil = ug_require '::/gui/main/styleutil.tl'
 local collect = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/collect.lua'
 local P = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/native_model.lua'
+local presets = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/presets.lua'
+local presetSettings = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/preset_settings.lua'
 local I = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/localization.lua'
 local modeMarks = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/mode_marks.lua'
 local diagnostic = ug_require 'linnan_bulb_cockpit::/gui/bulb_cockpit/diagnostics.lua'
@@ -183,7 +185,7 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker,tr,scale)
   scale=scale or 1
   local g=plan.geometry
   local width,height,railY,transferY=diagramMetrics(snapshot,plan)
-  local lineColor=color(snapshot.route.color)
+  local lineColor=color(plan.color or snapshot.route.color)
   local style,text,rectangle,floatingPanel,transferGroup=style,text,rectangle,floatingPanel,transferGroup
   if scale~=1 then
     local baseStyle,baseText,baseRectangle,basePanel=style,text,rectangle,floatingPanel
@@ -285,7 +287,7 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker,tr,scale)
     local x=stop.x
     local stopRailY=railY+(stop.y or 0)
     local stopTransferY=transferY+(stop.y or 0)
-    local stopColor=color(stop.color or snapshot.route.color)
+    local stopColor=color(stop.color or plan.color or snapshot.route.color)
     positioned(children,text(stop.name,g.fontSize,stop.nameWidth,stop.nameRows*(g.fontSize+4),
       HUD_INK,stop.endpoint and BLUE or SMOKE,
       stop.endpoint and 'bulb-station-terminus-name' or 'bulb-station-name',{0,1},stop.fullName),x,stopRailY-math.max(12,stop.markerSize/2+4),width,height)
@@ -305,7 +307,7 @@ local function diagramChildren(snapshot,plan,onTransfer,renderMarker,tr,scale)
         local badges={}
         for _,transfer in ipairs(row.lines)do
           local id=transfer.id
-          badges[#badges+1]={text=transfer.text,fullName=transfer.fullName,fill=color(transfer.color),
+          badges[#badges+1]={text=transfer.text,fullName=transfer.fullName,fill=color(transfer.color),presentation=transfer.presentation,
             onClick=onTransfer and id and function()onTransfer(id)end or nil}
         end
         badgeRows[#badgeRows+1]={lines=badges,y=row.y}
@@ -332,7 +334,7 @@ end
 local function staticDiagram(snapshot,aliases,onTransfer)
   local tr=I.bind(aliases)
   local count=snapshot.network and #snapshot.network.nodes or #snapshot.route.stops
-  local plan=P.plan(snapshot,aliases,false,math.max(800,count*220+256),tr)
+  local plan=presets.decorate(P.plan(snapshot,aliases,false,math.max(800,count*220+256),tr),aliases,snapshot.route.color)
   local children,width,height=diagramChildren(snapshot,plan,onTransfer,nil,tr)
   return floatingPanel(width,height,children,'linnan.bulb.static-canvas'),width,height
 end
@@ -475,7 +477,7 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
   local maxWidth=math.max(240,math.min(1600,(viewport.x-48)/(requestedScale/100)))
   local aliases=param.aliases:old()
   local flashing=aliases.__options and aliases.__options.flashNextStop==true
-  local plan=P.plan(snapshot,aliases,not flashing,maxWidth,tr)
+  local plan=presets.decorate(P.plan(snapshot,aliases,not flashing,maxWidth,tr),aliases,snapshot.route.color)
   local _,logicalHeight=diagramMetrics(snapshot,plan)
   local drawingScale=requestedScale/100
   if plan.segments then drawingScale=math.min(drawingScale,math.max(.01,math.max(120,viewport.y-200)/logicalHeight))end
@@ -487,9 +489,9 @@ local Hud = react.RegisterRecipe('LinnanBulbCockpitHudNative',function(param)
             padding={0,0,0,0},margin={0,0,0,0}}.styleSheet}}
     end
   end,tr,drawingScale)
-  local lineColor=color(snapshot.route.color)
+  local lineColor=color(plan.color)
   local badge=plan.hasBadge and plan.badge or tr(modeNames[plan.mode] or plan.mode)
-  local mark,markWidth,markHeight=modeMark(plan.mode,badge,lineColor,false,plan.name)
+  local mark,markWidth,markHeight=modeMark(plan.mode,badge,lineColor,false,plan.name,plan.presentation)
   local inset=12
   local titleLimit=math.min(420,viewport.x-48)-markWidth-12-inset*2
   local columns=math.max(4,math.floor(titleLimit/14)*2)
@@ -515,7 +517,10 @@ end)
 local Settings=settingsUI.create(react,builtin,style,P,modeMarks,collect,aliasStore,diagnostic,windows,
   cityUI.create(react,builtin,style,aliasStore,windows,P,I),
   stationUI.create(react,builtin,style,aliasStore,windows,P,collect,I),
-  {badge=lineBadge,draw=staticDiagram,mark=modeMark},I,nativeFilters)
+  {badge=lineBadge,draw=staticDiagram,mark=modeMark,
+    presentation=function(line,aliases,defaults)
+      return presets.resolve(P.mode(line,aliases),P.alias(line,aliases,defaults),line.color,aliases,P.identifier(line,aliases,defaults))
+    end},I,nativeFilters,presetSettings.create(react,builtin,style,aliasStore,I,modeMarks,presets))
 
 -- Layout may not be ready on the first join. This child retries only until
 -- calibration succeeds; removing the child also removes its native timer.
@@ -574,7 +579,7 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
     if not control.alive or aliases:hasExpired()then return end
     local ok,stored,revision=pcall(aliasStore.read,aliasRevision:get())
     if ok and stored and revision~=aliasRevision:get()then aliases:set(stored);aliasRevision:set(revision)
-    elseif not ok then log.warning('[Route Display 0.1.79dev] launcher settings: '..tostring(stored))end
+    elseif not ok then log.warning('[Route Display 0.1.80dev] launcher settings: '..tostring(stored))end
   end
   local function prepareOpen(open)
     if not control.alive then return end
@@ -599,8 +604,8 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
         wc.addSingletonWindow(Launcher,{aliases=aliases,viewport=viewport:old(),prepareOpen=prepareOpen,
           initialX=1,initialY=0})
         requestMeasure()
-        log.verbose('[Route Display 0.1.79dev] floating entry mounted; extension=::ModEntryPointExtension')
-      else log.warning('[Route Display 0.1.79dev] launcher window manager unavailable')end
+        log.verbose('[Route Display 0.1.80dev] floating entry mounted; extension=::ModEntryPointExtension')
+      else log.warning('[Route Display 0.1.80dev] launcher window manager unavailable')end
     end,'LinnanBulbMainButtonNative:mount')
   end)
   react.onUnmount(function()

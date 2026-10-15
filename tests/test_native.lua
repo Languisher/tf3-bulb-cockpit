@@ -151,6 +151,8 @@ local nativeFilters=dofile('tests/carrier_filter_fixture.lua')(builtin)
 local modules={['statistics_react_util.tl']=nativeFilters,['react.lua']=react,['builtin.lua']=builtin,['free_cam_options.tl']=free,
   ['styleutil.tl']={makeStyle=function(v)return v end},['collect.lua']=collect,['native_model.lua']=P,
   ['mode_marks.lua']=B,['settings.lua']=S,
+  ['presets.lua']=dofile('mod/content/gui/bulb_cockpit/presets.lua'),
+  ['preset_settings.lua']=dofile('mod/content/gui/bulb_cockpit/preset_settings.lua'),
   ['localization.lua']=dofile('mod/content/gui/bulb_cockpit/localization.lua'),
   ['city_settings.lua']=dofile('mod/content/gui/bulb_cockpit/city_settings.lua'),
   ['station_settings.lua']=dofile('mod/content/gui/bulb_cockpit/station_settings.lua'),

@@ -33,7 +33,7 @@ local base='mod/content/gui/bulb_cockpit/'
 local modules={['react.lua']=react,['builtin.lua']=builtin,['free_cam_options.tl']=free,
   ['styleutil.tl']={makeStyle=function(v)return v end},['collect.lua']={},
   ['aliases.lua']={read=function()return {},0 end},['game_react_globals.tl']={getDefaultWindowApi=function()return wc end}}
-for _,name in ipairs({'localization.lua','native_model.lua','mode_marks.lua','diagnostics.lua','settings.lua','city_settings.lua','station_settings.lua','camera_state.lua'})do
+for _,name in ipairs({'presets.lua','preset_settings.lua','localization.lua','native_model.lua','mode_marks.lua','diagnostics.lua','settings.lua','city_settings.lua','station_settings.lua','camera_state.lua'})do
   modules[name]=dofile(base..name)
 end
 modules['statistics_react_util.tl']=dofile('tests/carrier_filter_fixture.lua')(builtin)

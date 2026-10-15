@@ -1,5 +1,15 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["线路预设"]="Schematy linii",
+  ["默认"]="Domyślny",
+  ["巴黎"]="Paryż",
+  ["上海"]="Szanghaj",
+  ["慕尼黑"]="Monachium",
+  ["分别设置"]="Według typu",
+  ["全部类型"]="Wszystkie typy",
+  ["返回线路设置"]="Wróć do ustawień linii",
+  ["预设保存失败，请重试。"]="Nie udało się zapisać schematu. Spróbuj ponownie.",
+
   ["线路图缩放"]="Skala schematu",
   ["恢复默认"]="Przywróć",
   ["缩放保存失败，请重试。"]="Nie udało się zapisać skali. Spróbuj ponownie.",

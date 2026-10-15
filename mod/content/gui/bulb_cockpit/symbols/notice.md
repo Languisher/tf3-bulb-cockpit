@@ -6,8 +6,9 @@ in BULB's “Use a preset” dialog (v1.5.2-alpha, inspected 2026-10-10):
 https://bulb.slama.io/editor
 
 The letter outlines and rounded frame preserve those graphical marks' proportions.
-The mod tints the frame with each live game line's color and selects black or white
-letter ink for contrast; it does not force the Paris line-color palette.
+By default, the mod tints the frame with each live game line's color and selects
+black or white letter ink for contrast. Optional city presets override the display
+color; the real game line color is unchanged. See docs/PRESETS.md in the repository.
 
 BULB credits its pictograms and fonts to RATP, Île-de-France Mobilités and the
 respective rights holders. These marks remain their property. This mod is not
@@ -28,3 +29,5 @@ badges still use the Paris RER A–E outlines described above. A single shared
 128×128 mask is loaded by the game; no SVG processing runs during gameplay.
 
 `rer-mode-ring.tga` is a simple transparent rounded-square outline drawn for this mod. Its RER text is rendered with the game font. The outline is generated offline by `tools/make_rer_mode_ring.py`; it does not embed a font or reuse the Transilien pictogram.
+
+`badge-diagonal.tga` is an original 64×64 geometric alpha overlay for Munich U7/U8 two-color badges, generated offline by `tools/make_badge_diagonal.py`. It contains no third-party artwork or font.

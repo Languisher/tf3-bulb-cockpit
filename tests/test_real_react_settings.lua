@@ -148,6 +148,8 @@ if arg[2]then
   end
 end
 local staticLoads=0
+local presetEditor=dofile('mod/content/gui/bulb_cockpit/preset_settings.lua').create(react,builtin,testStyle,optionStore,I,B,
+  dofile('mod/content/gui/bulb_cockpit/presets.lua'))
 local Entry=S.create(react,builtin,testStyle,P,B,
   {listLines=function()return {{id=10,name='Tram 乘客-杭州-LO-1',mode='TRAM'}}end,
     readLine=function(id)
@@ -158,7 +160,7 @@ local Entry=S.create(react,builtin,testStyle,P,B,
     getDefaultToolStackApi=function()return mapStack end},citySettings,stationSettings,
   {badge=badge,mark=mark,draw=function()
     return builtin.Component{meta=testStyle{size={1600,200}},layout=builtin.BoxLayout{children={testText('静态图',14,1600,200)}}}
-  end},I,nativeFilterUtility)
+  end},I,nativeFilterUtility,presetEditor)
 local entryId=react.GetRecipeId(Entry)
 local aliases=state({__options={language='zh'}})
 local function toggleFrom(root)
@@ -632,4 +634,38 @@ do
   assert(draw().params.value==100 and config:old().__options.routeMapScale==100)
   ctx.unmount();ug_require=previousRequire
   print('PASS: original React Slider, mouse drag coalescing, option acknowledgment and reset')
+end
+
+-- Real native ComboBox metadata and dependent-state notification, including a
+-- command acknowledged after the preset child unmounts.
+do
+  local previousRequire=ug_require
+  ug_require=function(path)
+    local locale=path:match('/locales/([%w-]+)%.lua$')
+    if locale then return dofile('mod/content/gui/bulb_cockpit/locales/'..locale..'.lua')end
+    return previousRequire(path)
+  end
+  local ctx=context()
+  local config=state({__options={language='fr',routeMapScale=137}})
+  local param={aliases=config,width=400,height=400,session={closed=false}}
+  local id=react.GetRecipeId(presetEditor)
+  local function draw()
+    lowerBound=nextNode;render(id,param,ctx)
+    return control('linnan.bulb.presets.metro')
+  end
+  local before=#optionRequests
+  assert(draw().params.value==1)
+  control('linnan.bulb.presets.all').params.onValueChange(3)
+  assert(#optionRequests==before+1 and draw().params.value==2 and not draw().meta.enabled)
+  config:transform(function(latest)latest.__options.language='de';return latest end)
+  optionRequests[#optionRequests].callback(nil,true);_reactDoExecuteJoins()
+  assert(draw().meta.enabled and config:old().__options.linePresets.TRAM=='paris')
+  draw().params.onValueChange(4)
+  param.session.closed=true
+  for _,item in pairs(ctx.states)do item.hasExpired=function()return true end end
+  optionRequests[#optionRequests].callback(nil,true);_reactDoExecuteJoins()
+  assert(config:old().__options.linePresets.METRO=='munich' and config:old().__options.linePresets.TRAM=='paris')
+  assert(config:old().__options.routeMapScale==137 and config:old().__options.language=='de')
+  ug_require=previousRequire
+  print('PASS: original React ComboBox metadata, global/per-mode preset persistence and late acknowledgment')
 end

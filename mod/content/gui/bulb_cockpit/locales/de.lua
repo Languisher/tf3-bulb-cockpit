@@ -1,5 +1,15 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["线路预设"]="Linienvorlagen",
+  ["默认"]="Standard",
+  ["巴黎"]="Paris",
+  ["上海"]="Shanghai",
+  ["慕尼黑"]="München",
+  ["分别设置"]="Je Typ",
+  ["全部类型"]="Alle Typen",
+  ["返回线路设置"]="Zurück zu den Linieneinstellungen",
+  ["预设保存失败，请重试。"]="Vorlage konnte nicht gespeichert werden. Bitte erneut versuchen.",
+
   ["线路图缩放"]="Linienplan-Zoom",
   ["恢复默认"]="Zurücksetzen",
   ["缩放保存失败，请重试。"]="Skalierung nicht gespeichert. Erneut versuchen.",

@@ -1,5 +1,12 @@
 local S={}
 local languages={en=true,zh=true,['zh-tw']=true,fr=true,de=true,es=true,it=true,['pt-br']=true,ru=true,pl=true,tr=true,uk=true,ja=true,ko=true}
+local presetModes={TRAIN=true,RER=true,METRO=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true}
+local presetNames={default=true,paris=true,shanghai=true,munich=true}
+local function validPresets(value)
+  if type(value)~='table' or not next(value)then return false end
+  for mode,name in pairs(value)do if not presetModes[mode] or not presetNames[name]then return false end end
+  return true
+end
 local EVENT='linnan.bulb.setAlias'
 local BUS_EVENT='linnan.bulb.setBusNaming'
 local STATION_EVENT='linnan.bulb.setStationLink'
@@ -117,8 +124,9 @@ function S.handleEvent(_,state,_,id,name,param)
       or (param.flashNextStop~=nil and type(param.flashNextStop)~='boolean')
       or (param.language~=nil and languages[param.language]~=true)
       or (param.routeMapScale~=nil and (type(param.routeMapScale)~='number' or param.routeMapScale<10
-        or param.routeMapScale>400 or param.routeMapScale%1~=0))then return end
-    if param.flashNextStop==nil and param.language==nil and param.routeMapScale==nil then return end
+        or param.routeMapScale>400 or param.routeMapScale%1~=0))
+      or (param.linePresets~=nil and not validPresets(param.linePresets))then return end
+    if param.flashNextStop==nil and param.language==nil and param.routeMapScale==nil and param.linePresets==nil then return end
     local old=state:get() or {}
     local options={};for k,v in pairs(old.options or {})do options[k]=v end
     -- Option commands are patches: language and blinking must never reset
@@ -126,6 +134,11 @@ function S.handleEvent(_,state,_,id,name,param)
     if param.flashNextStop~=nil then options.flashNextStop=param.flashNextStop end
     if param.language~=nil then options.language=param.language end
     if param.routeMapScale~=nil then options.routeMapScale=param.routeMapScale end
+    if param.linePresets then
+      local selections={};for k,v in pairs(options.linePresets or {})do selections[k]=v end
+      for k,v in pairs(param.linePresets)do selections[k]=v end
+      options.linePresets=selections
+    end
     replace(state,{options=options})
     return
   end

@@ -2,6 +2,16 @@
 -- Bound translators are immutable snapshots; no global language or polling.
 local I={}
 I.english={
+  ["线路预设"]="Line presets",
+  ["默认"]="Default",
+  ["巴黎"]="Paris",
+  ["上海"]="Shanghai",
+  ["慕尼黑"]="Munich",
+  ["分别设置"]="Per type",
+  ["全部类型"]="All types",
+  ["返回线路设置"]="Back to line settings",
+  ["预设保存失败，请重试。"]="Could not save the preset. Please retry.",
+
   ["线路图缩放"]="Route-map scale",
   ["恢复默认"]="Reset",
   ["缩放保存失败，请重试。"]="Could not save the scale. Please retry.",

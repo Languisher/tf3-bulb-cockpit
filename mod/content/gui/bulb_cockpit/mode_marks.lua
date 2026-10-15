@@ -1,6 +1,6 @@
 -- Mode-specific primitives; RER A–E use BULB's Paris preset outline masks.
 -- See symbols/notice.md for the graphical marks' source and attribution.
--- All shapes are white alpha masks; the live game line color supplies tint.
+-- Shared white alpha masks use game colors by default, or the chosen city preset.
 local B={}
 local DARK={0.137,0.122,0.125,1}
 local BLUE={0.137,0.247,0.569,1}
@@ -80,8 +80,24 @@ function B.create(builtin,style,text,gameIcon,theme)
   local function add(children,item,x,y,w,h)
     children[#children+1]=builtin.FloatingLayoutChild{h=x/w,v=y/h,item=item}
   end
-  local function icon(mode,size)
+  local function rgb(value)
+    if type(value)=='table'then return value end
+    if type(value)=='string' and value:match('^#%x%x%x%x%x%x$')then
+      return {tonumber(value:sub(2,3),16)/255,tonumber(value:sub(4,5),16)/255,tonumber(value:sub(6,7),16)/255,1}
+    end
+  end
+  local function box(width,height,ink)
+    return builtin.Component{meta=style{size={width,height},backgroundColor=ink,anchorPoint={0,0}}}
+  end
+  local function icon(mode,size,presentation)
     local children={}
+    if presentation and presentation.matched and presentation.preset=='munich' and (mode=='METRO' or mode=='RER' or mode=='TRAM')then
+      add(children,mode=='RER' and mask('circle',size,size,rgb('#00975f'))
+        or box(size,size,rgb(mode=='TRAM' and '#e30613' or '#0065ae')),0,0,size,size)
+      add(children,text(mode=='RER' and 'S' or mode=='TRAM' and 'Tram' or 'U',
+        math.floor(size*(mode=='TRAM' and .35 or .75)),size,size,{1,1,1,1},nil,'bulb-mode-letter'),0,0,size,size)
+      return component(size,size,children,'bulb-mode-icon')
+    end
     if mode=='TRAIN' then
       add(children,mask('transilien-mode',size,size,symbolInk,'bulb-rail-mode-icon'),0,0,size,size)
     elseif mode=='RER' then
@@ -101,39 +117,55 @@ function B.create(builtin,style,text,gameIcon,theme)
     end
     return component(size,size,children,'bulb-mode-icon')
   end
-  local function appendBadge(children,mode,label,fill,small,tooltip,x,y,width,height)
+  local function appendBadge(children,mode,label,fill,small,tooltip,x,y,width,height,presentation)
     local g=B.geometry(mode,small)
-    local preset=(mode=='RER' or mode=='TRAIN') and tostring(label):match('^%s*([A-Ea-e])%s*$')
+    presentation=presentation or {}
+    fill=rgb(presentation.color) or fill
+    local ink=rgb(presentation.ink) or badgeInk(mode,fill)
+    local shape=presentation.shape or g.shape
+    local drawHeight=presentation.aspect and g.width/presentation.aspect or g.height
+    local drawY=y+(g.height-drawHeight)/2
+    if shape=='rectangle' then
+      add(children,box(g.width,drawHeight,fill),x,drawY,width,height)
+      if presentation.outline then add(children,box(g.width-2,drawHeight-2,{1,1,1,1}),x+1,drawY+1,width,height)end
+    elseif shape=='capsule'then
+      add(children,mask('circle',drawHeight,drawHeight,fill),x,drawY,width,height)
+      add(children,box(g.width-drawHeight,drawHeight,fill),x+drawHeight/2,drawY,width,height)
+      add(children,mask('circle',drawHeight,drawHeight,fill),x+g.width-drawHeight,drawY,width,height)
+    end
+    if presentation.secondary then add(children,mask('badge-diagonal',g.width,drawHeight,rgb(presentation.secondary)),x,drawY,width,height)end
+    local preset=not presentation.shape and (mode=='RER' or mode=='TRAIN') and tostring(label):match('^%s*([A-Ea-e])%s*$')
     if preset then
       -- Both layers retain the original full SVG bounds, including the letter's
       -- internal padding. Do not fit or recenter these glyphs as ordinary text.
       add(children,mask('rer-frame',g.width,g.height,fill,'bulb-shape-'..g.shape,tooltip),x,y,width,height)
-      add(children,mask('rer-'..preset:lower(),g.width,g.height,badgeInk(mode,fill),
+      add(children,mask('rer-'..preset:lower(),g.width,g.height,ink,
         small and 'bulb-rer-transfer-preset' or 'bulb-rer-line-preset',tooltip),x,y,width,height)
     else
-      add(children,mask(g.shape,g.width,g.height,fill,'bulb-shape-'..g.shape,tooltip),x,y,width,height)
+      if not presentation.shape then add(children,mask(g.shape,g.width,g.height,fill,'bulb-shape-'..g.shape,tooltip),x,y,width,height)end
       local inset=mode=='METRO' and g.width*0.06 or (mode=='RER' or mode=='TRAIN') and g.width*0.16
         or (mode=='TRAM' and small and g.width*0.05 or g.width*0.10)
       local labelWidth=g.width-2*inset
-      local value,font=B.fit(label,labelWidth,g.font,g.minFont)
-      local lineHeight=math.min(g.height,font+4)
-      add(children,text(value,font,labelWidth,lineHeight,badgeInk(mode,fill),nil,
+      local base=math.min(g.font,drawHeight-2)
+      local value,font=B.fit(label,labelWidth,base,math.min(g.minFont,base))
+      local lineHeight=math.min(drawHeight,font+4)
+      add(children,text(value,font,labelWidth,lineHeight,ink,nil,
         small and 'bulb-transfer-label' or 'bulb-line-badge',nil,tooltip),
-        x+inset,y+(g.height-lineHeight)/2,width,height)
+        x+inset,drawY+(drawHeight-lineHeight)/2,width,height)
     end
   end
-  local function single(mode,label,fill,small,tooltip)
+  local function single(mode,label,fill,small,tooltip,presentation)
     local g=B.geometry(mode,small)
     local width,height=g.icon+g.gap+g.width,math.max(g.icon,g.height)
     local children={}
-    add(children,icon(mode,g.icon),0,(height-g.icon)/2,width,height)
-    appendBadge(children,mode,label,fill,small,tooltip,g.icon+g.gap,(height-g.height)/2,width,height)
+    add(children,icon(mode,g.icon,presentation),0,(height-g.icon)/2,width,height)
+    appendBadge(children,mode,label,fill,small,tooltip,g.icon+g.gap,(height-g.height)/2,width,height,presentation)
     return component(width,height,children,'bulb-mode-mark',tooltip),width,height
   end
-  local function badge(mode,label,fill,small,tooltip,anchor)
+  local function badge(mode,label,fill,small,tooltip,anchor,presentation)
     local g=B.geometry(mode,small)
     local children={}
-    appendBadge(children,mode,label,fill,small,tooltip,0,0,g.width,g.height)
+    appendBadge(children,mode,label,fill,small,tooltip,0,0,g.width,g.height,presentation)
     -- Buttons center their content; inline table cells supply a top-left
     -- anchor. The masks inside always keep local top-left coordinates.
     return component(g.width,g.height,children,'bulb-line-tile',tooltip,anchor or {.5,.5}),g.width,g.height
@@ -148,18 +180,18 @@ function B.create(builtin,style,text,gameIcon,theme)
     local children,names={},{}
     -- One mode icon belongs to the first row. Continuations keep the same
     -- badge columns in a transparent group, without another icon.
-    add(children,icon(mode,g.icon),0,(24-g.icon)/2,width,height)
+    add(children,icon(mode,g.icon,rows[1] and rows[1].lines[1] and rows[1].lines[1].presentation),0,(24-g.icon)/2,width,height)
     for _,row in ipairs(rows)do
       for index,line in ipairs(row.lines)do
         local x=g.icon+g.gap+(index-1)*(g.width+g.gap)
         local y=row.y+(24-g.height)/2
         if line.onClick then
-          local content=badge(mode,line.text,line.fill,true,line.fullName)
+          local content=badge(mode,line.text,line.fill,true,line.fullName,nil,line.presentation)
           local meta=style{size={g.width,g.height},anchorPoint={0,0},padding={0,0,0,0},margin={0,0,0,0}}
           meta.class='bulb-transfer-link';meta.tooltip=line.fullName
           add(children,builtin.Button{meta=meta,content=content,onClick=line.onClick},x,y,width,height)
         else
-          appendBadge(children,mode,line.text,line.fill,true,line.fullName,x,y,width,height)
+          appendBadge(children,mode,line.text,line.fill,true,line.fullName,x,y,width,height,line.presentation)
         end
         names[#names+1]=line.fullName
       end

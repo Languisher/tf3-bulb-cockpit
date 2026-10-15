@@ -87,7 +87,7 @@ function S.directory(lines,aliases,busQuery,P)
       local key=hasBadge and badge or ('line:'..line.id)
       local item=group.byBadge[key]
       if not item then
-        item={id=line.id,badge=hasBadge and badge or line.name,mode=mode,color=line.color,members={}}
+        item={id=line.id,badge=hasBadge and badge or line.name,mode=mode,color=line.color,members={},defaults=defaults}
         group.byBadge[key]=item;group.items[#group.items+1]=item
       end
       item.members[#item.members+1]=line
@@ -113,7 +113,7 @@ function S.geometry(viewport,language)
   local fixed=badge+field+number+field+mode+save+6*8
   local extraToolbar=content<376 and 80 or 40
   if english and content<376 then extraToolbar=extraToolbar+40 end
-  local listHeight=math.max(64,math.min(304,viewport.y-392-extraToolbar))
+  local listHeight=math.max(64,math.min(304,viewport.y-432-extraToolbar))
   return {width=width,content=content,compact=compact,rowWidth=rowWidth,inner=inner,badge=badge,
     line=compact and inner or inner-fixed,
     prefix=field,number=number,suffix=field,alias=number,
@@ -150,7 +150,7 @@ local function prepareChanges(lines,aliases,drafts,P,tr)
   end
   return changes,candidate,defaults
 end
-function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,citySettings,stationSettings,visuals,I,nativeFilters)
+function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,citySettings,stationSettings,visuals,I,nativeFilters,presetEditor)
   -- Native size describes content, excluding the control's CSS padding.
   -- Keep official skins/insets while budgeting their complete outer bounds.
   local function inputSize(width)return {width-8,28}end
@@ -305,7 +305,8 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local badgeChildren={}
     if hasBadge and visuals then
       badgeChildren[1]=builtin.FloatingLayoutChild{h=.5,v=.5,
-        item=visuals.badge(P.mode(line,param.aliases:old()),badge,param.lineColor,true,badge)}
+        item=visuals.badge(P.mode(line,param.aliases:old()),badge,param.lineColor,true,badge,nil,
+          visuals.presentation and visuals.presentation(line,param.aliases:old(),param.defaults))}
     end
     local badgeCell=wrap(builtin.FloatingLayout{children=badgeChildren},'bulb-settings-badge',g.badge,32)
     local name=horizontal(nameCells,'bulb-settings-name',g.line,32)
@@ -586,6 +587,8 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local searchRows=splitSearch and {search,horizontal(filters,'bulb-settings-controls',g.content,32)}
       or {horizontal({search,filters[1],filters[2]},'bulb-settings-controls',g.content,32)}
     local body={
+      builtin.Button{meta={id='linnan.bulb.settings.presets',class='bulb-settings-save',
+          styleSheet=style{size={g.content-16,32}}.styleSheet},content=label(tr('线路预设'),nil,24),onClick=param.showPresets},
       ScaleControl{aliases=param.aliases,width=g.content,session=param.session},
       CarrierBar{state=carrierChoice,aliases=param.aliases},
       horizontal({label('',g.content-applyWidth-8,32),applyButton},'bulb-settings-controls',g.content,32),
@@ -595,7 +598,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
         meta={class='bulb-settings-scroll',styleSheet=style{size={g.content,g.listHeight}}.styleSheet}},
       horizontal(footer,'bulb-settings-footer',g.content,40),
     }
-    for i=#searchRows,1,-1 do table.insert(body,4,searchRows[i])end
+    for i=#searchRows,1,-1 do table.insert(body,5,searchRows[i])end
     if #controls==2 and g.content<376 then
       table.insert(body,1,horizontal({controls[2]},'bulb-settings-controls',g.content,32))
       table.insert(body,1,horizontal({controls[1]},'bulb-settings-controls',g.content,32))
@@ -681,7 +684,8 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       local route=h.snapshot.route
       local aliases=h.aliases;local defaults=P.defaults(h.snapshot.lines,aliases)
       local mode=P.mode(route,aliases);local badge=P.alias(route,aliases,defaults)
-      local mark,markWidth=visuals.mark(mode,badge,param.color(route.color),false,route.name)
+      local mark,markWidth=visuals.mark(mode,badge,param.color(route.color),false,route.name,
+        visuals.presentation and visuals.presentation(route,aliases,defaults))
       local titleWidth=math.max(32,g.content-inset-markWidth-identityGap)
       children[#children+1]=horizontal({mark,label(B.fit(route.name,titleWidth,19,19),
         titleWidth,44,'font-scale-body, bulb-static-title',route.name)},'bulb-static-identity',g.content,44)
@@ -745,14 +749,24 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       release();page:set(id)
     end
     local function home()navigate(nil)end
-    local function back()if page:old()~=nil then home()else param.onClose()end end
+    local function back()
+      if page:old()=='presets'then page:set('config')
+      elseif page:old()~=nil then home()else param.onClose()end
+    end
     react.useInputAction('IA_MENU_BACK',react.iaHandler(back))
     react.useInputAction('IA_BACK',react.iaHandler(back))
     -- Language-dependent widths update on demand with the subscribed aliases.
     local g=S.geometry(param.viewport,I.language(param.aliases:old()))
+    if page:old()=='presets' and presetEditor then
+      return builtin.BoxLayout{children={vertical({
+        button('linnan.bulb.presets.back',tr('返回线路设置'),function()page:set('config')end,S.backWidth(tr('返回线路设置'),g.content,B),true),
+        presetEditor{aliases=param.aliases,width=g.content-12,height=param.viewport.y-220,session=param.session},
+      },'bulb-settings-body',g.content)}}
+    end
     if page:old()=='config' then
       local configParam={};for key,value in pairs(param)do configParam[key]=value end
       configParam.geometry=g
+      configParam.showPresets=function()page:set('presets')end
       return builtin.BoxLayout{children={vertical({button('linnan.bulb.browser.back',tr('返回线路目录'),home,S.backWidth(tr('返回线路目录'),g.content,B),true),
         Content(configParam)},'bulb-settings-body',g.content)}}
     elseif type(page:old())=='number' then
@@ -778,7 +792,8 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
       for i,item in ipairs(group.items)do
         local names={};for _,line in ipairs(item.members)do names[#names+1]=line.name end
         local tooltip=table.concat(names,'\n')
-        local tile=visuals.badge(item.mode,item.badge,param.color(item.color),true,tooltip)
+        local tile=visuals.badge(item.mode,item.badge,param.color(item.color),true,tooltip,nil,
+          visuals.presentation and visuals.presentation(item.members[1],param.aliases:old(),item.defaults))
         local id=item.id
         row[#row+1]=builtin.Button{meta={id='linnan.bulb.browser.line.'..id,class='bulb-directory-tile',tooltip=tooltip,
           styleSheet=style{size={tileWidth,tileHeight}}.styleSheet},content=tile,onClick=function()navigate(id)end}

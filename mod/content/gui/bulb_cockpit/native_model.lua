@@ -348,6 +348,7 @@ function P.plan(snapshot, aliases, blink, width,tr)
   local n=#route.stops
   local result={name=route.name,mode=P.mode(route,aliases),total=n}
   result.badge,result.hasBadge=P.alias(route,aliases,defaults)
+  result.identifier=P.identifier(route,aliases,defaults)
   result.track=P.trackStyle(result.mode)
   local prepared={}
   -- Leave room for origin, next stop and terminus even on a narrow GUI.
@@ -358,7 +359,7 @@ function P.plan(snapshot, aliases, blink, width,tr)
     local transfers={}
     for _,transfer in ipairs(stop.transfers)do
       transfers[#transfers+1]={id=transfer.id,text=P.alias(transfer,aliases,defaults),fullName=transfer.name,
-        color=transfer.color,mode=P.mode(transfer,aliases)}
+        color=transfer.color,mode=P.mode(transfer,aliases),identifier=P.identifier(transfer,aliases,defaults)}
     end
     local groups,rowWidth,rows,height=P.transferGroups(transfers,maxRowWidth)
     prepared[index]={transfers=transfers,groups=groups,rowWidth=rowWidth,rows=rows,height=height}
@@ -476,7 +477,9 @@ function P.branchPlan(snapshot,aliases,blink,width,tr)
   local graph,route=snapshot.network,snapshot.route
   local mode=P.mode(route,aliases)
   local result={name=route.name,mode=mode,track=P.trackStyle(mode),stops={},segments={},rails={},gaps={},total=#graph.nodes}
-  result.badge,result.hasBadge=P.alias(route,aliases,P.defaults(snapshot.lines,aliases))
+  local defaults=P.defaults(snapshot.lines,aliases)
+  result.badge,result.hasBadge=P.alias(route,aliases,defaults)
+  result.identifier=P.identifier(route,aliases,defaults)
   local active,selected={},{}
   for i,stop in ipairs(route.stops)do active[stop.id]=i end
   for _,node in ipairs(graph.nodes)do
@@ -631,7 +634,6 @@ function P.branchPlan(snapshot,aliases,blink,width,tr)
       end
     end
   end
-  local defaults=P.defaults(snapshot.lines,aliases)
   local columns,transferLeads,maxRank={},{},0
   local maxName,maxTransfers=0,0
   local nameLimit=math.max(44,math.min(100,math.floor((width-36)/(#ordered+1))))
@@ -643,7 +645,7 @@ function P.branchPlan(snapshot,aliases,blink,width,tr)
       local badge=P.alias(transfer,aliases,defaults);local tm=P.mode(transfer,aliases)
       local key=tm..':'..badge
       if not seen[key]then
-        seen[key]=true;transfers[#transfers+1]={id=transfer.id,text=badge,mode=tm,fullName=transfer.name,color=transfer.color}
+        seen[key]=true;transfers[#transfers+1]={id=transfer.id,text=badge,mode=tm,fullName=transfer.name,color=transfer.color,identifier=P.identifier(transfer,aliases,defaults)}
       end
     end
     local groups,rowWidth,rows,transferHeight=P.transferGroups(transfers,rowLimit)
