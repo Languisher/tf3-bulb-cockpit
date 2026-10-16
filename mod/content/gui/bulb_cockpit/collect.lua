@@ -28,11 +28,18 @@ local function color(id,get)
   local function byte(x) return math.floor(math.max(0, math.min(1, x))*255+0.5) end
   return string.format('#%02x%02x%02x', byte(c.color.x), byte(c.color.y), byte(c.color.z))
 end
-local function passengerLine(id,get)
+local function servesLine(id,get,freight)
   local cargo = api.res.cargoTypeRep.getPassengerCargoTypeId()
   for _, vid in ipairs(api.engine.system.transportVehicleSystem.getLineVehicles(id)) do
     local v = get(vid, 'TRANSPORT_VEHICLE')
-    if v and (v.config.capacities[cargo+1] or 0) > 0 then return true end
+    if v then
+      if not freight and (v.config.capacities[cargo+1] or 0)>0 then return true end
+      if freight then
+        for index,capacity in ipairs(v.config.capacities)do
+          if index~=cargo+1 and capacity>0 then return true end
+        end
+      end
+    end
   end
   return false
 end
@@ -226,6 +233,7 @@ local function topology(lineId,withCities,stationLinks,aliases)
     end
   end
   local stationCache, serviceCache,serviceInfo = {}, {},{}
+  local freight=P.mode(main,aliases)=='FREIGHT_TRAIN'
   local network=stationNetwork(stationLinks,get,allStops)
   local stops = {}
   local function transfersFor(id)
@@ -238,7 +246,7 @@ local function topology(lineId,withCities,stationLinks,aliases)
         for _, other in ipairs(api.engine.system.lineSystem.getLinesForStationGroup(group)) do
           if other~=lineId and not(graph and graph.members[other]) and not seen[other] then
             seen[other]=true
-            if serviceCache[other]==nil then serviceCache[other]=passengerLine(other,get)end
+            if serviceCache[other]==nil then serviceCache[other]=servesLine(other,get,freight)end
             if serviceCache[other]then
               if not serviceInfo[other]then
                 serviceInfo[other]={id=other,name=name(other,get),color=color(other,get),mode=mode(other,get)}

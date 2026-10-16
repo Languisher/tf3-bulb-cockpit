@@ -428,7 +428,7 @@ do
   local apply=control('linnan.bulb.settings.apply-all').params
   drawRow(rows[10]);assert(control('linnan.bulb.identifier.10').params.placeholderText=='1')
   local types=control('linnan.bulb.mode.10').params
-  assert(#types.items==8 and types.value==4,'default tram selects its single actual type')
+  assert(#types.items==9 and types.value==4,'default tram selects its single actual type')
   local typeLabels={}
   for _,id in ipairs(types.items)do
     local item=nodes[id].props.props[1]

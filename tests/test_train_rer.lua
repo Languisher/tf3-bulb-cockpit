@@ -5,7 +5,7 @@ local G=dofile(base..'merge.lua')
 local lines={{id=1,name='Rail one',mode='TRAIN'}, {id=2,name='Rail two',mode='TRAIN'},
   {id=3,name='New rail',mode='TRAIN'}, {id=4,name='Manual RER',mode='TRAIN'}}
 local groups=S.directory(lines,{},'',P)
-assert(#groups==5 and groups[1].mode=='TRAIN' and groups[1].title=='Train')
+assert(#groups==6 and groups[1].mode=='TRAIN' and groups[1].title=='Train')
 assert(groups[2].mode=='RER' and #groups[2].items==0 and groups[3].mode=='METRO')
 assert(#groups[1].items==4,'no unconfigured game railway enters RER')
 local aliases={['4']={name=lines[4].name,displayMode='RER',shortName=''},__defaults={

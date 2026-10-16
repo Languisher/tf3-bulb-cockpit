@@ -1,10 +1,13 @@
-In-Game Route Display / 游戏线路显示 · 0.1.81dev
+In-Game Route Display / 游戏线路显示 · 0.1.82dev
 
-[FIX] English station names wrap between complete words before applying the two-row limit. Apostrophes, hyphenated words and Latin accents are retained; CJK can still wrap between characters.
-[FIX] 英文站名以完整单词为单位换行，再应用两行限制，支持撇号、连字符和重音字符；中文仍可按字符换行。
+[NEW FEATURE] Optional Freight train display type: existing front-train icon, bold borderless numeric identifiers, independently allocated from 72001. Manual numbers/prefixes/suffixes remain supported; saved assignments and turnaround labels stay stable. Ordinary rail still defaults to passenger Train letters.
+[NEW FEATURE] 可选货运火车显示类型：现有正面火车图标，无底框粗体数字，独立从 72001 编号。保留手动编号／前后缀，新增线路和折返不重排已保存编号；铁路默认 Train 字母编号不变。
 
-[FIX] First-person, static and branch maps share the same label layout and existing font-width metrics. Excess text or an oversized single word uses an ellipsis; hovering retains the full station name.
-[FIX] 第一人称、静态和分支图共用站名排版及现有字体宽度数据；过长名称或超宽单词采用省略号，完整站名仍可悬停查看。
+[NEW FEATURE] Freight directory, static/HUD/transfer/branch integration and related cargo-capable connections during existing local initialization. French-inspired game-line identifiers, without inferring service classes from goods or changing real game line names.
+[NEW FEATURE] 接入货运目录、静态图、第一人称、换乘与同号分支；仅在已有局部初始化时读取货运接驳。借鉴法国号段的游戏线路编号，不按货物类型猜测运输类别，也不改真实线路名。
 
-No new timers, synchronization events, fonts or textures. 60 Lua suites and 94 syntax checks passed. Native C++ display still needs in-game verification. Fully quit and restart after upgrading.
-没有新增计时器、同步事件、字体或贴图。60 项 Lua 回归与 94 项语法检查通过；C++ 实机显示仍需核对，更新后请完整重启。
+[FIX] Numeric badges stay inside their table cells and directory hit targets; all 14 interface languages support the new type. No added timers, scripting events, fonts, textures or global styles.
+[FIX] 数字标识保持在编号列和目录点击范围内；新类型支持全部 14 种语言。不新增计时器、脚本事件、字体、贴图或全局样式。
+
+61 Lua suites and 95 syntax checks passed. Native C++ appearance and long-session performance still require in-game verification. Fully quit and restart after upgrading, apply the type change and save the game.
+61 项 Lua 回归与 95 项语法检查通过；C++ 实机显示和长时间性能仍需核对。更新后请完整重启，应用类型修改并保存游戏。

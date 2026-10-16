@@ -1,5 +1,6 @@
 -- Interface translations; keys are stable source messages.
 return {
+  ["货运火车"]="Trem de carga",
   ["线路预设"]="Predefinições de linhas",
   ["默认"]="Padrão",
   ["巴黎"]="Paris",

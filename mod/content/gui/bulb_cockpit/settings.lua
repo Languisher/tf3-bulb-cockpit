@@ -22,8 +22,8 @@ local function dropSessionOwner(session,key,token)
   local owner=session.owners[key]
   if owner and owner.token==token then session.owners[key]=nil end
 end
-local modeNames={'Train','RER','地铁','电车','公交','轮渡','航空','货运'}
-local modeChoices={'TRAIN','RER','METRO','TRAM','BUS','BOAT','AIR','TRUCK'}
+local modeNames={'Train','RER','地铁','电车','公交','轮渡','航空','货运','货运火车'}
+local modeChoices={'TRAIN','RER','METRO','TRAM','BUS','BOAT','AIR','TRUCK','FREIGHT_TRAIN'}
 local function numberKey(value)
   value=tostring(value):lower()
   if value:match('^%d+$')then
@@ -37,7 +37,7 @@ local function numberKey(value)
     return string.format('%04d',#digits)..digits
   end)
 end
-local carrierIndex={BUS=1,TRUCK=1,TRAM=2,TRAIN=3,RER=3,METRO=3,BOAT=4,AIR=5}
+local carrierIndex={BUS=1,TRUCK=1,TRAM=2,TRAIN=3,RER=3,METRO=3,BOAT=4,AIR=5,FREIGHT_TRAIN=3}
 local carriers={
   {key='ROAD',icon='bus',tooltip='显示公路线路'}, {key='TRAM',icon='tram',tooltip='显示电车线路'},
   {key='RAIL',icon='train',tooltip='显示铁路线路'}, {key='WATER',icon='ship',tooltip='显示船舶线路'},
@@ -72,7 +72,7 @@ end
 -- just to show its badge. The selected route is validated on navigation.
 function S.directory(lines,aliases,busQuery,P)
   local groups,byMode={},{}
-  for _,entry in ipairs({{'TRAIN','Train'},{'RER','RER'},{'METRO','地铁'},{'TRAM','电车'},{'BUS','公交'}})do
+  for _,entry in ipairs({{'TRAIN','Train'},{'RER','RER'},{'METRO','地铁'},{'TRAM','电车'},{'BUS','公交'},{'FREIGHT_TRAIN','货运火车'}})do
     local group={mode=entry[1],title=entry[2],items={},byBadge={}}
     groups[#groups+1]=group;byMode[group.mode]=group
   end
@@ -105,7 +105,7 @@ function S.geometry(viewport,language)
   local rowWidth=content-12
   local inner=rowWidth-8
   local english=language~='zh'
-  local badge=english and 48 or 40
+  local badge=48
   local field=compact and math.floor((inner-badge-24)/3) or 72
   local number=compact and field or 64
   local save=english and 128 or 56
@@ -779,9 +779,10 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     end
     local groups=S.directory(param.lines,param.aliases:old(),busQuery:old(),P)
     local sections={}
-    local tileWidth,tileHeight,tileGap=44,32,8
-    local columns=math.max(1,math.floor((g.content-32+tileGap)/(tileWidth+tileGap)))
+    local tileHeight,tileGap=32,8
     for _,group in ipairs(groups)do
+      local tileWidth=math.max(44,B.geometry(group.mode,true).width+10)
+      local columns=math.max(1,math.floor((g.content-32+tileGap)/(tileWidth+tileGap)))
       local section={label(tr(group.title),g.content-32,28,'font-scale-body')}
       if group.mode=='BUS' then
         section[#section+1]=builtin.TextInputField{value=busQuery:old(),placeholderText=tr('搜索公交标号或线路名称'),

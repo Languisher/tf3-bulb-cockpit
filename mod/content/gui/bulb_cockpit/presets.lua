@@ -1,6 +1,6 @@
 -- Static display palettes; no game reads, network access or mutable cache.
 -- Sources and native-shape approximations: docs/PRESETS.md.
-local V={names={'default','paris','shanghai','munich'},modes={'TRAIN','RER','METRO','TRAM','BUS','BOAT','AIR','TRUCK'}}
+local V={names={'default','paris','shanghai','munich'},modes={'TRAIN','RER','METRO','TRAM','BUS','BOAT','AIR','TRUCK','FREIGHT_TRAIN'}}
 local allowedModes,allowedNames={},{}
 for _,m in ipairs(V.modes)do allowedModes[m]=true end
 for _,n in ipairs(V.names)do allowedNames[n]=true end

@@ -2,7 +2,7 @@
 -- Use the game's saved GAME_SCRIPT state, scoped to the current save.
 local A={}
 local languages={en=true,zh=true,['zh-tw']=true,fr=true,de=true,es=true,it=true,['pt-br']=true,ru=true,pl=true,tr=true,uk=true,ja=true,ko=true}
-local presetModes={TRAIN=true,RER=true,METRO=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true}
+local presetModes={TRAIN=true,RER=true,METRO=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true,FREIGHT_TRAIN=true}
 local presetNames={default=true,paris=true,shanghai=true,munich=true}
 local function validPresets(value)
   if type(value)~='table' or not next(value)then return false end
@@ -76,7 +76,7 @@ end
 local function aliasValue(line,shortName,displayMode,parts)
   assert(type(line)=='table' and type(line.id)=='number' and line.id>=0 and line.id%1==0
     and type(line.name)=='string' and type(shortName)=='string','无效的线路配置。')
-  assert(displayMode==nil or ({['']=true,RER=true,METRO=true,TRAIN=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true})[displayMode],
+  assert(displayMode==nil or ({['']=true,RER=true,METRO=true,TRAIN=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true,FREIGHT_TRAIN=true})[displayMode],
     '无效的显示类型。')
   local value={lineId=line.id,name=line.name,shortName=shortName:match('^%s*(.-)%s*$')}
   value.displayMode=displayMode

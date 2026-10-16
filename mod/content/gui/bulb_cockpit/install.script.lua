@@ -70,7 +70,7 @@ local function rectangle(w,h,fill,class)
   meta.class=class
   return builtin.Component{meta=meta}
 end
-local modeNames={METRO='地铁',RER='RER',TRAIN='Train',TRAM='电车',BUS='公交',BOAT='轮渡',AIR='航空',TRUCK='货运'}
+local modeNames={METRO='地铁',RER='RER',TRAIN='Train',TRAM='电车',BUS='公交',BOAT='轮渡',AIR='航空',TRUCK='货运',FREIGHT_TRAIN='货运火车'}
 local modeIcons={TRAIN='::/gui/statistics/icons/vehicle_train_18.tga',
   TRAM='::/gui/statistics/icons/vehicle_tram_18.tga',BUS='::/gui/statistics/icons/vehicle_bus_18.tga',
   BOAT='::/gui/statistics/icons/vehicle_ship_18.tga',AIR='::/gui/statistics/icons/vehicle_airplane_18.tga',
@@ -579,7 +579,7 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
     if not control.alive or aliases:hasExpired()then return end
     local ok,stored,revision=pcall(aliasStore.read,aliasRevision:get())
     if ok and stored and revision~=aliasRevision:get()then aliases:set(stored);aliasRevision:set(revision)
-    elseif not ok then log.warning('[Route Display 0.1.81dev] launcher settings: '..tostring(stored))end
+    elseif not ok then log.warning('[Route Display 0.1.82dev] launcher settings: '..tostring(stored))end
   end
   local function prepareOpen(open)
     if not control.alive then return end
@@ -604,8 +604,8 @@ local MainButton=react.RegisterRecipe('LinnanBulbMainButtonNative',function()
         wc.addSingletonWindow(Launcher,{aliases=aliases,viewport=viewport:old(),prepareOpen=prepareOpen,
           initialX=1,initialY=0})
         requestMeasure()
-        log.verbose('[Route Display 0.1.81dev] floating entry mounted; extension=::ModEntryPointExtension')
-      else log.warning('[Route Display 0.1.81dev] launcher window manager unavailable')end
+        log.verbose('[Route Display 0.1.82dev] floating entry mounted; extension=::ModEntryPointExtension')
+      else log.warning('[Route Display 0.1.82dev] launcher window manager unavailable')end
     end,'LinnanBulbMainButtonNative:mount')
   end)
   react.onUnmount(function()

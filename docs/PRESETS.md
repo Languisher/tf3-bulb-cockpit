@@ -1,6 +1,6 @@
 # City line presets
 
-Open **Line settings → Line presets**. Choose Default, Paris, Shanghai or Munich for all types, or choose independently for Train, RER, Metro, Tramway, Bus, Ferry, Air and Freight. “Per type” indicates mixed choices. Changes apply after the save command succeeds; save the game to retain them across reloads. Existing saves start with Default without a migration write.
+Open **Line settings → Line presets**. Choose Default, Paris, Shanghai or Munich for all types, or choose independently for Train, RER, Metro, Tramway, Bus, Ferry, Air, road Freight and Freight train. “Per type” indicates mixed choices. Changes apply after the save command succeeds; save the game to retain them across reloads. Existing saves start with Default without a migration write.
 
 Presets change **badge colors/shapes and diagram track colors**, including merged branches, static maps, first-person maps and transfers. They never change a real game's line name, transport type or stored line color. Default uses game colors and the existing mode shapes. Unsupported numbers or types also use game colors and the existing shapes.
 
@@ -38,7 +38,7 @@ One new 64×64 white-alpha diagonal mask is shared by Munich U7/U8. It is genera
 
 ## 中文使用说明
 
-进入「线路设置 → 线路预设」，可统一选择默认／巴黎／上海／慕尼黑，也可按 Train、RER、地铁、电车、公交等类型分别选择。各类型不同时，统一选择框显示「分别设置」。保存命令成功后生效，保存游戏后可在下次载入时保留。
+进入「线路设置 → 线路预设」，可统一选择默认／巴黎／上海／慕尼黑，也可按 Train、RER、地铁、电车、公交、货运火车等类型分别选择。各类型不同时，统一选择框显示「分别设置」。保存命令成功后生效，保存游戏后可在下次载入时保留。
 
 预设同时影响编号图标、线路图线条和对应换乘标识；主线、合并分支、静态图和第一人称使用同一规则。默认或未匹配的编号继续沿用游戏颜色与现有样式，不修改游戏里的真实线路名或颜色。自定义前后缀保留，先匹配最终标号，再尝试编号字段。上海未配置 RER 配色；慕尼黑 S 线请使用 RER 显示类型。
 

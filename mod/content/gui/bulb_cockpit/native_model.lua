@@ -4,7 +4,7 @@ function P.mapScale(aliases)
   if type(value)=='number' and value>=10 and value<=400 and value%1==0 then return value end
   return 100
 end
-local displayModes={RER=true,METRO=true,TRAIN=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true}
+local displayModes={RER=true,METRO=true,TRAIN=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true,FREIGHT_TRAIN=true}
 function P.mode(line,aliases)
   local entry=aliases and aliases[tostring(line.lineId or line.id)]
   local mode=entry and entry.name==line.name and displayModes[entry.displayMode] and entry.displayMode or line.mode or 'TRAIN'
@@ -90,12 +90,12 @@ function P.defaults(lines,aliases)
   table.sort(ordered,function(a,b)return (a.lineId or a.id)<(b.lineId or b.id)end)
   for _,line in ipairs(ordered)do
     local mode=P.mode(line,aliases);local key=tostring(line.lineId or line.id)
-    if mode=='TRAIN' or mode=='RER' or mode=='TRAM' or mode=='METRO'then
+    if mode=='TRAIN' or mode=='RER' or mode=='TRAM' or mode=='METRO' or mode=='FREIGHT_TRAIN'then
       local old=saved[key]
       local index=old and P.defaultMode(old,aliases and aliases[key])==mode and old.index
       if not index then index=(counts[mode] or 0)+1;counts[mode]=index end
       result[key]={name=line.name,mode=mode,index=index,
-        shortName=(mode=='TRAIN' or mode=='RER') and letter(index) or (mode=='TRAM' and 'T' or '')..index,
+        shortName=mode=='FREIGHT_TRAIN' and tostring(72000+index) or (mode=='TRAIN' or mode=='RER') and letter(index) or (mode=='TRAM' and 'T' or '')..index,
         railTypesVersion=(mode=='TRAIN' or mode=='RER') and 2 or nil}
     end
   end
@@ -303,7 +303,7 @@ function P.ellipsize(value,columns,uniform)
   end
   return table.concat(result)..'…'
 end
-local modeOrder={METRO=1,TRAIN=2,RER=3,TRAM=4,BUS=5,BOAT=6,AIR=7,TRUCK=8}
+local modeOrder={METRO=1,TRAIN=2,RER=3,TRAM=4,BUS=5,BOAT=6,AIR=7,TRUCK=8,FREIGHT_TRAIN=9}
 local function labelKey(value)
   return tostring(value):lower():gsub('%d+',function(digits)
     return string.format('%04d',#digits)..digits
@@ -328,7 +328,7 @@ function P.transferGroups(transfers,maxWidth)
     end)
     -- Match mode_marks.geometry's fixed small badges. One mode symbol is
     -- centered below the station; its line badges extend to the right.
-    local badge=group.mode=='BUS' and 34 or (group.mode=='TRUCK' and 38 or 24)
+    local badge=group.mode=='BUS' and 34 or (group.mode=='TRUCK' and 38 or (group.mode=='FREIGHT_TRAIN' and 48 or 24))
     local icon,gap=18,5
     local capacity=math.max(1,math.floor((maxWidth-icon)/(badge+gap)))
     if group.mode=='BUS'then capacity=math.min(3,capacity)end
@@ -352,7 +352,7 @@ end
 function P.trackStyle(mode)
   if mode=='METRO'then
     return {rail=6,stripe=0,ordinarySize=18,interchangeSize=18,terminusSize=18,ordinaryFill='line'}
-  elseif mode=='RER' or mode=='TRAIN'then
+  elseif mode=='RER' or mode=='TRAIN' or mode=='FREIGHT_TRAIN'then
     return {rail=18,stripe=0,ordinarySize=10,interchangeSize=14,terminusSize=16,ordinaryFill='white'}
   elseif mode=='TRAM'then
     return {rail=8,stripe=2.5,ordinarySize=14,interchangeSize=14,terminusSize=16,ordinaryFill='line'}

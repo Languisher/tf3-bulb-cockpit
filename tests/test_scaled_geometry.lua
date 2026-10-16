@@ -9,7 +9,7 @@ do
     return {id=id,name='Line '..id,mode=mode,color='#abcdef',stops=stops}
   end
   local function near(a,b,msg)assert(math.abs(a-b)<.00001,msg..': '..a..' vs '..b)end
-  for _,mode in ipairs({'TRAIN','RER','METRO','TRAM','BUS'})do
+  for _,mode in ipairs({'TRAIN','RER','METRO','TRAM','BUS','FREIGHT_TRAIN'})do
     for _,branch in ipairs({false,true})do
       local a,b=service(800,{1,2,3,4},mode),service(801,{5,2,3,4},mode)
       for _,reverse in ipairs({false,true})do

@@ -6,8 +6,12 @@ local DARK={0.137,0.122,0.125,1}
 local BLUE={0.137,0.247,0.569,1}
 local ROOT='linnan_bulb_cockpit::/gui/bulb_cockpit/symbols/'
 local shapes={METRO='circle',RER='rounded-square',TRAIN='rounded-square',TRAM='tram-bars',BUS='bus-frame',
-  BOAT='tram-bars',AIR='rounded-square',TRUCK='bus-frame'}
+  BOAT='tram-bars',AIR='rounded-square',TRUCK='bus-frame',FREIGHT_TRAIN='none'}
 function B.geometry(mode,small)
+  if mode=='FREIGHT_TRAIN'then
+    return {shape='none',width=small and 48 or 80,height=small and 24 or 38,
+      icon=small and 18 or 26,gap=small and 5 or 6,font=small and 14 or 24,minFont=small and 9 or 10}
+  end
   local size=small and 24 or 38
   local bus=mode=='BUS' or mode=='TRUCK'
   return {shape=shapes[mode] or shapes.TRAIN,width=bus and (small and (mode=='BUS' and 34 or 38) or 50) or size,
@@ -54,6 +58,7 @@ function B.create(builtin,style,text,gameIcon,theme)
   theme=theme or {}
   local symbolInk=theme.symbolInk or BLUE
   local function badgeInk(mode,fill)
+    if mode=='FREIGHT_TRAIN'then return theme.openBadgeInk or symbolInk end
     return ((mode=='TRAM' or mode=='BOAT') and theme.openBadgeInk) or B.ink(mode,fill)
   end
   local function mask(name,width,height,ink,class,tooltip)
@@ -98,7 +103,7 @@ function B.create(builtin,style,text,gameIcon,theme)
         math.floor(size*(mode=='TRAM' and .35 or .75)),size,size,{1,1,1,1},nil,'bulb-mode-letter'),0,0,size,size)
       return component(size,size,children,'bulb-mode-icon')
     end
-    if mode=='TRAIN' then
+    if mode=='TRAIN' or mode=='FREIGHT_TRAIN' then
       add(children,mask('transilien-mode',size,size,symbolInk,'bulb-rail-mode-icon'),0,0,size,size)
     elseif mode=='RER' then
       add(children,mask('rer-mode-ring',size,size,symbolInk,'bulb-rer-mode-icon'),0,0,size,size)
@@ -142,8 +147,8 @@ function B.create(builtin,style,text,gameIcon,theme)
       add(children,mask('rer-'..preset:lower(),g.width,g.height,ink,
         small and 'bulb-rer-transfer-preset' or 'bulb-rer-line-preset',tooltip),x,y,width,height)
     else
-      if not presentation.shape then add(children,mask(g.shape,g.width,g.height,fill,'bulb-shape-'..g.shape,tooltip),x,y,width,height)end
-      local inset=mode=='METRO' and g.width*0.06 or (mode=='RER' or mode=='TRAIN') and g.width*0.16
+      if not presentation.shape and g.shape~='none' then add(children,mask(g.shape,g.width,g.height,fill,'bulb-shape-'..g.shape,tooltip),x,y,width,height)end
+      local inset=mode=='FREIGHT_TRAIN' and 2 or mode=='METRO' and g.width*0.06 or (mode=='RER' or mode=='TRAIN') and g.width*0.16
         or (mode=='TRAM' and small and g.width*0.05 or g.width*0.10)
       local labelWidth=g.width-2*inset
       local base=math.min(g.font,drawHeight-2)

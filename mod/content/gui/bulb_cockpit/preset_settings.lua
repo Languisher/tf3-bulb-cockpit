@@ -1,6 +1,6 @@
 local U={}
 function U.create(react,builtin,style,store,I,B,V)
-  local labels={TRAIN='Train',RER='RER',METRO='地铁',TRAM='电车',BUS='公交',BOAT='轮渡',AIR='航空',TRUCK='货运'}
+  local labels={TRAIN='Train',RER='RER',METRO='地铁',TRAM='电车',BUS='公交',BOAT='轮渡',AIR='航空',TRUCK='货运',FREIGHT_TRAIN='货运火车'}
   local names={'默认','巴黎','上海','慕尼黑'}
   return react.RegisterRecipe('LinnanBulbPresetSettingsNative',function(param)
     local aliases=react.useMirrorState(param.aliases)

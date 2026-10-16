@@ -1,6 +1,6 @@
 local S={}
 local languages={en=true,zh=true,['zh-tw']=true,fr=true,de=true,es=true,it=true,['pt-br']=true,ru=true,pl=true,tr=true,uk=true,ja=true,ko=true}
-local presetModes={TRAIN=true,RER=true,METRO=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true}
+local presetModes={TRAIN=true,RER=true,METRO=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true,FREIGHT_TRAIN=true}
 local presetNames={default=true,paris=true,shanghai=true,munich=true}
 local function validPresets(value)
   if type(value)~='table' or not next(value)then return false end
@@ -12,7 +12,7 @@ local BUS_EVENT='linnan.bulb.setBusNaming'
 local STATION_EVENT='linnan.bulb.setStationLink'
 local OPTIONS_EVENT='linnan.bulb.setOptions'
 local DEFAULTS_EVENT='linnan.bulb.setDefaults'
-local modes={['']=true,RER=true,METRO=true,TRAIN=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true}
+local modes={['']=true,RER=true,METRO=true,TRAIN=true,TRAM=true,BUS=true,BOAT=true,AIR=true,TRUCK=true,FREIGHT_TRAIN=true}
 -- Re-register once when the Lua script loads, including newly added events
 -- absent from older saves. Afterwards only check the engine's read-only flag.
 local subscriptionsInitialized=false
@@ -45,7 +45,7 @@ local function mergeDefaults(old,input,configured)
   local rows={}
   for id,v in pairs(input)do
     if type(id)~='string' or not id:match('^%d+$') or type(v)~='table' or type(v.name)~='string'
-      or not({TRAIN=true,RER=true,TRAM=true,METRO=true,BUS=true})[v.mode] or type(v.index)~='number'
+      or not({TRAIN=true,RER=true,TRAM=true,METRO=true,BUS=true,FREIGHT_TRAIN=true})[v.mode] or type(v.index)~='number'
       or v.index<1 or v.index%1~=0 or v.index>1000000
       or (v.railTypesVersion~=nil and v.railTypesVersion~=2)then return nil end
     if v.mode=='BUS'then
@@ -87,7 +87,7 @@ local function mergeDefaults(old,input,configured)
       entry.prefix='';entry.suffix='';entry.identifier=v.code..string.format('%02d',index)
       entry.shortName=entry.identifier;entry.busScope=v.busScope;entry.routeKey=v.routeKey
       entry.towns={};for i,town in ipairs(v.towns)do entry.towns[i]={id=town.id,name=town.name}end
-    else entry.shortName=(v.mode=='TRAIN' or v.mode=='RER') and letter(index) or (v.mode=='TRAM' and 'T' or '')..index end
+    else entry.shortName=v.mode=='FREIGHT_TRAIN' and tostring(72000+index) or (v.mode=='TRAIN' or v.mode=='RER') and letter(index) or (v.mode=='TRAM' and 'T' or '')..index end
     defaults[id]=entry;reserve(entry,id)
   end
   return defaults,not equal(old or {},defaults)
