@@ -230,6 +230,65 @@ local function textWidth(value,size,uniform)
   end
   return math.max(longest,used)*size/2+4
 end
+-- Station labels wrap words before applying the two-row budget. The native
+-- renderer injects its existing glyph metrics; portable callers retain the
+-- conservative character estimate. CJK can still break between characters.
+function P.stationLabel(value,width,size,measure)
+  measure=measure or function(text,font)return textWidth(text,font,true)-4 end
+  local limit=math.max(0,width-4)
+  local tokens,word,space={},{},false
+  local function push(text)
+    tokens[#tokens+1]={text=text,space=space};space=false
+  end
+  local function flush()if #word>0 then push(table.concat(word));word={}end end
+  for c in tostring(value):gmatch('[%z\1-\127\194-\244][\128-\191]*')do
+    if c:match('%s') or c=='\194\160' or c=='\227\128\128'then flush();space=true
+    elseif c:byte()>=227 then flush();push(c)
+    else word[#word+1]=c end
+  end
+  flush()
+  local function elide(text)
+    if text:sub(-3)=='…'then
+      if measure(text,size)<=limit then return text end
+      text=text:sub(1,-4)
+    end
+    if measure(text..'…',size)<=limit then return text..'…'end
+    local result=''
+    for c in text:gmatch('[%z\1-\127\194-\244][\128-\191]*')do
+      if measure(result..c..'…',size)>limit then break end
+      result=result..c
+    end
+    return measure('…',size)<=limit and result..'…' or ''
+  end
+  local lines,line={},{}
+  local used,spaceWidth,ellipsisWidth=0,measure(' ',size),measure('…',size)
+  local function joined(parts)
+    local result=''
+    for i,token in ipairs(parts)do result=result..(i>1 and token.space and ' ' or '')..token.text end
+    return result
+  end
+  for _,token in ipairs(tokens)do
+    local text,tokenWidth=token.text,measure(token.text,size)
+    if tokenWidth>limit then text=elide(text);tokenWidth=measure(text,size)end
+    local entry={text=text,space=token.space,width=tokenWidth}
+    local added=entry.width+(#line>0 and entry.space and spaceWidth or 0)
+    if #line>0 and used+added>limit then
+      if #lines==1 then
+        -- Remove whole trailing words to make room for the omission mark.
+        while #line>1 and used+ellipsisWidth>limit do
+          local last=line[#line];used=used-last.width-(last.space and spaceWidth or 0);line[#line]=nil
+        end
+        lines[#lines+1]=elide(joined(line));line={};break
+      end
+      lines[#lines+1]=joined(line);line={};used=0;added=entry.width
+    end
+    line[#line+1]=entry;used=used+added
+  end
+  if #line>0 or #lines==0 then lines[#lines+1]=joined(line)end
+  local longest=0
+  for _,lineText in ipairs(lines)do longest=math.max(longest,measure(lineText,size))end
+  return table.concat(lines,'\n'),#lines,math.min(width,longest+4)
+end
 function P.ellipsize(value,columns,uniform)
   local chars,used={},0
   for c in tostring(value):gsub('[\r\n]',' '):gmatch('[%z\1-\127\194-\244][\128-\191]*') do
@@ -340,9 +399,9 @@ local function arrange(stops,tr)
   g.width=math.ceil(furthest+12);g.rightMargin=g.width-g.right
   return g,gaps
 end
-function P.plan(snapshot, aliases, blink, width,tr)
+function P.plan(snapshot, aliases, blink, width,tr,measure)
   tr=tr or string.format
-  if snapshot.network then return P.branchPlan(snapshot,aliases,blink,width,tr)end
+  if snapshot.network then return P.branchPlan(snapshot,aliases,blink,width,tr,measure)end
   local route=snapshot.route
   local defaults=P.defaults(snapshot.lines or {route},aliases)
   local n=#route.stops
@@ -367,13 +426,12 @@ function P.plan(snapshot, aliases, blink, width,tr)
   end
   local function build(indices,labelWidth)
     local stops={}
-    local columns=math.max(4,math.floor((labelWidth-4)/14)*2)
     for _,i in ipairs(indices)do
       local stop,data=route.stops[i],prepare(i)
-      local value,rows=P.wrap(P.ellipsize(stop.name,columns*2,true),columns,true)
+      local value,rows,nameWidth=P.stationLabel(stop.name,labelWidth,14,measure)
       local kind=(i==1 or i==n) and 'terminus' or (#data.transfers>0 and 'interchange' or 'ordinary')
       stops[#stops+1]={index=i,key=occurrenceKey(route,stop,i),name=value,fullName=stop.name,nameRows=rows,
-        nameWidth=math.min(labelWidth,textWidth(value,14,true)),rowWidth=data.rowWidth,
+        nameWidth=nameWidth,rowWidth=data.rowWidth,
         transfers=data.transfers,transferGroups=data.groups,transferRows=data.rows,transferHeight=data.height,markerKind=kind,
         markerSize=result.track[kind..'Size'],showProgress=not snapshot.static,
         lit=snapshot.next>0 and (i>snapshot.next or i==snapshot.next and blink),endpoint=i==1 or i==n}
@@ -472,7 +530,7 @@ end
 -- Convert the station union into a layered diagram. Paths are oriented from
 -- their shared station order; a longest-path rank keeps unequal parallel
 -- branches aligned at their shared ends. Cyclic connections use a return lane.
-function P.branchPlan(snapshot,aliases,blink,width,tr)
+function P.branchPlan(snapshot,aliases,blink,width,tr,measure)
   tr=tr or string.format
   local graph,route=snapshot.network,snapshot.route
   local mode=P.mode(route,aliases)
@@ -649,9 +707,7 @@ function P.branchPlan(snapshot,aliases,blink,width,tr)
       end
     end
     local groups,rowWidth,rows,transferHeight=P.transferGroups(transfers,rowLimit)
-    local chars=math.max(4,math.floor((nameLimit-4)/14)*2)
-    local name,nameRows=P.wrap(P.ellipsize(source.name,chars*2,true),chars,true)
-    local nameWidth=math.min(nameLimit,textWidth(name,14,true))
+    local name,nameRows,nameWidth=P.stationLabel(source.name,nameLimit,14,measure)
     local endpoint=#node.incoming==0 or #node.outgoing==0 or source.degree==1
     local kind=endpoint and 'terminus' or ((#transfers>0 or source.degree>2) and 'interchange' or 'ordinary')
     local index=active[node.id]

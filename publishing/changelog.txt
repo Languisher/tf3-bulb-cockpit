@@ -1,13 +1,10 @@
-In-Game Route Display / 游戏线路显示 · 0.1.80dev
+In-Game Route Display / 游戏线路显示 · 0.1.81dev
 
-[NEW FEATURE] Default / Paris / Shanghai / Munich presets, selectable globally or per display type under Line settings → Line presets. Presets change badges and map tracks, including branches and transfers. Unknown numbers and types use game colors. Save the game to retain your choice.
-[NEW FEATURE] 默认／巴黎／上海／慕尼黑预设，在线路设置 → 线路预设统一选择或按类型分别配置。编号图标和图上线路同时变色，包含分支与换乘；未匹配的编号／类型沿用游戏颜色，保存游戏后保留。
+[FIX] English station names wrap between complete words before applying the two-row limit. Apostrophes, hyphenated words and Latin accents are retained; CJK can still wrap between characters.
+[FIX] 英文站名以完整单词为单位换行，再应用两行限制，支持撇号、连字符和重音字符；中文仍可按字符换行。
 
-[NEW FEATURE] Paris Metro 1–18, 3bis/7bis, RER A–E, Train letters and trams; Shanghai Metro 1–18 square badges; Munich U1–U8, S1–S8 (RER) and tram colors/shapes. Custom prefixes and suffixes remain unchanged.
-[NEW FEATURE] 巴黎地铁、RER、Train 与电车；上海地铁方形编号；慕尼黑 U-Bahn、RER 对应 S-Bahn 与电车配色／样式。保留自定义前后缀。
+[FIX] First-person, static and branch maps share the same label layout and existing font-width metrics. Excess text or an oversized single word uses an ellipsis; hovering retains the full station name.
+[FIX] 第一人称、静态和分支图共用站名排版及现有字体宽度数据；过长名称或超宽单词采用省略号，完整站名仍可悬停查看。
 
-Native dropdowns, 14 languages, save rollback and independent option patches. No added timers, map scans, network requests or global styles. One new shared 64×64 diagonal badge mask; no runtime image generation.
-原生下拉框，14 种语言，保存失败回退与独立选项补丁。不增加计时器、地图扫描、联网或全局样式；仅一张共用 64×64 编号遮罩，游戏内不生成图片。
-
-59 Lua tests and 93 syntax checks passed, including native React and branch/transfer colors. In-game rendering and long-session performance still require verification.
-59 项 Lua 回归与 93 项语法检查通过，包括原版 React 与分支／换乘配色。游戏实机显示和长时间性能仍需核对。
+No new timers, synchronization events, fonts or textures. 60 Lua suites and 94 syntax checks passed. Native C++ display still needs in-game verification. Fully quit and restart after upgrading.
+没有新增计时器、同步事件、字体或贴图。60 项 Lua 回归与 94 项语法检查通过；C++ 实机显示仍需核对，更新后请完整重启。

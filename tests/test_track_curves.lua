@@ -79,7 +79,7 @@ do
       local canvas
       walk(tree,function(_,p)if p.meta and p.meta.id=='linnan.bulb.canvas'then canvas=p end end)
       local size=canvas.meta.styleSheet.size
-      local plan=P.plan(snapshot,aliases,true,1232)
+      local plan=P.plan(snapshot,aliases,true,1232,nil,B.textWidth)
       local expected={}
       local function capKey(x,y,suffix)return string.format('%s:%.5f:%.5f',suffix,x,y)end
       for _,suffix in ipairs(plan.track.stripe>0 and {':rail',':stripe'} or {':rail'})do

@@ -28,7 +28,7 @@ do
           if m.id=='linnan.bulb.canvas'then canvas=p end
         end)
         assert(canvas)
-        local plan=P.plan(snapshot,aliases,false,math.max(240,math.min(1600,(viewport.x-48)/(percent/100))))
+        local plan=P.plan(snapshot,aliases,false,math.max(240,math.min(1600,(viewport.x-48)/(percent/100))),nil,B.textWidth)
         local dimensions=canvas.meta.styleSheet.size
         local s=dimensions[1]/plan.geometry.width
         assert(s>0 and s<=percent/100+.00001)
