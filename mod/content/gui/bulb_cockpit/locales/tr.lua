@@ -24,7 +24,7 @@ return {
   ["公交"]="Otobüs",
   ["轮渡"]="Feribot",
   ["航空"]="Havayolu",
-  ["货运"]="Yük",
+  ["货车"]="Kamyon",
   ["线路图设置"]="Hat şemaları",
   ["关闭线路图设置"]="Şemaları kapat",
   ["拖动此处移动线路图按钮"]="Hat şeması düğmesini taşımak için burayı sürükleyin",

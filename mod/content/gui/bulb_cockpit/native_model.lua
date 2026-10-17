@@ -329,6 +329,8 @@ function P.transferGroups(transfers,maxWidth)
     -- Match mode_marks.geometry's fixed small badges. One mode symbol is
     -- centered below the station; its line badges extend to the right.
     local badge=group.mode=='BUS' and 34 or (group.mode=='TRUCK' and 38 or (group.mode=='FREIGHT_TRAIN' and 48 or 24))
+    local presentation=group.lines[1] and group.lines[1].presentation
+    if presentation and presentation.aspect then badge=24*presentation.aspect end
     local icon,gap=18,5
     local capacity=math.max(1,math.floor((maxWidth-icon)/(badge+gap)))
     if group.mode=='BUS'then capacity=math.min(3,capacity)end
@@ -399,9 +401,9 @@ local function arrange(stops,tr)
   g.width=math.ceil(furthest+12);g.rightMargin=g.width-g.right
   return g,gaps
 end
-function P.plan(snapshot, aliases, blink, width,tr,measure)
+function P.plan(snapshot, aliases, blink, width,tr,measure,present)
   tr=tr or string.format
-  if snapshot.network then return P.branchPlan(snapshot,aliases,blink,width,tr,measure)end
+  if snapshot.network then return P.branchPlan(snapshot,aliases,blink,width,tr,measure,present)end
   local route=snapshot.route
   local defaults=P.defaults(snapshot.lines or {route},aliases)
   local n=#route.stops
@@ -419,6 +421,11 @@ function P.plan(snapshot, aliases, blink, width,tr,measure)
     for _,transfer in ipairs(stop.transfers)do
       transfers[#transfers+1]={id=transfer.id,text=P.alias(transfer,aliases,defaults),fullName=transfer.name,
         color=transfer.color,mode=P.mode(transfer,aliases),identifier=P.identifier(transfer,aliases,defaults)}
+    end
+    if present then
+      for _,transfer in ipairs(transfers)do
+        transfer.presentation=present(transfer.mode,transfer.text,transfer.color,transfer.identifier)
+      end
     end
     local groups,rowWidth,rows,height=P.transferGroups(transfers,maxRowWidth)
     prepared[index]={transfers=transfers,groups=groups,rowWidth=rowWidth,rows=rows,height=height}
@@ -530,7 +537,7 @@ end
 -- Convert the station union into a layered diagram. Paths are oriented from
 -- their shared station order; a longest-path rank keeps unequal parallel
 -- branches aligned at their shared ends. Cyclic connections use a return lane.
-function P.branchPlan(snapshot,aliases,blink,width,tr,measure)
+function P.branchPlan(snapshot,aliases,blink,width,tr,measure,present)
   tr=tr or string.format
   local graph,route=snapshot.network,snapshot.route
   local mode=P.mode(route,aliases)
@@ -704,6 +711,11 @@ function P.branchPlan(snapshot,aliases,blink,width,tr,measure)
       local key=tm..':'..badge
       if not seen[key]then
         seen[key]=true;transfers[#transfers+1]={id=transfer.id,text=badge,mode=tm,fullName=transfer.name,color=transfer.color,identifier=P.identifier(transfer,aliases,defaults)}
+      end
+    end
+    if present then
+      for _,transfer in ipairs(transfers)do
+        transfer.presentation=present(transfer.mode,transfer.text,transfer.color,transfer.identifier)
       end
     end
     local groups,rowWidth,rows,transferHeight=P.transferGroups(transfers,rowLimit)

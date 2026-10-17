@@ -22,7 +22,7 @@ local function dropSessionOwner(session,key,token)
   local owner=session.owners[key]
   if owner and owner.token==token then session.owners[key]=nil end
 end
-local modeNames={'Train','RER','地铁','电车','公交','轮渡','航空','货运','货运火车'}
+local modeNames={'Train','RER','地铁','电车','公交','轮渡','航空','货车','货运火车'}
 local modeChoices={'TRAIN','RER','METRO','TRAM','BUS','BOAT','AIR','TRUCK','FREIGHT_TRAIN'}
 local function numberKey(value)
   value=tostring(value):lower()
@@ -46,7 +46,7 @@ local carriers={
 function S.backWidth(caption,limit,B)
   return math.min(limit,math.max(120,math.ceil(B.textWidth(caption,19))+24))
 end
-function S.list(lines,aliases,query,scope,order,P,categories)
+function S.list(lines,aliases,query,scope,order,P,categories,presentation)
   local defaults=P.defaults(lines,aliases)
   local result,keys={},{}
   query=tostring(query or ''):lower()
@@ -54,6 +54,10 @@ function S.list(lines,aliases,query,scope,order,P,categories)
   for _,line in ipairs(lines)do
     local identifier=P.identifier(line,aliases,defaults)
     local badge=P.alias(line,aliases,defaults):lower()
+    if query~='' and scope~='name' and presentation then
+      local shown=presentation(line,aliases,defaults)
+      if shown and shown.label then badge=badge..'\n'..shown.label:lower()end
+    end
     local name=tostring(line.name):lower()
     local haystack=scope=='number' and badge or (scope=='name' and name or name..'\n'..badge)
     if (all or categories[carrierIndex[line.mode]]) and haystack:find(query,1,true)then
@@ -432,7 +436,7 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local carrierChoice=react.useState({category={}})
     local rows,g={},param.geometry
     local filtered,defaults=S.list(param.lines,param.aliases:old(),query:old(),
-      ({'number','name','all'})[scope:old()],({'number_asc','number_desc','name'})[order:old()],P,carrierChoice:old().category)
+      ({'number','name','all'})[scope:old()],({'number_asc','number_desc','name'})[order:old()],P,carrierChoice:old().category,visuals and visuals.presentation)
     for _,line in ipairs(filtered) do
       rows[#rows+1]=AliasRow{meta={localKey=tostring(line.id)..line.name},line=line,geometry=g,
         lines=param.lines,defaults=defaults,
@@ -781,7 +785,11 @@ function S.create(react,builtin,style,P,B,collect,aliasStore,diagnostic,windows,
     local sections={}
     local tileHeight,tileGap=32,8
     for _,group in ipairs(groups)do
-      local tileWidth=math.max(44,B.geometry(group.mode,true).width+10)
+      local tileWidth=44
+      for _,item in ipairs(group.items)do
+        local presentation=visuals.presentation and visuals.presentation(item.members[1],param.aliases:old(),item.defaults)
+        tileWidth=math.max(tileWidth,B.geometry(group.mode,true,presentation).width+10)
+      end
       local columns=math.max(1,math.floor((g.content-32+tileGap)/(tileWidth+tileGap)))
       local section={label(tr(group.title),g.content-32,28,'font-scale-body')}
       if group.mode=='BUS' then

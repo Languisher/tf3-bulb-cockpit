@@ -24,7 +24,7 @@ return {
   ["公交"]="Bus",
   ["轮渡"]="Ferry",
   ["航空"]="Avion",
-  ["货运"]="Fret",
+  ["货车"]="Camion",
   ["线路图设置"]="Plans des lignes",
   ["关闭线路图设置"]="Fermer les plans",
   ["拖动此处移动线路图按钮"]="Faites glisser ici pour déplacer le bouton des plans",

@@ -7,14 +7,14 @@ local BLUE={0.137,0.247,0.569,1}
 local ROOT='linnan_bulb_cockpit::/gui/bulb_cockpit/symbols/'
 local shapes={METRO='circle',RER='rounded-square',TRAIN='rounded-square',TRAM='tram-bars',BUS='bus-frame',
   BOAT='tram-bars',AIR='rounded-square',TRUCK='bus-frame',FREIGHT_TRAIN='none'}
-function B.geometry(mode,small)
+function B.geometry(mode,small,presentation)
   if mode=='FREIGHT_TRAIN'then
     return {shape='none',width=small and 48 or 80,height=small and 24 or 38,
       icon=small and 18 or 26,gap=small and 5 or 6,font=small and 14 or 24,minFont=small and 9 or 10}
   end
   local size=small and 24 or 38
   local bus=mode=='BUS' or mode=='TRUCK'
-  return {shape=shapes[mode] or shapes.TRAIN,width=bus and (small and (mode=='BUS' and 34 or 38) or 50) or size,
+  return {shape=shapes[mode] or shapes.TRAIN,width=presentation and presentation.aspect and size*presentation.aspect or (bus and (small and (mode=='BUS' and 34 or 38) or 50) or size),
     height=bus and (small and (mode=='BUS' and 15.3 or 17.1) or 22.5) or size,
     icon=small and 18 or 26,gap=small and 5 or 6,
     font=small and (bus and (mode=='BUS' and 11 or 9) or (mode=='TRAM' and 16 or (mode=='METRO' and 20 or 18)))
@@ -96,13 +96,14 @@ function B.create(builtin,style,text,gameIcon,theme)
   end
   local function icon(mode,size,presentation)
     local children={}
-    if presentation and presentation.matched and presentation.preset=='munich' and (mode=='METRO' or mode=='RER' or mode=='TRAM')then
+    if presentation and presentation.preset=='munich' and (mode=='METRO' or mode=='RER' or mode=='TRAM')then
       add(children,mode=='RER' and mask('circle',size,size,rgb('#00975f'))
         or box(size,size,rgb(mode=='TRAM' and '#e30613' or '#0065ae')),0,0,size,size)
       add(children,text(mode=='RER' and 'S' or mode=='TRAM' and 'Tram' or 'U',
         math.floor(size*(mode=='TRAM' and .35 or .75)),size,size,{1,1,1,1},nil,'bulb-mode-letter'),0,0,size,size)
       return component(size,size,children,'bulb-mode-icon')
     end
+    local symbolInk=rgb(presentation and presentation.symbolInk) or symbolInk
     if mode=='TRAIN' or mode=='FREIGHT_TRAIN' then
       add(children,mask('transilien-mode',size,size,symbolInk,'bulb-rail-mode-icon'),0,0,size,size)
     elseif mode=='RER' then
@@ -123,12 +124,13 @@ function B.create(builtin,style,text,gameIcon,theme)
     return component(size,size,children,'bulb-mode-icon')
   end
   local function appendBadge(children,mode,label,fill,small,tooltip,x,y,width,height,presentation)
-    local g=B.geometry(mode,small)
+    local g=B.geometry(mode,small,presentation)
     presentation=presentation or {}
+    label=presentation.label or label
     fill=rgb(presentation.color) or fill
     local ink=rgb(presentation.ink) or badgeInk(mode,fill)
     local shape=presentation.shape or g.shape
-    local drawHeight=presentation.aspect and g.width/presentation.aspect or g.height
+    local drawHeight=g.height
     local drawY=y+(g.height-drawHeight)/2
     if shape=='rectangle' then
       add(children,box(g.width,drawHeight,fill),x,drawY,width,height)
@@ -160,7 +162,7 @@ function B.create(builtin,style,text,gameIcon,theme)
     end
   end
   local function single(mode,label,fill,small,tooltip,presentation)
-    local g=B.geometry(mode,small)
+    local g=B.geometry(mode,small,presentation)
     local width,height=g.icon+g.gap+g.width,math.max(g.icon,g.height)
     local children={}
     add(children,icon(mode,g.icon,presentation),0,(height-g.icon)/2,width,height)
@@ -168,7 +170,7 @@ function B.create(builtin,style,text,gameIcon,theme)
     return component(width,height,children,'bulb-mode-mark',tooltip),width,height
   end
   local function badge(mode,label,fill,small,tooltip,anchor,presentation)
-    local g=B.geometry(mode,small)
+    local g=B.geometry(mode,small,presentation)
     local children={}
     appendBadge(children,mode,label,fill,small,tooltip,0,0,g.width,g.height,presentation)
     -- Buttons center their content; inline table cells supply a top-left
@@ -176,7 +178,8 @@ function B.create(builtin,style,text,gameIcon,theme)
     return component(g.width,g.height,children,'bulb-line-tile',tooltip,anchor or {.5,.5}),g.width,g.height
   end
   local function group(mode,rows)
-    local g=B.geometry(mode,true)
+    local presentation=rows[1] and rows[1].lines[1] and rows[1].lines[1].presentation
+    local g=B.geometry(mode,true,presentation)
     local width,height=g.icon,24
     for _,row in ipairs(rows)do
       width=math.max(width,g.icon+#row.lines*(g.gap+g.width))

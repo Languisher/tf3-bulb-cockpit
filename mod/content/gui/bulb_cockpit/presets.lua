@@ -44,6 +44,7 @@ local function key(mode,value)
   elseif mode=='RER'then text=text:gsub('^rer',''):gsub('^s','')
   elseif mode=='TRAIN'then text=text:gsub('^train','')
   elseif mode=='TRAM'then text=text:gsub('^tramway',''):gsub('^tram',''):gsub('^t','')end
+  text=text:gsub('^0+(%d)','%1')
   return text
 end
 function V.resolve(mode,badge,gameColor,aliases,identifier)
@@ -52,17 +53,26 @@ function V.resolve(mode,badge,gameColor,aliases,identifier)
   -- Default/unsupported types do no badge-string normalization.
   if not palette then return {color=gameColor,preset=preset,matched=false}end
   local index=key(mode,badge)
-  local chosen=palette and palette[index]
-  if not chosen and identifier~=nil then index=key(mode,identifier);chosen=palette and palette[index]end
+  local fullMatch=palette[index]~=nil
+  local chosen=palette[index]
+  if not chosen and identifier~=nil then index=key(mode,identifier);chosen=palette[index]end
   local result={color=chosen or gameColor,preset=preset,matched=chosen~=nil}
-  if not chosen then return result end
-  if preset=='paris' and mode=='TRAM'then result.ink='#231f20'
-  elseif preset=='shanghai' and mode=='METRO'then result.shape='rectangle';result.ink='#ffffff'
+  -- A supported city's shape/symbol is independent of its known color table.
+  -- Unknown services keep game color, without reverting to the default icon.
+  if preset=='paris'then
+    result.symbolInk='#233f91'
+    if mode=='TRAM'then result.ink='#231f20'end
+    if mode=='METRO' and fullMatch then result.label=index end
+  elseif preset=='shanghai' and mode=='METRO'then
+    result.shape='rectangle';result.ink='#ffffff';result.symbolInk='#e3002b'
+    if fullMatch then result.label=index end
   elseif preset=='munich' and (mode=='METRO' or mode=='RER' or mode=='TRAM')then
     result.shape=mode=='RER' and 'capsule' or 'rectangle';result.aspect=2
+    -- Unlike U/S badges, Tram numbers do not carry a letter in MVG maps.
+    if fullMatch then result.label=(mode=='METRO' and 'U' or mode=='RER' and 'S' or '')..index end
     result.ink=(mode=='RER' and index=='8') and '#000000' or '#ffffff'
-    if mode=='METRO' and (index=='7' or index=='8')then result.secondary='#c10831'
-    elseif mode=='TRAM' and index=='28'then result.outline=true;result.ink=chosen end
+    if chosen and mode=='METRO' and (index=='7' or index=='8')then result.secondary='#c10831'
+    elseif chosen and mode=='TRAM' and index=='28'then result.outline=true;result.ink=chosen end
   end
   return result
 end
@@ -80,5 +90,11 @@ function V.decorate(plan,aliases,gameColor)
     end
   end
   return plan
+end
+function V.plan(model,snapshot,aliases,blink,width,tr,measure)
+  local function present(mode,badge,color,identifier)
+    return V.resolve(mode,badge,color,aliases,identifier)
+  end
+  return V.decorate(model.plan(snapshot,aliases,blink,width,tr,measure,present),aliases,snapshot.route.color)
 end
 return V

@@ -147,9 +147,33 @@ do
     local tile=badge(mode,mode=='METRO' and 'U7' or 'S1',{1,0,0,1},true,nil,nil,presentation)
     local masks=0
     walk(tile,function(kind,p)if kind=='ImageView'then masks=masks+1;assert(p.path:match('symbols/[%w-]+%.tga$'))end end)
-    assert(tile.param.meta.styleSheet.size[1]==24 and tile.param.meta.styleSheet.size[2]==24)
+    assert(tile.param.meta.styleSheet.size[1]==48 and tile.param.meta.styleSheet.size[2]==24)
     assert(masks==(mode=='METRO' and 1 or 2))
   end
+  -- Wide city badges must fit their directory hit boxes and native map groups.
+  aliases.__options.linePresets.METRO='munich'
+  contexts.LinnanBulbBrowserNative={}
+  local home=render('LinnanBulbBrowserNative',{aliases=aliasState,lines={a,b},viewport={x=1280,y=720},
+    color=settingsParam.color,onClose=function()end})
+  local tiles=0
+  walk(home,function(kind,p)
+    if kind=='Button' and p.meta.id=='linnan.bulb.browser.line.800'then
+      assert(p.meta.styleSheet.size[1]>=58 and p.content.param.meta.styleSheet.size[1]==48)
+      tiles=tiles+1
+    end
+  end)
+  assert(tiles==1)
+  tick()
+  local hud=render('LinnanBulbCockpitHudNative',{aliases=aliasState,viewport={x=1280,y=720}})
+  local fullLabels={}
+  walk(hud,function(kind,p)
+    if kind=='TextView' and p.meta.class=='bulb-transfer-label'then fullLabels[p.text]=true end
+    if kind=='Component' and p.meta.class=='bulb-transfer-group'then
+      assert(p.meta.styleSheet.size[1]>=71,'one 48px S badge plus icon and gap')
+    end
+  end)
+  assert(fullLabels.S1,'native transfer glyph must contain S, not just the number')
+  unmounts.LinnanBulbBrowserNative()
   print('PASS: native preset dropdowns, global/mixed state, acknowledgments, rollback, closing, 14-locale bounds, immutable plans and HUD/static branch colors')
 end
 ]=],'@city_presets_ui'))()

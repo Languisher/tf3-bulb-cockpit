@@ -24,7 +24,7 @@ return {
   ["公交"]="Autobús",
   ["轮渡"]="Ferri",
   ["航空"]="Aviación",
-  ["货运"]="Mercancías",
+  ["货车"]="Camión",
   ["线路图设置"]="Mapas de líneas",
   ["关闭线路图设置"]="Cerrar mapas",
   ["拖动此处移动线路图按钮"]="Arrastra aquí para mover el botón de mapas",

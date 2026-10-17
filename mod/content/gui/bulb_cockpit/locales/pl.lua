@@ -24,7 +24,7 @@ return {
   ["公交"]="Autobus",
   ["轮渡"]="Prom",
   ["航空"]="Lotnictwo",
-  ["货运"]="Towary",
+  ["货车"]="Ciężarówka",
   ["线路图设置"]="Schematy linii",
   ["关闭线路图设置"]="Zamknij schematy",
   ["拖动此处移动线路图按钮"]="Przeciągnij tutaj, aby przesunąć przycisk schematów",

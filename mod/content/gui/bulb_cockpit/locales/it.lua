@@ -24,7 +24,7 @@ return {
   ["公交"]="Autobus",
   ["轮渡"]="Traghetto",
   ["航空"]="Aviazione",
-  ["货运"]="Merci",
+  ["货车"]="Camion",
   ["线路图设置"]="Mappe delle linee",
   ["关闭线路图设置"]="Chiudi mappe",
   ["拖动此处移动线路图按钮"]="Trascina qui per spostare il pulsante delle mappe",

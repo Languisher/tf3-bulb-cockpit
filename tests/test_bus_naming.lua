@@ -26,7 +26,7 @@ api={type={ComponentType=types,['enum']={TransportMode=modes}},engine={
   entityExists=function(id)return entities[id]~=nil end,
   getComponent=function(id,kind)if id==999 and kind=='GAME_SCRIPT'then return {state=value}end;return entities[id] and entities[id][kind]end,
   forEachEntityWithComponent=function(fn,kind)for id,entity in pairs(entities)do if entity[kind]then fn(id)end end end,
-  system={lineSystem={getLines=function()return {90,80,70,60,50,40,30,20,11,10}end},
+  system={transportVehicleSystem={getLineVehicles=function()return {}end},lineSystem={getLines=function()return {90,80,70,60,50,40,30,20,11,10}end},
     stationSystem={getTown=function(id)return ({[1100]=100,[1101]=100,[1200]=200})[id]end,getStation2TownMap=function()mappingReads=mappingReads+1;return {[1100]=100,[1101]=100,[1200]=200}end},
     gameScriptSystem={getEntityForGameScript=function()return 999 end}}},
   cmd={makeScriptingSendEventCmd=function(src,id,name,param)return {src=src,id=id,name=name,param=param}end,

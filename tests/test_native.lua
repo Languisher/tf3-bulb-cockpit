@@ -720,7 +720,7 @@ walk(tree,function(kind,param)
   elseif kind=='ComboBox' and param.meta.id=='linnan.bulb.mode.10' then modeButton=param end
 end)
 assert(#modeButton.items==9 and modeButton.compact==true,'type dropdown shows each actual type exactly once')
-for i,name in ipairs({'Train','RER','地铁','电车','公交','轮渡','航空','货运','货运火车'})do
+for i,name in ipairs({'Train','RER','地铁','电车','公交','轮渡','航空','货车','货运火车'})do
   assert(modeButton.items[i].param.content.param.text==name,'one RER option with no duplicate automatic choice')
 end
 modeButton.onValueChange(3)

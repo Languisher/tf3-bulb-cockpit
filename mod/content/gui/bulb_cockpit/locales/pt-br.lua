@@ -24,7 +24,7 @@ return {
   ["公交"]="Ônibus",
   ["轮渡"]="Balsa",
   ["航空"]="Aviação",
-  ["货运"]="Carga",
+  ["货车"]="Caminhão",
   ["线路图设置"]="Mapas de linhas",
   ["关闭线路图设置"]="Fechar mapas",
   ["拖动此处移动线路图按钮"]="Arraste aqui para mover o botão dos mapas",

@@ -28,29 +28,40 @@ local function color(id,get)
   local function byte(x) return math.floor(math.max(0, math.min(1, x))*255+0.5) end
   return string.format('#%02x%02x%02x', byte(c.color.x), byte(c.color.y), byte(c.color.z))
 end
-local function servesLine(id,get,freight)
-  local cargo = api.res.cargoTypeRep.getPassengerCargoTypeId()
-  for _, vid in ipairs(api.engine.system.transportVehicleSystem.getLineVehicles(id)) do
-    local v = get(vid, 'TRANSPORT_VEHICLE')
-    if v then
-      if not freight and (v.config.capacities[cargo+1] or 0)>0 then return true end
-      if freight then
-        for index,capacity in ipairs(v.config.capacities)do
-          if index~=cargo+1 and capacity>0 then return true end
+-- Scoped to one initialization/settings read. Reuse the official vehicle
+-- capacity fields, including auto-load capability; never retain engine data.
+local function loadLookup(get)
+  local cache,passenger={},nil
+  return function(id)
+    if cache[id]then return cache[id]end
+    local loads={passenger=false,freight=false}
+    for _,vid in ipairs(api.engine.system.transportVehicleSystem.getLineVehicles(id))do
+      local v=get(vid,'TRANSPORT_VEHICLE')
+      local config=v and v.config
+      if config then
+        if passenger==nil then passenger=api.res.cargoTypeRep.getPassengerCargoTypeId()+1 end
+        local capacities=config.allCaps or config.capacities or {}
+        if (capacities[passenger] or 0)>0 then loads.passenger=true end
+        for index,capacity in ipairs(capacities)do
+          if index~=passenger and capacity>0 then loads.freight=true;break end
         end
       end
+      if loads.passenger and loads.freight then break end
     end
+    cache[id]=loads;return loads
   end
-  return false
 end
-local function mode(id,get)
+local function mode(id,get,loads)
   local l = (get or comp)(id, 'LINE')
   local modes = l and l.vehicleInfo and l.vehicleInfo.transportModes or {}
   for _, n in ipairs({'TRAM','ELECTRIC_TRAM','TRAM_TRACK','ELECTRIC_TRAM_TRACK','TRAIN','ELECTRIC_TRAIN','BUS','TRUCK','SHIP','SMALL_SHIP','AIRCRAFT','SMALL_AIRCRAFT','HELICOPTER'}) do
     local e = api.type['enum'].TransportMode[n]
     if e and modes[e] then
       if n:find('TRAM') then return 'TRAM' end
-      if n:find('TRAIN') then return 'TRAIN' end
+      if n:find('TRAIN') then
+        local capacity=loads(id)
+        return capacity.freight and not capacity.passenger and 'FREIGHT_TRAIN' or 'TRAIN'
+      end
       if n:find('SHIP') then return 'BOAT' end
       if n:find('AIRCRAFT') or n == 'HELICOPTER' then return 'AIR' end
       if n == 'TRUCK' then return 'TRUCK' end
@@ -176,9 +187,10 @@ end
 function C.listLines(withCities,get)
   get=get or memoizedComponents()
   local result = {}
+  local loads=loadLookup(get)
   local townForStation=withCities and townLookup()
   for _, id in ipairs(api.engine.system.lineSystem.getLines()) do
-    local line={id=id, name=name(id,get), color=color(id,get), mode=mode(id,get)}
+    local line={id=id, name=name(id,get), color=color(id,get), mode=mode(id,get,loads)}
     if withCities and line.mode=='BUS'then line.towns,line.busScope=busCities(id,townForStation,get)end
     result[#result+1]=line
   end
@@ -190,14 +202,14 @@ local function mergeKey(main,aliases)
   local ids=G.candidates(main,aliases,P)
   return P.mode(main,aliases)..':'..P.alias(main,aliases,P.defaults({main},aliases))..':'..table.concat(ids,','),ids
 end
-local function servicesFor(main,aliases,get)
+local function servicesFor(main,aliases,get,loads)
   local key,ids=mergeKey(main,aliases)
   local services={}
   local badge=P.alias(main,aliases,P.defaults({main},aliases))
   for _,id in ipairs(ids)do
     local route=get(id,'LINE')
     if route then
-      local info={id=id,name=name(id,get),mode=mode(id,get),color=color(id,get)}
+      local info={id=id,name=name(id,get),mode=mode(id,get,loads),color=color(id,get)}
       local other=P.alias(info,aliases,P.defaults({info},aliases))
       local entry=aliases and aliases[tostring(id)]
       local fallback=aliases and aliases.__defaults and aliases.__defaults[tostring(id)]
@@ -214,17 +226,19 @@ local function servicesFor(main,aliases,get)
 end
 function C.mergeStatus(line,aliases)
   local get=memoizedComponents()
-  local main={id=line.id,name=name(line.id,get),mode=mode(line.id,get)}
-  local services=servicesFor(main,aliases,get)
+  local loads=loadLookup(get)
+  local main={id=line.id,name=name(line.id,get),mode=mode(line.id,get,loads)}
+  local services=servicesFor(main,aliases,get,loads)
   local graph,warning=G.build(services)
   return graph and #services or 1,warning
 end
 local function topology(lineId,withCities,stationLinks,aliases)
   local get=memoizedComponents()
+  local loads=loadLookup(get)
   local line=get(lineId,'LINE')
   if not line then return nil end
-  local main={id=lineId,name=name(lineId,get),color=color(lineId,get),mode=mode(lineId,get)}
-  local services,key=servicesFor(main,aliases,get)
+  local main={id=lineId,name=name(lineId,get),color=color(lineId,get),mode=mode(lineId,get,loads)}
+  local services,key=servicesFor(main,aliases,get,loads)
   local graph,warning=G.build(services)
   local allStops={};for _,stop in ipairs(line.stops)do allStops[#allStops+1]=stop end
   if graph then
@@ -246,10 +260,13 @@ local function topology(lineId,withCities,stationLinks,aliases)
         for _, other in ipairs(api.engine.system.lineSystem.getLinesForStationGroup(group)) do
           if other~=lineId and not(graph and graph.members[other]) and not seen[other] then
             seen[other]=true
-            if serviceCache[other]==nil then serviceCache[other]=servesLine(other,get,freight)end
+            if serviceCache[other]==nil then
+              local capacity=loads(other)
+              serviceCache[other]=freight and capacity.freight or not freight and capacity.passenger
+            end
             if serviceCache[other]then
               if not serviceInfo[other]then
-                serviceInfo[other]={id=other,name=name(other,get),color=color(other,get),mode=mode(other,get)}
+                serviceInfo[other]={id=other,name=name(other,get),color=color(other,get),mode=mode(other,get,loads)}
               end
               transfers[#transfers+1]=serviceInfo[other]
             end

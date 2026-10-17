@@ -24,7 +24,7 @@ return {
   ["公交"]="Bus",
   ["轮渡"]="Fähre",
   ["航空"]="Flugverkehr",
-  ["货运"]="Güterverkehr",
+  ["货车"]="Lkw",
   ["线路图设置"]="Linienpläne",
   ["关闭线路图设置"]="Linienpläne schließen",
   ["拖动此处移动线路图按钮"]="Hier ziehen, um die Linienplan-Schaltfläche zu verschieben",
